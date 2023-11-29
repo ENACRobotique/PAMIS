@@ -10,6 +10,7 @@
 uint32_t status_time = 0;
 
 Stepper stepper_left(MOT1_STEP, MOT1_DIR);
+Stepper stepper_right(MOT2_STEP, MOT2_DIR);
 StepControl controller;
 
 #define NB_TARGETS 2
@@ -24,18 +25,21 @@ void setup() {
     Serial.begin(115200);
     delay(500);
 
-    // setup stepper
+    // setup left stepper
     stepper_left.setAcceleration(STEPPER_MAX_ACC)
                 .setMaxSpeed(STEPPER_MAX_SPEED/2)
                 .setPullInSpeed(10)
                 .setInverseRotation(true);
-    //gpios.setMode(Gpios::FDC1, INPUT_PULLUP);     // on statically configured TCA
-    //gpios.setMode(Gpios::MOT1_ENABLE, OUTPUT);    // on statically configured TCA
     gpios.write(Gpios::MOT1_ENABLE, LOW);       //enable motor
 
-    target_pos = 0;
-    stepper_left.setTargetAbs(target_pos);
-    controller.moveAsync(stepper_left);
+    // setup right stepper
+    stepper_right.setAcceleration(STEPPER_MAX_ACC)
+                .setMaxSpeed(STEPPER_MAX_SPEED/2)
+                .setPullInSpeed(10)
+                .setInverseRotation(true);
+   
+    gpios.write(Gpios::MOT2_ENABLE, LOW);       //enable motor
+
 }
 
 void loop() {
@@ -46,7 +50,12 @@ void loop() {
         gpios.toggle(Gpios::LED);
         status_time = millis();
     }
-
+    if(millis() - status_time > 200) {
+        float pos = stepper_right.getPosition() / STEP_PER_MM;
+        Serial.println(pos);
+        gpios.toggle(Gpios::LED);
+        status_time = millis();
+    }
     // si le stepper est proche de sa target, passer à la traget suivante.
     if(abs(target_pos - stepper_left.getPosition()) < 10 * STEP_PER_MM) {
         // delay(500);
@@ -55,5 +64,11 @@ void loop() {
         stepper_left.setTargetAbs(target_pos);
         controller.moveAsync(stepper_left);
     }
-    
+    if(abs(target_pos - stepper_right.getPosition()) < 10 * STEP_PER_MM) {
+        // delay(500);
+        target_idx = (target_idx + 1) % NB_TARGETS;
+        target_pos = targets[target_idx] * STEP_PER_MM;
+        stepper_right.setTargetAbs(target_pos);
+        controller.moveAsync(stepper_right);
+    }
 }
