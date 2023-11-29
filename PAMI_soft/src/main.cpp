@@ -4,19 +4,16 @@
 #include "Gpios.h"
 
 #define STEP_PER_MM 10.186
+#define STEP_TO_DEGREES 10 // chercher 
 #define STEPPER_MAX_ACC 10000
 #define STEPPER_MAX_SPEED 4000
 
+#define E 1
 uint32_t status_time = 0;
 
 Stepper stepper_left(MOT1_STEP, MOT1_DIR);
 Stepper stepper_right(MOT2_STEP, MOT2_DIR);
 StepControl controller;
-
-#define NB_TARGETS 2
-float targets[NB_TARGETS] = {200, 0};
-size_t target_idx = 0;
-int32_t target_pos = 0;
 
 
 void setup() {
@@ -41,34 +38,27 @@ void setup() {
     gpios.write(Gpios::MOT2_ENABLE, LOW);       //enable motor
 
 }
+void straight_line(int dist) // dist in milimeters
+{
+    if (controller.isRunning()){return;}
+
+    stepper_left.setTargetRel(dist*STEP_PER_MM);
+    stepper_right.setTargetRel(-dist*STEP_PER_MM);
+    controller.moveAsync(stepper_left,stepper_right);
+
+}
+void turn(float angle) // angle in degrees, direction true for trigonometric
+{  
+    if (controller.isRunning()){return;}
+
+    stepper_left.setTargetRel(angle*STEP_TO_DEGREES);
+    stepper_right.setTargetRel(-angle*STEP_TO_DEGREES);    
+    controller.moveAsync(stepper_left,stepper_right);
+}
+
 
 void loop() {
-    // toggle led and print stepper position
-    if(millis() - status_time > 200) {
-        float pos = stepper_left.getPosition() / STEP_PER_MM;
-        Serial.println(pos);
-        gpios.toggle(Gpios::LED);
-        status_time = millis();
-    }
-    if(millis() - status_time > 200) {
-        float pos = stepper_right.getPosition() / STEP_PER_MM;
-        Serial.println(pos);
-        gpios.toggle(Gpios::LED);
-        status_time = millis();
-    }
-    // si le stepper est proche de sa target, passer à la traget suivante.
-    if(abs(target_pos - stepper_left.getPosition()) < 10 * STEP_PER_MM) {
-        // delay(500);
-        target_idx = (target_idx + 1) % NB_TARGETS;
-        target_pos = targets[target_idx] * STEP_PER_MM;
-        stepper_left.setTargetAbs(target_pos);
-        controller.moveAsync(stepper_left);
-    }
-    if(abs(target_pos - stepper_right.getPosition()) < 10 * STEP_PER_MM) {
-        // delay(500);
-        target_idx = (target_idx + 1) % NB_TARGETS;
-        target_pos = targets[target_idx] * STEP_PER_MM;
-        stepper_right.setTargetAbs(target_pos);
-        controller.moveAsync(stepper_right);
-    }
+
+    straight_line(10);
+
 }
