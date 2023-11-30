@@ -43,7 +43,8 @@ int nb_elem = 0;
 command_t commands[TAILLE_FILE];
 void addCommand(command_t cmd);
 void update_commands();
-void tour(float arete);
+void carre(float arete);
+void tour(float rayon);
 
 void setup() {
     gpios.init();
@@ -69,7 +70,8 @@ void setup() {
     //addCommand({ROTATE, M_PI/2});
     //addCommand({TRANSLATE, 400});
     //addCommand({ROTATE, M_PI/2});
-    carre(400);
+    //carre(400);
+    
    
     
 }
@@ -128,8 +130,9 @@ void carre(float arete){
     
 }
 void tour(float rayon){
-    stepper_right.setTargetRel(2*M_PI*(RAYON_PAMI+rayon)* STEP_PER_MM);
-    stepper_left.setTargetRel(2*M_PI*(rayon-RAYON_PAMI)* STEP_PER_MM);  
+    stepper_right.setTargetRel(-2*M_PI*(RAYON_PAMI+rayon)* STEP_PER_MM);
+    stepper_left.setTargetRel(2*M_PI*(rayon-RAYON_PAMI)* STEP_PER_MM);
+    controller.moveAsync(stepper_left, stepper_right);  
 }
 
 void loop(){
@@ -137,9 +140,9 @@ void loop(){
         digitalToggle(LED_BUILTIN);
         last_blink = millis();
     }
-    
+    tour(400);
     update_commands();
-
+    delay(500);
     
 }
 
