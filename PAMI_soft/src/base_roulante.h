@@ -1,5 +1,20 @@
-#define TAILLE_FILE 10
+#pragma once
 
+#include "Gpios.h"
+#include "PinLayout.h"
+#include "TeensyStep.h"
+
+
+#define TAILLE_FILE 10
+#define STEP_PER_MM 6.68
+#define STEPPER_MAX_ACC 10000
+#define STEPPER_MAX_SPEED 4000
+
+constexpr float RAYON_PAMI = (152/2);
+
+extern Stepper stepper_left;
+extern Stepper stepper_right;
+extern StepControl controller;
 
 enum CmdType {
     TRANSLATE,
@@ -11,12 +26,20 @@ typedef struct{
     float value;
 }command_t;
 
+
 class Base_roulante {
+    private:
+        int cmd_a_executer;
+        int cmd_ecrire;
+        int nb_elem;
+        float absc;
+        float ord;
+        float teta_0;
+
     public:
-        int cmd_a_executer = 0;
-        int cmd_ecrire = 0;
-        int nb_elem = 0;
+     
         command_t commands[TAILLE_FILE];
+        void init();
         void addCommand(command_t cmd);
         void update_commands();
         void rotate(float angle);
@@ -24,11 +47,7 @@ class Base_roulante {
         void move(float x,float y);
         void carre(float arete);
         void tour(float rayon);
-};
-
-
-class File {
-    public:
-        
+    
+     
 };
 

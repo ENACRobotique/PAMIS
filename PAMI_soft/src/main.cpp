@@ -4,43 +4,16 @@
 #include "Gpios.h"
 #include <math.h>
 #include <stdlib.h>
+#include "base_roulante.h"
+#include <Wire.h>
+#include <VL53L0X.h>
 
-#define STEP_PER_MM 6.68
-#define STEPPER_MAX_ACC 10000
-#define STEPPER_MAX_SPEED 4000
-#define TAILLE_FILE 10
-constexpr float RAYON_PAMI = (152/2);
+VL53L0X sensor;
 
-Stepper stepper_left(MOT1_STEP, MOT1_DIR);
-Stepper stepper_right(MOT2_STEP, MOT2_DIR);
-StepControl controller;float absc=0;
-float ord=0;
-float teta_0=0;
-void rotate(float angle);
-void translate(float distance);
 
-enum CmdType {
-    TRANSLATE,
-    ROTATE,
-};
-enum Direction {
-    Right,
-    Left,
-};
+//I2C1_SDA PB07
+//I2C1_SCL PB06
 
-typedef struct{
-    CmdType command_name;
-    float value;
-}command_t;
-
-int cmd_a_executer = 0;
-int cmd_ecrire = 0;
-int nb_elem = 0;
-command_t commands[TAILLE_FILE];
-void addCommand(command_t cmd);
-void update_commands();
-void carre(float arete);
-void tour(float rayon);
 
 void setup() {
     gpios.init();
@@ -60,26 +33,30 @@ void setup() {
                 .setMaxSpeed(STEPPER_MAX_SPEED/2)
                 .setPullInSpeed(10)
                 .setInverseRotation(true);
-   
+
     gpios.write(Gpios::MOT2_ENABLE, LOW);     //enable motor
 
 
+    Wire.begin();        // join i2c bus (address optional for master)
     
+
+
+    sensor.init();
+    sensor.setTimeout(500);
+
+  // Start continuous back-to-back mode (take readings as
+  // fast as possible).  To use continuous timed mode
+  // instead, provide a desired inter-measurement period in
+  // ms (e.g. sensor.startContinuous(100)).
+    sensor.startContinuous();
+
+
 }
 
 
-
-
+Base_roulante base_roulante;
 uint32_t last_blink=0;
 
-
-void carre(float arete){
-    for (int i = 0; i < 4; ++i){
-    addCommand({TRANSLATE, arete});
-    addCommand({ROTATE, M_PI/2});
-   }
-    
-}
 
 
 void loop(){
@@ -87,10 +64,26 @@ void loop(){
         digitalToggle(LED_BUILTIN);
         last_blink = millis();
     }
-   
-    delay(500);
-    
-}
+    //base_roulante.move(10,10);
+    delay(50);
+    base_roulante.update_commands();
+    //stepper_left.setPosition(500);
+    //Serial.println(stepper_left.getPosition());
 
+
+
+    base_roulante.addCommand({TRANSLATE,100});
+    delay(2000);   
+
+
+    int distance =sensor.readRangeContinuousMillimeters();
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    if (sensor.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
+
+  Serial.println();
+
+    delay(500);
+}
 
 
