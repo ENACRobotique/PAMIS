@@ -9,19 +9,47 @@
 
 //define IO PB04
 #define MOT_ENABLE PA12
-VL53L0X sensor;
 
+#define XSHUT_SENSOR2 PB0
+#define XSHUT_SENSOR1 PB1
 
-//I2C1_SDA PB07
-//I2C1_SCL PB06
+VL53L0X sensor1;
+VL53L0X snensor2;
 
 
 void setup() {
-    //gpios.init();
-    //gpios.setMode(Gpios::LED, OUTPUT);
+
+    pinMode(XSHUT_SENSOR1, OUTPUT);
+    pinMode(XSHUT_SENSOR2, OUTPUT);
+    digitalWrite(XSHUT_SENSOR1, HIGH);
+    digitalWrite(XSHUT_SENSOR2, LOW);
+
+    delay(1);
+
+    Wire.begin();        // join i2c bus (address optional for master)
+
+    sensor1.init();
+    sensor1.setTimeout(500);
+
+    sensor1.setAddress(0x30);
+
+  // Start continuous back-to-back mode (take readings as
+  // fast as possible).  To use continuous timed mode
+  // instead, provide a desired inter-measurement period in
+  // ms (e.g. sensor.startContinuous(100)).
+    sensor1.startContinuous();
+   
+    digitalWrite(XSHUT_SENSOR2, HIGH);
+    delay(1);
+    snensor2.init();
+    snensor2.setTimeout(500);
+    ///snensor2.setAddress(0x30);
+    snensor2.startContinuous();
+  
+
+
     Serial.begin(115200);
     delay(500);
-    Serial.println("coucou ");
 
     pinMode(MOT_ENABLE, OUTPUT);
     digitalWrite(MOT_ENABLE, LOW);
@@ -31,29 +59,16 @@ void setup() {
                 .setMaxSpeed(STEPPER_MAX_SPEED/2)
                 .setPullInSpeed(10)
                 .setInverseRotation(true);
-    //gpios.write(Gpios::MOT1_ENABLE, LOW);      //enable motor
+    
 
     // setup right stepper
     stepper_right.setAcceleration(STEPPER_MAX_ACC)
                 .setMaxSpeed(STEPPER_MAX_SPEED/2)
                 .setPullInSpeed(10)
                 .setInverseRotation(true);
-
-    //gpios.write(Gpios::MOT2_ENABLE, LOW);     //enable motor
-
-
-    Wire.begin();        // join i2c bus (address optional for master)
+    
     
     pinMode(LED_BUILTIN, OUTPUT);
-
-    sensor.init();
-    sensor.setTimeout(500);
-
-  // Start continuous back-to-back mode (take readings as
-  // fast as possible).  To use continuous timed mode
-  // instead, provide a desired inter-measurement period in
-  // ms (e.g. sensor.startContinuous(100)).
-    sensor.startContinuous();
 
 
 }
@@ -70,25 +85,24 @@ void loop(){
         last_blink = millis();
     }
     //base_roulante.move(10,10);
-    delay(50);
-    base_roulante.update_commands();
+     delay(50);
+
     //stepper_left.setPosition(500);
     //Serial.println(stepper_left.getPosition());
 
 
 
     base_roulante.addCommand({TRANSLATE,100});
-    delay(2000);   
+    
+    base_roulante.update_commands();
+   delay(2000);
 
+    int distance1 =sensor1.readRangeContinuousMillimeters();
+    int distance2 =snensor2.readRangeContinuousMillimeters();
+    Serial.printf("Distance: %d,  %d\n", distance1, distance2);
+    //if (sensor.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
 
-    int distance =sensor.readRangeContinuousMillimeters();
-    Serial.print("Distance: ");
-    Serial.print(distance);
-    if (sensor.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
-
-  Serial.println();
-
-    delay(500);
+  delay(100);
 }
 
 
