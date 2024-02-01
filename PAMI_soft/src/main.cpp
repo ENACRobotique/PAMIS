@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include "TeensyStep.h"
 #include "PinLayout.h"
-#include "Gpios.h"
 #include <math.h>
 #include <stdlib.h>
 #include "base_roulante.h"
 #include <Wire.h>
 #include <VL53L0X.h>
 
+//define IO PB04
+#define MOT_ENABLE PA12
 VL53L0X sensor;
 
 
@@ -16,17 +17,21 @@ VL53L0X sensor;
 
 
 void setup() {
-    gpios.init();
-    gpios.setMode(Gpios::LED, OUTPUT);
+    //gpios.init();
+    //gpios.setMode(Gpios::LED, OUTPUT);
     Serial.begin(115200);
     delay(500);
+    Serial.println("coucou ");
+
+    pinMode(MOT_ENABLE, OUTPUT);
+    digitalWrite(MOT_ENABLE, LOW);
 
     // setup left stepper
     stepper_left.setAcceleration(STEPPER_MAX_ACC)
                 .setMaxSpeed(STEPPER_MAX_SPEED/2)
                 .setPullInSpeed(10)
                 .setInverseRotation(true);
-    gpios.write(Gpios::MOT1_ENABLE, LOW);      //enable motor
+    //gpios.write(Gpios::MOT1_ENABLE, LOW);      //enable motor
 
     // setup right stepper
     stepper_right.setAcceleration(STEPPER_MAX_ACC)
@@ -34,12 +39,12 @@ void setup() {
                 .setPullInSpeed(10)
                 .setInverseRotation(true);
 
-    gpios.write(Gpios::MOT2_ENABLE, LOW);     //enable motor
+    //gpios.write(Gpios::MOT2_ENABLE, LOW);     //enable motor
 
 
     Wire.begin();        // join i2c bus (address optional for master)
     
-
+    pinMode(LED_BUILTIN, OUTPUT);
 
     sensor.init();
     sensor.setTimeout(500);

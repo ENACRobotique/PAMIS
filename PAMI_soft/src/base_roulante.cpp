@@ -1,10 +1,17 @@
 #include "TeensyStep.h"
 #include "PinLayout.h"
-#include "Gpios.h"
 #include <math.h>
 #include <stdlib.h>
 #include "base_roulante.h"
 #include <Arduino.h>
+
+
+#define MOT1_DIR PB4
+#define MOT2_DIR PB5
+#define MOT1_PWM PA8
+#define MOT2_PWM PA11
+#define MOT1_STEP MOT1_PWM
+#define MOT2_STEP MOT2_PWM
 
 Stepper stepper_left(MOT1_STEP, MOT1_DIR);
 Stepper stepper_right(MOT2_STEP, MOT2_DIR);

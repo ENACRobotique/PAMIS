@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Gpios.h"
 #include "PinLayout.h"
 #include "TeensyStep.h"
 

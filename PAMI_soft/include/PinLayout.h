@@ -4,10 +4,10 @@
 #include <HardwareSerial.h>
 #include <Arduino.h>
 
-constexpr uint32_t MOT1_STEP = PA1;
+/*constexpr uint32_t MOT1_STEP = PA1;
 constexpr uint32_t MOT1_DIR = PB0;
 constexpr uint32_t MOT2_STEP = PA0;
-constexpr uint32_t MOT2_DIR = PB1;
+constexpr uint32_t MOT2_DIR = PB1;*/
 
 constexpr uint32_t R_MEAS_PIN = PA4;
 
