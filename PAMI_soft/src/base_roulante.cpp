@@ -7,7 +7,9 @@
 
 
 #define MOT1_DIR PB4
-#define MOT2_DIR PB5
+
+// PA5 -> PB5
+#define MOT2_DIR PA5
 #define MOT1_PWM PA8
 #define MOT2_PWM PA11
 #define MOT1_STEP MOT1_PWM
@@ -28,7 +30,7 @@ void Base_roulante::init(){
 
 
 void Base_roulante::addCommand (command_t cmd){
-    if (nb_elem<10){
+    if (nb_elem<TAILLE_FILE){
         commands[cmd_ecrire]=cmd;
         cmd_ecrire = (cmd_ecrire + 1) % TAILLE_FILE;
         nb_elem ++;
@@ -48,8 +50,9 @@ void Base_roulante::update_commands (){
 }
 
 void Base_roulante::rotate(float angle) {
-    stepper_left.setTargetRel(RAYON_PAMI* angle * STEP_PER_MM);
-    stepper_right.setTargetRel(RAYON_PAMI* angle * STEP_PER_MM);
+    double temp  = RAYON_PAMI* (angle) * STEP_PER_MM;
+    stepper_left.setTargetRel(temp);
+    stepper_right.setTargetRel(temp);
     controller.moveAsync(stepper_left, stepper_right);
 }
 void Base_roulante::translate(float distance) {
@@ -62,9 +65,13 @@ void Base_roulante::move(float x,float y) {
     
     float dx= x- absc;
     float dy= y - ord;
-    if (dx !=0 and dy !=0){
-        addCommand({ROTATE,(atan2(dy,dx)-teta_0)});
-        teta_0=atan2(dy,dx);
+    if (dx !=0 || dy !=0){
+        double new_angle = atan2(dy,dx);
+        float rotate_angle = new_angle-teta_0;
+        if (rotate_angle > PI){rotate_angle -= 2*PI;}
+
+        addCommand({ROTATE,rotate_angle});
+        teta_0= new_angle;
         addCommand({TRANSLATE,sqrt(static_cast<float>(pow(dx,2)+pow(dy,2)))});
         absc=x;
         ord=y; 
