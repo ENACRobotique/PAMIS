@@ -21,6 +21,23 @@ enum CmdType {
     ROTATE,
 };
 
+
+typedef struct{
+  float x;
+  float y;
+  float theta;
+} coord;
+
+enum EtatRobot{
+    ATTENTE_DEBUT,
+    TOURNER,
+    AVANCER,
+    OBSTACLE_TOURNER,
+    OBSTACLE_AVANCER,
+    ETAT_FIN,
+};
+
+
 typedef struct{
     CmdType command_name;
     float value;
@@ -33,25 +50,25 @@ class Base_roulante {
         int cmd_a_executer;
         int cmd_ecrire;
         int nb_elem;
-        float absc;
-        float ord;
-        float teta_0;
-        bool etat_evitement;
-        int pos_reached = -1;
-    public:
-
-        int etat_evitement_temp;
+        coord current_coord;
         command_t commands[TAILLE_FILE];
+        void rotate(float angle);
+        void translate(float distance);
+
+    public:
         void init();
         void addCommand(command_t cmd);
         void update_commands();
-        void rotate(float angle);
-        void translate(float distance);
+        bool commands_finished();
         void move(float x,float y);
-        void carre(float arete);
-        void tour(float rayon);
         void stop();
-        void evitement(int v_gauche, int v_droit);
+        void rotate_point(float x, float y);
+        void translate_point(float x, float y);
+        void odometry ();
+
+        coord get_current_position(){
+            return current_coord;
+        }
      
 };
 

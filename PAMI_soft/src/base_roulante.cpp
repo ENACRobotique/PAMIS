@@ -6,26 +6,22 @@
 #include <Arduino.h>
 
 
-#define MOT1_DIR PA5
-
-// PA5 -> PB5
+#define MOT1_DIR PA5 // PA5 -> PB5
 #define MOT2_DIR PB4
-#define MOT1_PWM PA11
-#define MOT2_PWM PA8
-#define MOT1_STEP MOT1_PWM
-#define MOT2_STEP MOT2_PWM
+#define MOT1_STEP PA11
+#define MOT2_STEP PA8
 
 Stepper stepper_left(MOT1_STEP, MOT1_DIR);
 Stepper stepper_right(MOT2_STEP, MOT2_DIR);
 StepControl controller;
 
+
+
 void Base_roulante::init(){
     cmd_a_executer = 0;
     cmd_ecrire = 0;
     nb_elem = 0;
-    absc=0;
-    ord=0;
-    etat_evitement = false;
+    current_coord = {0,0,0};
 }
 
 
@@ -38,7 +34,7 @@ void Base_roulante::addCommand (command_t cmd){
 }
 
 void Base_roulante::update_commands (){
-    if (!(controller.isRunning()) && nb_elem>0 && !etat_evitement){
+    if (!(controller.isRunning()) && nb_elem>0){
         if (commands[cmd_a_executer].command_name == TRANSLATE){
             this->translate(commands[cmd_a_executer].value);
         }else{
@@ -50,10 +46,14 @@ void Base_roulante::update_commands (){
     }
 }
 
+bool Base_roulante::commands_finished(){
+    return nb_elem == 0 && !controller.isRunning();
+}
+
 void Base_roulante::rotate(float angle) {
     double temp  = RAYON_PAMI * angle * STEP_PER_MM;
-    stepper_left.setTargetRel(temp);
-    stepper_right.setTargetRel(temp);
+    stepper_left.setTargetRel(-temp);
+    stepper_right.setTargetRel(-temp);
     controller.moveAsync(stepper_left, stepper_right);
 }
 
@@ -64,24 +64,34 @@ void Base_roulante::translate(float distance) {
 }
 
 void Base_roulante::move(float x,float y) {
-    float dx= x- absc;
-    float dy= y - ord;
+    float dx= x- current_coord.x;
+    float dy= y - current_coord.y;
     if (dx !=0 || dy !=0){
         double new_angle = atan2(dy,dx);
-        float rotate_angle = new_angle-teta_0;
+        float rotate_angle = new_angle-current_coord.theta;
         if (rotate_angle > PI){rotate_angle -= 2*PI;}
 
         addCommand({ROTATE,rotate_angle});
-        teta_0= new_angle;
         addCommand({TRANSLATE,sqrt(static_cast<float>(pow(dx,2)+pow(dy,2)))});
-        absc=x;
-        ord=y; 
     }
 }
-void Base_roulante::tour(float rayon){
-    stepper_right.setTargetRel(-2*M_PI*(RAYON_PAMI+rayon)* STEP_PER_MM);
-    stepper_left.setTargetRel(2*M_PI*(rayon-RAYON_PAMI)* STEP_PER_MM);
-    controller.moveAsync(stepper_left, stepper_right);  
+
+void Base_roulante::rotate_point(float x, float y){
+    float dx= x - current_coord.x;
+    float dy= y - current_coord.y;
+    if (dx !=0 || dy !=0){
+        double new_angle = atan2(dy,dx);
+        float rotate_angle = new_angle-current_coord.theta;
+        if (rotate_angle > PI){rotate_angle -= 2*PI;}
+
+        addCommand({ROTATE,rotate_angle});
+    }
+}
+
+void Base_roulante::translate_point(float x, float y){
+    float dx= x- current_coord.x;
+    float dy= y - current_coord.y;
+    addCommand({TRANSLATE,sqrt(static_cast<float>(pow(dx,2)+pow(dy,2)))});
 }
 
 void Base_roulante::stop(){
@@ -91,41 +101,27 @@ void Base_roulante::stop(){
 }
 
 
-void Base_roulante::evitement(int v_gauche, int v_droit){
-    
-    
-    if (v_gauche < DISTANCE_EVITEMENT && v_droit > DISTANCE_EVITEMENT){
-        etat_evitement_temp=1;
-        if ((!etat_evitement) || (etat_evitement && !controller.isRunning())){
-            etat_evitement = true;
-            rotate(-M_PI/6);
-        }
-        
-            
-        //evite a droite
-    }else if (v_gauche > DISTANCE_EVITEMENT && v_droit < DISTANCE_EVITEMENT){
-        etat_evitement_temp=2;
-        if ((!etat_evitement) || (etat_evitement && !controller.isRunning())){
-            etat_evitement = true;
-            rotate(M_PI/6);
-        }
+void Base_roulante::odometry (){
+  static float old_pos_1 = 0;
+  static float old_pos_2 = 0;
+  float pos_1 = stepper_left.getPosition();
+  float pos_2 = stepper_right.getPosition();
 
-    }else if (v_gauche < DISTANCE_EVITEMENT && v_droit < DISTANCE_EVITEMENT){
-        etat_evitement_temp=3;
-        if (!etat_evitement){
-            etat_evitement = true;
-            stop();
-        }
+  float dpos_1 = (pos_1 - old_pos_1) / STEP_PER_MM;
+  float dpos_2 = (pos_2 - old_pos_2) / STEP_PER_MM; 
 
-    }else{
-        etat_evitement_temp=0;
-        if (etat_evitement){
-            translate(200);
-            etat_evitement = false;
-            //move(last_move_x, last_move_y);
-        }
-        
-    }
+  current_coord.theta += (-dpos_1 - dpos_2) / (2 * RAYON_PAMI);
+  current_coord.x += ((dpos_1 - dpos_2)/2) * cos (current_coord.theta);
+  current_coord.y += ((dpos_1 - dpos_2)/2) * sin (current_coord.theta); 
+
+  old_pos_1 = pos_1;
+  old_pos_2 = pos_2;
+
 }
+
+
+
+
+
 
 
