@@ -19,13 +19,16 @@ VL53L0X sensor_left;
 
 Base_roulante base_roulante;
 uint32_t last_blink=0;
+uint32_t last_odo=0;
 
+typedef struct{
+  float x;
+  float y;
+  float theta;
+} coord;
 
+coord current_coord = {0,0,0};
 
-coord point0 = {0,0,0};
-coord point1 = {10000,0,0};
-//atan2(dy,dx)
-coord list_point[2] = {point0,point1};
 
 void setup() {
 
@@ -54,13 +57,9 @@ void setup() {
   delay(1);
   sensor_left.init();
   sensor_left.setTimeout(500);
-  ///sensor_left.setAddress(0x30);
   sensor_left.startContinuous();
 
-
-
   Serial.begin(115200);
-  delay(500);
 
   pinMode(MOT_ENABLE, OUTPUT);
   digitalWrite(MOT_ENABLE, LOW);
@@ -71,60 +70,80 @@ void setup() {
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
-
   // setup right stepper
   stepper_right.setAcceleration(STEPPER_MAX_ACC)
               .setMaxSpeed(STEPPER_MAX_SPEED/2)
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
-  
   pinMode(LED_BUILTIN, OUTPUT);
 
+  coord point0 = {0,0,0};
+  coord point1 = {10000,0,0};
+  coord list_point[2] = {point0,point1};
   //base_roulante.move(10000,0);
   // base_roulante.move(250,380);
   // base_roulante.move(950,380);
   // base_roulante.move(950,-600);
   // base_roulante.move(250,0);
   // base_roulante.move(0,0);
-
 }
 
 
+void odometry (){
+  static float old_pos_1 = 0;
+  static float old_pos_2 = 0;
+  float pos_1 = stepper_left.getPosition();
+  float pos_2 = stepper_right.getPosition();
 
+  float dpos_1 = (pos_1 - old_pos_1) / STEP_PER_MM;
+  float dpos_2 = (pos_2 - old_pos_2) / STEP_PER_MM; 
 
+  current_coord.theta += (-dpos_1 - dpos_2) / (2 * RAYON_PAMI);
+  current_coord.x += ((dpos_1 - dpos_2)/2) * cos (current_coord.theta);
+  current_coord.y += ((dpos_1 - dpos_2)/2) * sin (current_coord.theta); 
 
+  old_pos_1 = pos_1;
+  old_pos_2 = pos_2;
+
+}
+
+uint32_t debug = 0;
 
 void loop(){
-    if(millis() - last_blink > 200) {
-        digitalToggle(LED_BUILTIN);
-        last_blink = millis();
-    }
+  if(millis() - last_blink > 200) {
+    digitalToggle(LED_BUILTIN);
+    last_blink = millis();
+  }
 
-    
+  if(millis() - last_odo > 50) {
+    odometry();
+    last_odo = millis();
+  }
 
-    delay(50);
+  
+  
 
+  int distance_right =sensor_right.readRangeContinuousMillimeters();
+  int distance_left =sensor_left.readRangeContinuousMillimeters();
 
+  if(millis() - debug > 200){
+    // Serial.printf("etat de l'évitement : %d \n", base_roulante.etat_evitement_temp);
+    // Serial.printf("Distance: %d,  %d\n", distance_right, distance_left);
+    // if (sensor_right.timeoutOccurred() || sensor_left.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
+    Serial.print(current_coord.x);
+    Serial.print("  ");
+    Serial.print(current_coord.y);
+    Serial.print("  ");
+    Serial.println(current_coord.theta);
+    debug = millis();
 
+  }
 
-    
+  //mettre l'evitement TOUJOURS avant l'update commande
+  base_roulante.evitement(distance_right,distance_left);
+  base_roulante.update_commands();
 
-    
-    Serial.printf("etat de l'évitement : %d \n", base_roulante.etat_evitement_temp);
-    int distance_right =sensor_right.readRangeContinuousMillimeters();
-    int distance_left =sensor_left.readRangeContinuousMillimeters();
-    Serial.printf("Distance: %d,  %d\n", distance_right, distance_left);
-    if (sensor_right.timeoutOccurred() || sensor_left.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
-
-    //mettre l'evitement TOUJOURS avant l'update commande
-    base_roulante.evitement(distance_right,distance_left);
-    base_roulante.update_commands(list_point);
-
-
-
-
-  delay(100);
 }
 
 

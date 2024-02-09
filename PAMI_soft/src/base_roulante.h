@@ -26,11 +26,7 @@ typedef struct{
     float value;
 }command_t;
 
-typedef struct{
-  float x;
-  float y;
-  float theta;
-}coord;
+
 
 class Base_roulante {
     private:
@@ -42,15 +38,13 @@ class Base_roulante {
         float teta_0;
         bool etat_evitement;
         int pos_reached = -1;
-        coord current_coord;
-        command_t last_command;
     public:
 
         int etat_evitement_temp;
         command_t commands[TAILLE_FILE];
         void init();
         void addCommand(command_t cmd);
-        void update_commands(coord* list);
+        void update_commands();
         void rotate(float angle);
         void translate(float distance);
         void move(float x,float y);
