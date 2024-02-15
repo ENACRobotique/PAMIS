@@ -218,4 +218,5 @@ void loop(){
 
 }
 
-
+//lire tension de batterie et faire clignoter beaucoups led quand plus de batterie  
+//arreter moteur quand y'a plus de batterie et arreter moteur quand pas besoin de rouler (au debut et a la fin)

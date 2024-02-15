@@ -6,7 +6,7 @@
 #include <Arduino.h>
 
 
-#define MOT1_DIR PA5 // PA5 -> PB5
+#define MOT1_DIR PB5 
 #define MOT2_DIR PB4
 #define MOT1_STEP PA11
 #define MOT2_STEP PA8
