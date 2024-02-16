@@ -7,13 +7,17 @@
 #include <Wire.h>
 #include <VL53L0X.h>
 
+
+#define PHOTORESISTOR PA4
+#define PHOTORESISTOR_INTENSITY_DEM 1000
+
 //define IO PB04
 #define MOT_ENABLE PA12
 
 #define XSHUT_SENSOR2 PB0
 #define XSHUT_SENSOR1 PB1
 
-#define DISTANCE_EVITEMENT 200
+#define DISTANCE_EVITEMENT 250
 
 VL53L0X sensor_right;
 VL53L0X sensor_left;
@@ -23,9 +27,12 @@ Base_roulante base_roulante;
 uint32_t last_blink=0;
 uint32_t last_odo=0;
 uint32_t last_sensor = 0;
+uint32_t last_led_intensity;
 uint32_t debug = 0;
 
 
+
+int current_led_intensity = 0;
 int distance_right;
 int distance_left;
 
@@ -33,6 +40,7 @@ int distance_left;
 EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
 
 
+#define MAX_EVITEMENT 3
 #define NB_POINTS 3
 coord list_point[NB_POINTS] = {{300,-300,0},{1300,-300,0},{1300,700,0}};
 uint16_t index_point = 0;
@@ -78,6 +86,7 @@ void setup() {
               .setInverseRotation(true);
   
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(PHOTORESISTOR, INPUT);
 
 }
 
@@ -87,8 +96,9 @@ void setup() {
 
 void run_comportement (){
   static int substate = 0;
+  static int nb_evitement = 0; //nb d'évitement utlisiser avant d'atteindre le point suivant
 
-  if ((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER){
+  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER) && etat_robot != ATTENTE_DEBUT && etat_robot != ETAT_FIN){
     etat_robot = OBSTACLE_TOURNER;
     base_roulante.stop();
     substate = 0;
@@ -97,8 +107,8 @@ void run_comportement (){
   switch (etat_robot) {
     case ATTENTE_DEBUT:
       //si photoresistor allume avance
-      if(millis() > 2000) {
-        Serial.println("TOURNER");
+      if(current_led_intensity > PHOTORESISTOR_INTENSITY_DEM) {
+        //Serial.println("TOURNER");
         etat_robot = TOURNER;
         substate = 0;
       }
@@ -113,7 +123,7 @@ void run_comportement (){
           substate = 1;
         }
         else if(substate == 1) {
-          Serial.println("AVANCER");
+          //Serial.println("AVANCER");
           etat_robot = AVANCER;
           substate = 0;
         }
@@ -131,13 +141,14 @@ void run_comportement (){
         else if(substate == 1) {
           if(index_point >= (NB_POINTS - 1)) {
             // arrivé
-            Serial.println("ETAT_FIN");
+            //Serial.println("ETAT_FIN");
             etat_robot = ETAT_FIN;
             substate = 0;
           } else {
             // point suivant
-            index_point += 1;
-            Serial.println("TOURNER");
+            nb_evitement = 0;
+            index_point ++;
+            //Serial.println("TOURNER");
             etat_robot = TOURNER;
             substate = 0;
           }
@@ -146,20 +157,29 @@ void run_comportement (){
       break;
     case OBSTACLE_TOURNER:
       if (base_roulante.commands_finished()){
-        if (substate == 0){
-          if (distance_left < DISTANCE_EVITEMENT && distance_right < DISTANCE_EVITEMENT){
-              base_roulante.addCommand({ROTATE,-M_PI/6}); //peut etre a changer plus tard
-          }else if (distance_left < DISTANCE_EVITEMENT){
-            base_roulante.addCommand({ROTATE,-M_PI/6});
-          }else{
-            base_roulante.addCommand({ROTATE,M_PI/6});
-          }
-          substate = 1;
-        }else if (substate == 1){
-          if (distance_left > DISTANCE_EVITEMENT && distance_right > DISTANCE_EVITEMENT){
-            etat_robot = OBSTACLE_AVANCER;
-          }
+        if (nb_evitement > MAX_EVITEMENT && index_point < NB_POINTS-1 ){
+          index_point ++;
+          nb_evitement = 0;
+          etat_robot = TOURNER;
           substate = 0;
+
+        }else{
+          if (substate == 0){
+            nb_evitement ++; // on vient de faire un evitement
+            if (distance_left < DISTANCE_EVITEMENT && distance_right < DISTANCE_EVITEMENT){
+                base_roulante.addCommand({ROTATE,-M_PI/3}); //peut etre a changer plus tard
+            }else if (distance_left < DISTANCE_EVITEMENT){
+              base_roulante.addCommand({ROTATE,-M_PI/3});
+            }else{
+              base_roulante.addCommand({ROTATE,M_PI/3});
+            }
+            substate = 1;
+          }else if (substate == 1){
+            if (distance_left > DISTANCE_EVITEMENT && distance_right > DISTANCE_EVITEMENT){
+              etat_robot = OBSTACLE_AVANCER;
+            }
+            substate = 0;
+          }
         }
       }
       break;
@@ -204,13 +224,19 @@ void loop(){
     last_sensor = millis();
   }
 
+  if (millis() - last_led_intensity > 50){
+     current_led_intensity = analogRead(PHOTORESISTOR);
+     last_led_intensity = millis();
+  }
+
   if(millis() - debug > 200){
     coord current_coord =base_roulante.get_current_position();
-    Serial.print(current_coord.x);
-    Serial.print("  ");
-    Serial.print(current_coord.y);
-    Serial.print("  ");
-    Serial.println(current_coord.theta);
+    //Serial.printf("la photoresistor : %d \n", current_led_intensity);
+    // Serial.print(current_coord.x);
+    // Serial.print("  ");
+    // Serial.print(current_coord.y);
+    // Serial.print("  ");
+    // Serial.println(current_coord.theta);
     debug = millis();
   }
 

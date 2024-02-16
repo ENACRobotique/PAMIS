@@ -38,6 +38,7 @@ enum EtatRobot{
 };
 
 
+
 typedef struct{
     CmdType command_name;
     float value;
