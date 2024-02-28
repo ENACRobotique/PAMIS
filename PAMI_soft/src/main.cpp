@@ -9,7 +9,7 @@
 
 
 #define PHOTORESISTOR PA4
-#define PHOTORESISTOR_INTENSITY_DEM 1000
+#define PHOTORESISTOR_INTENSITY_DEM 950
 
 //define IO PB04
 #define MOT_ENABLE PA12
@@ -21,6 +21,7 @@
 
 VL53L0X sensor_right;
 VL53L0X sensor_left;
+VL53L0X sensor_middle;
 
 
 Base_roulante base_roulante;
@@ -31,11 +32,11 @@ uint32_t last_led_intensity;
 uint32_t debug = 0;
 
 
-
+int blink_period = 1000;
 int current_led_intensity = 0;
 int distance_right;
 int distance_left;
-
+int distance_middle;
 
 EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
 
@@ -49,21 +50,36 @@ void setup() {
 
   pinMode(XSHUT_SENSOR1, OUTPUT);
   pinMode(XSHUT_SENSOR2, OUTPUT);
-  digitalWrite(XSHUT_SENSOR1, HIGH);
+  digitalWrite(XSHUT_SENSOR1, LOW);
   digitalWrite(XSHUT_SENSOR2, LOW);
   
 
-  delay(1); //pour que le sensor soit reveille
+  delay(10); //pour que le sensor soit reveille
 
   Wire.begin();        // join i2c bus (address optional for master)
+  bool is_ok = sensor_middle.init();
+  if (is_ok){
+    sensor_middle.setTimeout(500);
+    sensor_middle.setAddress(0x40);
+    sensor_middle.startContinuous();
+  }else{
+    sensor_middle.setAddress(0x40);
+    // uint8_t readreg = sensor_middle.readReg(VL53L0X::IDENTIFICATION_MODEL_ID);
+    // if (readreg != 0xEE) { 
+    //   blink_period = 100;
+    //   }
+  } 
 
+
+  digitalWrite(XSHUT_SENSOR1, HIGH);
+  delay(10);
   sensor_right.init();
   sensor_right.setTimeout(500);
-  sensor_right.setAddress(0x30);
+  sensor_right.setAddress(0x50);
   sensor_right.startContinuous();
   
   digitalWrite(XSHUT_SENSOR2, HIGH);
-  delay(1); //pour que le sensor soit reveille
+  delay(10); //pour que le sensor soit reveille
   sensor_left.init();
   sensor_left.setTimeout(500);
   sensor_left.startContinuous();
@@ -207,7 +223,7 @@ void run_comportement (){
 
 
 void loop(){
-  if(millis() - last_blink > 200) {
+  if(millis() - last_blink > blink_period) {
     digitalToggle(LED_BUILTIN);
     last_blink = millis();
   }
@@ -217,15 +233,19 @@ void loop(){
     last_odo = millis();
   }
 
-  if(millis() - last_sensor > 50) {
+  if(millis() - last_sensor > 500) {
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
+    distance_middle = sensor_middle.readRangeContinuousMillimeters();
+    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
     run_comportement();
     last_sensor = millis();
   }
 
   if (millis() - last_led_intensity > 50){
      current_led_intensity = analogRead(PHOTORESISTOR);
+     //Serial.printf("valeur : %d \n", current_led_intensity);
      last_led_intensity = millis();
   }
 
