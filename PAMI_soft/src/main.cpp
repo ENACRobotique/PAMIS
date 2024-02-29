@@ -17,14 +17,18 @@
 #define XSHUT_SENSOR2 PB0
 #define XSHUT_SENSOR1 PB1
 
-#define DISTANCE_EVITEMENT 250
+
+
 
 VL53L0X sensor_right;
 VL53L0X sensor_left;
 VL53L0X sensor_middle;
 
+EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
+coord depart = {1200,200,M_PI/2};
 
 Base_roulante base_roulante;
+
 uint32_t last_blink=0;
 uint32_t last_odo=0;
 uint32_t last_sensor = 0;
@@ -32,18 +36,31 @@ uint32_t last_led_intensity;
 uint32_t debug = 0;
 
 
-int blink_period = 1000;
+uint32_t blink_period = 1000;
 int current_led_intensity = 0;
 int distance_right;
 int distance_left;
 int distance_middle;
 
-EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
 
 
 #define MAX_EVITEMENT 3
 #define NB_POINTS 3
-coord list_point[NB_POINTS] = {{300,-300,0},{1300,-300,0},{1300,700,0}};
+
+
+
+
+/*
+      x
+      ^
+      |
+      |
+      |
+y<-----
+
+*/
+
+coord list_point[NB_POINTS] = {{1500,500,0},{1500,1500,0},{500,1500,0}};
 uint16_t index_point = 0;
 
 void setup() {
@@ -104,6 +121,8 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PHOTORESISTOR, INPUT);
 
+  base_roulante.init(depart);
+  //base_roulante.rotate(M_PI*20);
 }
 
 
@@ -183,14 +202,22 @@ void run_comportement (){
           if (substate == 0){
             nb_evitement ++; // on vient de faire un evitement
             if (distance_left < DISTANCE_EVITEMENT && distance_right < DISTANCE_EVITEMENT){
-                base_roulante.addCommand({ROTATE,-M_PI/3}); //peut etre a changer plus tard
-            }else if (distance_left < DISTANCE_EVITEMENT){
+              //signe en fonction de ou l'on sera sur la table (ou vers la cible en fonction du temps que ca prend)
+              base_roulante.addCommand({ROTATE,-M_PI/2});
+            }else if (distance_left < DISTANCE_EVITEMENT && distance_middle < DISTANCE_EVITEMENT){
               base_roulante.addCommand({ROTATE,-M_PI/3});
-            }else{
+            }else if (distance_right < DISTANCE_EVITEMENT && distance_middle < DISTANCE_EVITEMENT){
               base_roulante.addCommand({ROTATE,M_PI/3});
+            }else if (distance_left < DISTANCE_EVITEMENT){
+              base_roulante.addCommand({ROTATE,-M_PI/6});
+            }else if (distance_right < DISTANCE_EVITEMENT){
+              base_roulante.addCommand({ROTATE,-M_PI/6});
+            }else if (distance_middle < DISTANCE_EVITEMENT){
+              //signe en fonction de ou l'on sera sur la table (ou vers la cible en fonction du temps que ca prend)
+              base_roulante.addCommand({ROTATE,-M_PI/4});
             }
-            substate = 1;
-          }else if (substate == 1){
+              substate = 1;
+            }else if (substate == 1){
             if (distance_left > DISTANCE_EVITEMENT && distance_right > DISTANCE_EVITEMENT){
               etat_robot = OBSTACLE_AVANCER;
             }
@@ -233,11 +260,11 @@ void loop(){
     last_odo = millis();
   }
 
-  if(millis() - last_sensor > 500) {
+  if(millis() - last_sensor > 50) {
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
     distance_middle = sensor_middle.readRangeContinuousMillimeters();
-    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
     //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
     run_comportement();
     last_sensor = millis();
@@ -249,17 +276,19 @@ void loop(){
      last_led_intensity = millis();
   }
 
-  if(millis() - debug > 200){
-    coord current_coord =base_roulante.get_current_position();
-    //Serial.printf("la photoresistor : %d \n", current_led_intensity);
-    // Serial.print(current_coord.x);
-    // Serial.print("  ");
-    // Serial.print(current_coord.y);
-    // Serial.print("  ");
-    // Serial.println(current_coord.theta);
-    debug = millis();
-  }
+  // if(millis() - debug > 200){
+  //   coord current_coord =base_roulante.get_current_position();
+    
+  //   Serial.printf("la photoresistor : %d \n", current_led_intensity);
+  //   Serial.print(current_coord.x);
+  //   Serial.print("  ");
+  //   Serial.print(current_coord.y);
+  //   Serial.print("  ");
+  //   Serial.println(current_coord.theta);
+  //   debug = millis();
+  // }
 
+  
   base_roulante.update_commands();
 
 }

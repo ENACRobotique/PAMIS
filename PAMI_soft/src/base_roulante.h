@@ -9,8 +9,10 @@
 #define STEPPER_MAX_ACC 10000
 #define STEPPER_MAX_SPEED 4000
 #define DISTANCE_EVITEMENT 200 
+#define TAILLE_TABLE_X 2000
+#define TAILLE_TABLE_Y 3000
 
-constexpr float RAYON_PAMI = (152/2);
+constexpr float RAYON_PAMI = 65.142;
 
 extern Stepper stepper_left;
 extern Stepper stepper_right;
@@ -53,11 +55,11 @@ class Base_roulante {
         int nb_elem;
         coord current_coord;
         command_t commands[TAILLE_FILE];
-        void rotate(float angle);
         void translate(float distance);
 
     public:
-        void init();
+        void init(coord depart);
+        void rotate(float angle);
         void addCommand(command_t cmd);
         void update_commands();
         bool commands_finished();
