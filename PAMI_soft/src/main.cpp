@@ -10,13 +10,16 @@
 
 #define PHOTORESISTOR PA4
 #define PHOTORESISTOR_INTENSITY_DEM 950
+#define MIN_U_BATTERY 12
 
 //define IO PB04
 #define MOT_ENABLE PA12
 
 #define XSHUT_SENSOR2 PB0
 #define XSHUT_SENSOR1 PB1
-
+#define BUZZER PA3
+#define BATTERYLVL PA7
+constexpr float F_BAT= 0.14838709677419354;
 
 
 
@@ -41,6 +44,9 @@ int current_led_intensity = 0;
 int distance_right;
 int distance_left;
 int distance_middle;
+int lvl;
+float u_battery;
+
 
 
 
@@ -64,6 +70,8 @@ coord list_point[NB_POINTS] = {{1500,500,0},{1500,1500,0},{500,1500,0}};
 uint16_t index_point = 0;
 
 void setup() {
+  pinMode(BUZZER,OUTPUT);
+
 
   pinMode(XSHUT_SENSOR1, OUTPUT);
   pinMode(XSHUT_SENSOR2, OUTPUT);
@@ -128,7 +136,17 @@ void setup() {
 
 
 
-
+void battery_checking(){
+  lvl=analogRead(PA7);
+  u_battery=lvl*3.3/(1023.*F_BAT);
+  Serial.println(u_battery);
+  if (u_battery<MIN_U_BATTERY){
+     digitalWrite(BUZZER,HIGH);
+  }
+  else{
+    digitalWrite(BUZZER,LOW);
+  }
+}
 void run_comportement (){
   static int substate = 0;
   static int nb_evitement = 0; //nb d'évitement utlisiser avant d'atteindre le point suivant
@@ -253,6 +271,8 @@ void loop(){
   if(millis() - last_blink > blink_period) {
     digitalToggle(LED_BUILTIN);
     last_blink = millis();
+    battery_checking();
+    
   }
 
   if(millis() - last_odo > 50) {
