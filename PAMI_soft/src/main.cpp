@@ -6,11 +6,15 @@
 #include "base_roulante.h"
 #include <Wire.h>
 #include <VL53L0X.h>
+#include <Servo.h>
 
 
 #define PHOTORESISTOR PA4
 #define PHOTORESISTOR_INTENSITY_DEM 950
 #define MIN_U_BATTERY 12
+
+#define GODET PA0
+Servo godet;
 
 //define IO PB04
 #define MOT_ENABLE PA12
@@ -21,6 +25,8 @@
 #define BATTERYLVL PA7
 constexpr float F_BAT= 0.14838709677419354;
 
+uint32_t timeout = 10000;
+uint32_t time_game = 0;
 
 
 VL53L0X sensor_right;
@@ -39,7 +45,7 @@ uint32_t last_led_intensity;
 uint32_t debug = 0;
 
 
-uint32_t blink_period = 1000;
+uint32_t blink_period = 2000;
 int current_led_intensity = 0;
 int distance_right;
 int distance_left;
@@ -69,6 +75,7 @@ y<-----
 coord list_point[NB_POINTS] = {{1500,500,0},{1500,1500,0},{500,1500,0}};
 uint16_t index_point = 0;
 
+
 void setup() {
   pinMode(BUZZER,OUTPUT);
 
@@ -78,6 +85,10 @@ void setup() {
   digitalWrite(XSHUT_SENSOR1, LOW);
   digitalWrite(XSHUT_SENSOR2, LOW);
   
+
+ godet.attach(GODET,0,170,30);
+
+
 
   delay(10); //pour que le sensor soit reveille
 
@@ -112,7 +123,7 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(MOT_ENABLE, OUTPUT);
-  digitalWrite(MOT_ENABLE, LOW);
+  digitalWrite(MOT_ENABLE, HIGH);
 
   // setup left stepper
   stepper_left.setAcceleration(STEPPER_MAX_ACC)
@@ -139,17 +150,24 @@ void setup() {
 void battery_checking(){
   lvl=analogRead(PA7);
   u_battery=lvl*3.3/(1023.*F_BAT);
-  Serial.println(u_battery);
+  //Serial.println(u_battery);
   if (u_battery<MIN_U_BATTERY){
      digitalWrite(BUZZER,HIGH);
+     digitalWrite(MOT_ENABLE, HIGH);
   }
   else{
     digitalWrite(BUZZER,LOW);
   }
 }
+
+
 void run_comportement (){
   static int substate = 0;
   static int nb_evitement = 0; //nb d'évitement utlisiser avant d'atteindre le point suivant
+
+  if (etat_robot != ATTENTE_DEBUT && (millis() - time_game) > timeout){
+    digitalWrite(MOT_ENABLE, HIGH);
+  }
 
   if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER) && etat_robot != ATTENTE_DEBUT && etat_robot != ETAT_FIN){
     etat_robot = OBSTACLE_TOURNER;
@@ -157,13 +175,17 @@ void run_comportement (){
     substate = 0;
   }
 
+
+
   switch (etat_robot) {
     case ATTENTE_DEBUT:
-      //si photoresistor allume avance
+      //si photoresistor allume commence
       if(current_led_intensity > PHOTORESISTOR_INTENSITY_DEM) {
         //Serial.println("TOURNER");
+        digitalWrite(MOT_ENABLE, LOW);
         etat_robot = TOURNER;
         substate = 0;
+        time_game = millis();
       }
       break;
     case TOURNER:
@@ -257,17 +279,23 @@ void run_comportement (){
       break;
     case ETAT_FIN:
       if (substate == 0){
-        base_roulante.addCommand({ROTATE, M_PI});
+        digitalWrite(MOT_ENABLE, HIGH);
+        //base_roulante.addCommand({ROTATE, M_PI});
         substate = 1;
         }
       break;
   }
 }
 
+void deploie_godet(){
+  godet.write(170);
+}
+
 
 
 
 void loop(){
+
   if(millis() - last_blink > blink_period) {
     digitalToggle(LED_BUILTIN);
     last_blink = millis();
@@ -296,6 +324,8 @@ void loop(){
      last_led_intensity = millis();
   }
 
+  base_roulante.update_commands();
+
   // if(millis() - debug > 200){
   //   coord current_coord =base_roulante.get_current_position();
     
@@ -308,8 +338,10 @@ void loop(){
   //   debug = millis();
   // }
 
+
+
   
-  base_roulante.update_commands();
+   
 
 }
 
