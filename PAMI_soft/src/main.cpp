@@ -19,8 +19,8 @@ Servo godet;
 //define IO PB04
 #define MOT_ENABLE PA12
 
-#define XSHUT_SENSOR2 PB0
-#define XSHUT_SENSOR1 PB1
+#define XSHUT_SENSOR1 PB0
+#define XSHUT_SENSOR2 PB1
 #define BUZZER PA3
 #define BATTERYLVL PA7
 constexpr float F_BAT= 0.14838709677419354;
@@ -312,7 +312,7 @@ void loop(){
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
     distance_middle = sensor_middle.readRangeContinuousMillimeters();
-    //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
     //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
     run_comportement();
     last_sensor = millis();
