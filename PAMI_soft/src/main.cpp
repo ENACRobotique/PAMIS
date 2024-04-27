@@ -8,9 +8,9 @@
 #include <VL53L0X.h>
 #include <Servo.h>
 
-
+#define LEVIER PA6
 #define PHOTORESISTOR PA4
-#define PHOTORESISTOR_INTENSITY_DEM 950
+#define PHOTORESISTOR_INTENSITY_DEM 850
 #define MIN_U_BATTERY 12
 
 #define GODET PA0
@@ -34,7 +34,7 @@ VL53L0X sensor_left;
 VL53L0X sensor_middle;
 
 EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
-coord depart = {1200,200,M_PI/2};
+
 
 Base_roulante base_roulante;
 
@@ -72,12 +72,19 @@ y<-----
 
 */
 
-coord list_point[NB_POINTS] = {{1500,500,0},{1500,1500,0},{500,1500,0}};
+//coord list_point[NB_POINTS];
+int team; // 1 = blue ; 2 = yellow
+coord depart;
+coord list_point[2][NB_POINTS] = {{{1375,175,0},{450,1550,0},{200,1800,0}}, {{1875,175,0},{2550,1550,0},{2800,1800,0}}};
+bool dernier_point = false;
+
 uint16_t index_point = 0;
 
 
 void setup() {
   pinMode(BUZZER,OUTPUT);
+  pinMode(LEVIER, OUTPUT);
+  digitalWrite(LEVIER,HIGH);
 
 
   pinMode(XSHUT_SENSOR1, OUTPUT);
@@ -140,6 +147,15 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PHOTORESISTOR, INPUT);
 
+    if  (digitalRead(LEVIER)){
+    depart = {1875,75,M_PI/2};
+    team = 1;
+  } else{
+    depart = {1375,75,M_PI/2};
+    team = 0;
+  }
+
+
   base_roulante.init(depart);
   //base_roulante.rotate(M_PI*20);
 }
@@ -169,7 +185,7 @@ void run_comportement (){
     digitalWrite(MOT_ENABLE, HIGH);
   }
 
-  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER) && etat_robot != ATTENTE_DEBUT && etat_robot != ETAT_FIN){
+  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER) && etat_robot != ATTENTE_DEBUT && etat_robot != ETAT_FIN && !dernier_point){
     etat_robot = OBSTACLE_TOURNER;
     base_roulante.stop();
     substate = 0;
@@ -181,6 +197,8 @@ void run_comportement (){
     case ATTENTE_DEBUT:
       //si photoresistor allume commence
       if(current_led_intensity > PHOTORESISTOR_INTENSITY_DEM) {
+
+        
         //Serial.println("TOURNER");
         digitalWrite(MOT_ENABLE, LOW);
         etat_robot = TOURNER;
@@ -192,8 +210,8 @@ void run_comportement (){
       if (base_roulante.commands_finished()) {
         if(substate == 0) {
           // tourner vers le point
-          float x = list_point[index_point].x;
-          float y = list_point[index_point].y;
+          float x = list_point[team][index_point].x;
+          float y = list_point[team][index_point].y;
           base_roulante.rotate_point(x, y);
           substate = 1;
         }
@@ -208,8 +226,8 @@ void run_comportement (){
       if (base_roulante.commands_finished()) {
         if(substate == 0) {
           // avancer vers le point
-          float x = list_point[index_point].x;
-          float y = list_point[index_point].y;
+          float x = list_point[team][index_point].x;
+          float y = list_point[team][index_point].y;
           base_roulante.translate_point(x, y);
           substate = 1;
         }
@@ -219,7 +237,15 @@ void run_comportement (){
             //Serial.println("ETAT_FIN");
             etat_robot = ETAT_FIN;
             substate = 0;
-          } else {
+          } else if (index_point >= (NB_POINTS - 2)){
+             // point suivant
+            nb_evitement = 0;
+            index_point ++;
+            //Serial.println("TOURNER");
+            etat_robot = TOURNER;
+            substate = 0;
+            dernier_point = true;
+          }else{
             // point suivant
             nb_evitement = 0;
             index_point ++;
@@ -295,7 +321,6 @@ void deploie_godet(){
 
 
 void loop(){
-
   if(millis() - last_blink > blink_period) {
     digitalToggle(LED_BUILTIN);
     last_blink = millis();
@@ -312,7 +337,7 @@ void loop(){
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
     distance_middle = sensor_middle.readRangeContinuousMillimeters();
-    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
     //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
     run_comportement();
     last_sensor = millis();
