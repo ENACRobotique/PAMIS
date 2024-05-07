@@ -6,6 +6,7 @@
 #include "base_roulante.h"
 #include <Wire.h>
 #include <VL53L0X.h>
+#include <VL53L1X.h>
 #include <Servo.h>
 
 #define LEVIER PA6
@@ -28,10 +29,22 @@ constexpr float F_BAT= 0.14838709677419354;
 uint32_t timeout = 10000;
 uint32_t time_game = 0;
 
-
+#if defined(MIA)
 VL53L0X sensor_right;
 VL53L0X sensor_left;
 VL53L0X sensor_middle;
+#elif defined(PAMI2)
+VL53L0X sensor_middle;
+VL53L1X sensor_left;
+VL53L1X sensor_right;
+#elif defined(PAMI3)
+VL53L1X sensor_middle;
+VL53L1X sensor_left;
+VL53L0X sensor_right;
+#else
+#error "Le PAMI n'est pas défini! (MIA, PAMI1, PAMI2)"
+#endif
+
 
 EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
 
@@ -104,7 +117,7 @@ void setup() {
   if (is_ok){
     sensor_middle.setTimeout(500);
     sensor_middle.setAddress(0x40);
-    sensor_middle.startContinuous();
+    sensor_middle.startContinuous(50);
   }else{
     sensor_middle.setAddress(0x40);
     // uint8_t readreg = sensor_middle.readReg(VL53L0X::IDENTIFICATION_MODEL_ID);
@@ -119,13 +132,13 @@ void setup() {
   sensor_right.init();
   sensor_right.setTimeout(500);
   sensor_right.setAddress(0x50);
-  sensor_right.startContinuous();
+  sensor_right.startContinuous(50);
   
   digitalWrite(XSHUT_SENSOR2, HIGH);
   delay(10); //pour que le sensor soit reveille
   sensor_left.init();
   sensor_left.setTimeout(500);
-  sensor_left.startContinuous();
+  sensor_left.startContinuous(50);
 
   Serial.begin(115200);
 
