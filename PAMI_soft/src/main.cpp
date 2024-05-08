@@ -11,10 +11,12 @@
 
 #define LEVIER PA6
 #define PHOTORESISTOR PA4
-#define PHOTORESISTOR_INTENSITY_DEM 850
 #define MIN_U_BATTERY 12
+int photoresistor_lim;
 
-#define GODET PA0
+
+
+#define GODET PA3 //PA0
 Servo godet;
 
 //define IO PB04
@@ -22,7 +24,7 @@ Servo godet;
 
 #define XSHUT_SENSOR1 PB0
 #define XSHUT_SENSOR2 PB1
-#define BUZZER PA3
+#define BUZZER PA0 //PA3
 #define BATTERYLVL PA7
 constexpr float F_BAT= 0.14838709677419354;
 
@@ -33,20 +35,21 @@ uint32_t time_game = 0;
 VL53L0X sensor_right;
 VL53L0X sensor_left;
 VL53L0X sensor_middle;
-#elif defined(PAMI2)
+#elif defined(MONA)
 VL53L0X sensor_middle;
 VL53L1X sensor_left;
 VL53L1X sensor_right;
-#elif defined(PAMI3)
-VL53L1X sensor_middle;
-VL53L1X sensor_left;
-VL53L0X sensor_right;
+#elif defined(MILO)
+VL53L0X sensor_middle;
+VL53L0X sensor_left;
+VL53L1X sensor_right;
 #else
 #error "Le PAMI n'est pas défini! (MIA, PAMI1, PAMI2)"
 #endif
 
 
-EtatRobot etat_robot = EtatRobot::ATTENTE_DEBUT;
+EtatRobot etat_robot = EtatRobot::RECEPTION_FINISHED;
+;
 
 
 Base_roulante base_roulante;
@@ -91,6 +94,11 @@ coord depart;
 coord list_point[2][NB_POINTS] = {{{1375,175,0},{450,1550,0},{200,1800,0}}, {{1875,175,0},{2550,1550,0},{2800,1800,0}}};
 bool dernier_point = false;
 
+
+int current_levier_position;
+int moyenne_led_intensity = 0;
+int moyenne_place_intensity = 0;
+
 uint16_t index_point = 0;
 
 
@@ -106,11 +114,11 @@ void setup() {
   digitalWrite(XSHUT_SENSOR2, LOW);
   
 
- godet.attach(GODET,0,170,30);
+ //godet.attach(GODET,0,170,30);
 
 
 
-  delay(10); //pour que le sensor soit reveille
+  delay(100); //pour que le sensor soit reveille
 
   Wire.begin();        // join i2c bus (address optional for master)
   bool is_ok = sensor_middle.init();
@@ -128,14 +136,14 @@ void setup() {
 
 
   digitalWrite(XSHUT_SENSOR1, HIGH);
-  delay(10);
+  delay(100);
   sensor_right.init();
   sensor_right.setTimeout(500);
   sensor_right.setAddress(0x50);
   sensor_right.startContinuous(50);
   
   digitalWrite(XSHUT_SENSOR2, HIGH);
-  delay(10); //pour que le sensor soit reveille
+  delay(100); //pour que le sensor soit reveille
   sensor_left.init();
   sensor_left.setTimeout(500);
   sensor_left.startContinuous(50);
@@ -151,7 +159,7 @@ void setup() {
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
-  // setup right stepper
+  // // setup right stepper
   stepper_right.setAcceleration(STEPPER_MAX_ACC)
               .setMaxSpeed(STEPPER_MAX_SPEED/2)
               .setPullInSpeed(10)
@@ -160,17 +168,53 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PHOTORESISTOR, INPUT);
 
-    if  (digitalRead(LEVIER)){
-    depart = {1875,75,M_PI/2};
-    team = 1;
-  } else{
-    depart = {1375,75,M_PI/2};
-    team = 0;
-  }
+  //   if  (digitalRead(LEVIER)){
+  //   depart = {1875,75,M_PI/2};
+  //   team = 1;
+  // } else{
+  //   depart = {1375,75,M_PI/2};
+  //   team = 0;
+  // }
 
 
   base_roulante.init(depart);
   //base_roulante.rotate(M_PI*20);
+
+  current_levier_position = digitalRead(LEVIER);
+  Serial.printf("DEBUT");
+  Serial.print(1);
+  while (digitalRead(LEVIER) == current_levier_position){
+
+  }
+  current_levier_position = digitalRead(LEVIER);
+  Serial.printf("RECEPTION_LED_INTENSITY \n");
+  delay(1000);
+  //on prend la moyenne de l'intensite sur 4 secondes
+  for (int i=0; i<50; i++){
+    moyenne_led_intensity += analogRead(PHOTORESISTOR);
+    Serial.printf("moy = %d \n", moyenne_led_intensity);
+    delay(30);
+  }
+  moyenne_led_intensity = moyenne_led_intensity/50;
+  //on leve le godet un peu
+  Serial.printf("RECEPTION_LED_FINISHED \n");
+  while (digitalRead(LEVIER) == current_levier_position){
+
+  }
+  current_levier_position = digitalRead(LEVIER);
+  Serial.printf("RECEPTION_PLACE_INTENSITY \n");
+  delay(1000);
+  //on prend la moyenne de l'intensite sur 4 secondes
+   for (int i=0; i<50; i++){
+    moyenne_place_intensity += analogRead(PHOTORESISTOR);
+    delay(30);
+  }
+  moyenne_place_intensity = moyenne_led_intensity / 50;
+  //apres le temps on calcul somme des deux intensité sur 2 et on le met à la place de PHOTORESISTOR_INTENSITY_DEM
+  photoresistor_lim = (moyenne_led_intensity + moyenne_place_intensity)/2;
+
+  //lever godet
+  delay(1000);
 }
 
 
@@ -194,11 +238,11 @@ void run_comportement (){
   static int substate = 0;
   static int nb_evitement = 0; //nb d'évitement utlisiser avant d'atteindre le point suivant
 
-  if (etat_robot != ATTENTE_DEBUT && (millis() - time_game) > timeout){
+  if (etat_robot != RECEPTION_FINISHED && (millis() - time_game) > timeout){
     digitalWrite(MOT_ENABLE, HIGH);
   }
 
-  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER) && etat_robot != ATTENTE_DEBUT && etat_robot != ETAT_FIN && !dernier_point){
+  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER)&& etat_robot != RECEPTION_FINISHED && etat_robot != RECEPTION_FINISHED && etat_robot != ETAT_FIN && !dernier_point){
     etat_robot = OBSTACLE_TOURNER;
     base_roulante.stop();
     substate = 0;
@@ -207,9 +251,17 @@ void run_comportement (){
 
 
   switch (etat_robot) {
-    case ATTENTE_DEBUT:
+
+
+      //on leve moyeu un peu
+
+    case RECEPTION_FINISHED:
+      //on choisit l'équipe
+
       //si photoresistor allume commence
-      if(current_led_intensity > PHOTORESISTOR_INTENSITY_DEM) {
+      Serial.printf("current_led_intensity: %d \n", current_led_intensity);
+      Serial.printf("photoresistor_lim : %d", photoresistor_lim);
+      if(current_led_intensity > photoresistor_lim) {
 
         
         //Serial.println("TOURNER");
@@ -350,7 +402,8 @@ void loop(){
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
     distance_middle = sensor_middle.readRangeContinuousMillimeters();
-    //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    Serial.printf("%d \n", analogRead(PHOTORESISTOR));
     //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
     run_comportement();
     last_sensor = millis();

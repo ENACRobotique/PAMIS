@@ -31,7 +31,7 @@ typedef struct{
 } coord;
 
 enum EtatRobot{
-    ATTENTE_DEBUT,
+    RECEPTION_FINISHED,
     TOURNER,
     AVANCER,
     OBSTACLE_TOURNER,
