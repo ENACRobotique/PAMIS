@@ -55,10 +55,9 @@ class Base_roulante {
         int nb_elem;
         coord current_coord;
         command_t commands[TAILLE_FILE];
-        void translate(float distance);
 
     public:
-        void init(coord depart);
+        void init();
         void rotate(float angle);
         void addCommand(command_t cmd);
         void update_commands();
@@ -68,9 +67,14 @@ class Base_roulante {
         void rotate_point(float x, float y);
         void translate_point(float x, float y);
         void odometry ();
+        void translate(float distance);
 
         coord get_current_position(){
             return current_coord;
+        }
+
+        void set_current_position(coord pos) {
+            current_coord = pos;
         }
      
 };

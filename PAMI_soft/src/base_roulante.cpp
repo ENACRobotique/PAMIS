@@ -17,11 +17,11 @@ StepControl controller;
 
 
 
-void Base_roulante::init(coord depart){
+void Base_roulante::init(){
     cmd_a_executer = 0;
     cmd_ecrire = 0;
     nb_elem = 0;
-    current_coord = depart;
+    current_coord = {0,0,0};
 }
 
 

@@ -22,6 +22,8 @@ Servo godet;
 //define IO PB04
 #define MOT_ENABLE PA12
 
+
+
 #define XSHUT_SENSOR1 PB0
 #define XSHUT_SENSOR2 PB1
 #define BUZZER PA0 //PA3
@@ -31,25 +33,52 @@ constexpr float F_BAT= 0.14838709677419354;
 uint32_t timeout = 10000;
 uint32_t time_game = 0;
 
-#if defined(MIA)
+#define MAX_EVITEMENT 3
+
+
+#if defined(MAMAMIA)
 VL53L0X sensor_right;
 VL53L0X sensor_left;
 VL53L0X sensor_middle;
-#elif defined(MONA)
-VL53L0X sensor_middle;
-VL53L1X sensor_left;
-VL53L1X sensor_right;
+coord depart[2] = {
+  {1500 - 225,175,M_PI/2}, 
+  {1500 + 225,175,M_PI/2}
+  };
+#define NB_POINTS 3
+coord list_point[2][NB_POINTS] =  {
+  {{1500-225,275,0}, {500, 275,0},{0,550,0}}, 
+  {{1500 + 225, 275,0}, {2500, 275, 0},{3000,550,0}}
+};
+
+
 #elif defined(MILO)
 VL53L0X sensor_middle;
 VL53L0X sensor_left;
 VL53L1X sensor_right;
+coord depart[2] = {
+  {1500 - 75, 175, M_PI/2},
+  {1500 + 75, 175, M_PI/2}};
+#define NB_POINTS 3
+coord list_point[2][NB_POINTS] =  {{{1500 - 75, 275, 0},{1500-737,275,0}, {1500-737, 175,0}}, 
+                                  {{1500 + 75, 275,0},{1500+737,275,0}, {1500+737, 175, 0}}};
+#elif defined(MONA)
+VL53L0X sensor_middle;
+VL53L1X sensor_left;
+VL53L1X sensor_right;
+
+coord depart[2] = { 
+  {1500 - 400,175,M_PI/2}, 
+  {1500 + 400,175,M_PI/2}};
+#define NB_POINTS 5
+coord list_point[2][NB_POINTS] = {{{1500 - 400, 275, 0},{700,550,0}, {700, 2000-550,0},{400,1700,0},{100,2000,0}}, 
+                                  {{1500 + 400, 275,0},{2300,550,0}, {2300, 2000-550, 0},{2600,1700,0},{2900,2000,0}}};
 #else
 #error "Le PAMI n'est pas défini! (MIA, PAMI1, PAMI2)"
 #endif
 
 
 EtatRobot etat_robot = EtatRobot::RECEPTION_FINISHED;
-;
+
 
 
 Base_roulante base_roulante;
@@ -70,14 +99,6 @@ int lvl;
 float u_battery;
 
 
-
-
-#define MAX_EVITEMENT 3
-#define NB_POINTS 3
-
-
-
-
 /*
       x
       ^
@@ -88,10 +109,8 @@ y<-----
 
 */
 
-//coord list_point[NB_POINTS];
 int team; // 1 = blue ; 2 = yellow
-coord depart;
-coord list_point[2][NB_POINTS] = {{{1375,175,0},{450,1550,0},{200,1800,0}}, {{1875,175,0},{2550,1550,0},{2800,1800,0}}};
+
 bool dernier_point = false;
 
 
@@ -102,10 +121,18 @@ int moyenne_place_intensity = 0;
 uint16_t index_point = 0;
 
 
+void deploie_godet(){
+  #if defined (MILO)
+  godet.writeMicroseconds(2800);
+  #elif defined(MAMAMIA)
+  godet.writeMicroseconds(2800);
+  #endif
+}
+
 void setup() {
   pinMode(BUZZER,OUTPUT);
   pinMode(LEVIER, OUTPUT);
-  digitalWrite(LEVIER,HIGH);
+ digitalWrite(LEVIER,HIGH);
 
 
   pinMode(XSHUT_SENSOR1, OUTPUT);
@@ -113,8 +140,14 @@ void setup() {
   digitalWrite(XSHUT_SENSOR1, LOW);
   digitalWrite(XSHUT_SENSOR2, LOW);
   
+  #if defined(MAMAMIA)
+  godet.attach(GODET);
+  delay(500);
+  godet.writeMicroseconds(2800);
+  delay(500);
+  #endif
 
- //godet.attach(GODET,0,170,30);
+
 
 
 
@@ -128,10 +161,6 @@ void setup() {
     sensor_middle.startContinuous(50);
   }else{
     sensor_middle.setAddress(0x40);
-    // uint8_t readreg = sensor_middle.readReg(VL53L0X::IDENTIFICATION_MODEL_ID);
-    // if (readreg != 0xEE) { 
-    //   blink_period = 100;
-    //   }
   } 
 
 
@@ -154,31 +183,34 @@ void setup() {
   digitalWrite(MOT_ENABLE, HIGH);
 
   // setup left stepper
+              #if defined(MONA)
   stepper_left.setAcceleration(STEPPER_MAX_ACC)
-              .setMaxSpeed(STEPPER_MAX_SPEED/2)
+              .setMaxSpeed(STEPPER_MAX_SPEED)
+              #else
+  stepper_left.setAcceleration(STEPPER_MAX_ACC)
+              .setMaxSpeed(STEPPER_MAX_SPEED)
+              #endif
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
   // // setup right stepper
-  stepper_right.setAcceleration(STEPPER_MAX_ACC)
-              .setMaxSpeed(STEPPER_MAX_SPEED/2)
+              #if defined(MONA)
+              stepper_right.setAcceleration(STEPPER_MAX_ACC)
+              .setMaxSpeed(STEPPER_MAX_SPEED)
+              #else
+ stepper_right.setAcceleration(STEPPER_MAX_ACC)
+              .setMaxSpeed(STEPPER_MAX_SPEED)
+              #endif
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PHOTORESISTOR, INPUT);
 
-  //   if  (digitalRead(LEVIER)){
-  //   depart = {1875,75,M_PI/2};
-  //   team = 1;
-  // } else{
-  //   depart = {1375,75,M_PI/2};
-  //   team = 0;
-  // }
+  digitalWrite(MOT_ENABLE, LOW);
 
 
-  base_roulante.init(depart);
-  //base_roulante.rotate(M_PI*20);
+  base_roulante.init();
 
   current_levier_position = digitalRead(LEVIER);
   Serial.printf("DEBUT");
@@ -188,6 +220,7 @@ void setup() {
   }
   current_levier_position = digitalRead(LEVIER);
   Serial.printf("RECEPTION_LED_INTENSITY \n");
+
   delay(1000);
   //on prend la moyenne de l'intensite sur 4 secondes
   for (int i=0; i<50; i++){
@@ -197,6 +230,13 @@ void setup() {
   }
   moyenne_led_intensity = moyenne_led_intensity/50;
   //on leve le godet un peu
+  #if (!defined(MONA))
+     godet.attach(GODET);
+     godet.writeMicroseconds(2000);
+     delay(500);
+  #endif
+
+
   Serial.printf("RECEPTION_LED_FINISHED \n");
   while (digitalRead(LEVIER) == current_levier_position){
 
@@ -211,10 +251,15 @@ void setup() {
   }
   moyenne_place_intensity = moyenne_led_intensity / 50;
   //apres le temps on calcul somme des deux intensité sur 2 et on le met à la place de PHOTORESISTOR_INTENSITY_DEM
-  photoresistor_lim = (moyenne_led_intensity + moyenne_place_intensity)/2;
-
-  //lever godet
-  delay(1000);
+  photoresistor_lim = (150 * moyenne_led_intensity + 50 * moyenne_place_intensity)/(2*100);
+  
+     #if defined(MAMAMIA)
+     delay(500);
+     godet.writeMicroseconds(760);
+  #elif defined(MILO)
+     delay(500);
+     godet.writeMicroseconds(700);
+  #endif
 }
 
 
@@ -226,12 +271,15 @@ void battery_checking(){
   //Serial.println(u_battery);
   if (u_battery<MIN_U_BATTERY){
      digitalWrite(BUZZER,HIGH);
-     digitalWrite(MOT_ENABLE, HIGH);
+     //digitalWrite(MOT_ENABLE, HIGH);
   }
   else{
     digitalWrite(BUZZER,LOW);
   }
 }
+
+
+
 
 
 void run_comportement (){
@@ -249,26 +297,29 @@ void run_comportement (){
   }
 
 
+    Serial.printf("%d \n", index_point);
 
   switch (etat_robot) {
-
 
       //on leve moyeu un peu
 
     case RECEPTION_FINISHED:
-      //on choisit l'équipe
-
       //si photoresistor allume commence
-      Serial.printf("current_led_intensity: %d \n", current_led_intensity);
-      Serial.printf("photoresistor_lim : %d", photoresistor_lim);
+      //Serial.printf("current_led_intensity: %d \n", current_led_intensity);
+      //Serial.printf("photoresistor_lim : %d", photoresistor_lim);
       if(current_led_intensity > photoresistor_lim) {
-
-        
+        team = !digitalRead(LEVIER);
+        base_roulante.set_current_position(depart[team]);
         //Serial.println("TOURNER");
         digitalWrite(MOT_ENABLE, LOW);
         etat_robot = TOURNER;
         substate = 0;
         time_game = millis();
+        #if defined(MILO)
+            delay(2000);
+        #elif defined(MAMAMIA)
+            delay(1000);
+        #endif
       }
       break;
     case TOURNER:
@@ -300,6 +351,11 @@ void run_comportement (){
           if(index_point >= (NB_POINTS - 1)) {
             // arrivé
             //Serial.println("ETAT_FIN");
+            
+            #if defined(MILO) or defined(MAMAMIA)
+            deploie_godet();
+            #endif
+
             etat_robot = ETAT_FIN;
             substate = 0;
           } else if (index_point >= (NB_POINTS - 2)){
@@ -378,14 +434,12 @@ void run_comportement (){
   }
 }
 
-void deploie_godet(){
-  godet.write(170);
-}
 
 
 
 
 void loop(){
+  
   if(millis() - last_blink > blink_period) {
     digitalToggle(LED_BUILTIN);
     last_blink = millis();
@@ -396,16 +450,17 @@ void loop(){
   if(millis() - last_odo > 50) {
     base_roulante.odometry();
     last_odo = millis();
+    run_comportement();
   }
 
   if(millis() - last_sensor > 50) {
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
     distance_middle = sensor_middle.readRangeContinuousMillimeters();
-    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
-    Serial.printf("%d \n", analogRead(PHOTORESISTOR));
+    //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    //Serial.printf("%d \n", analogRead(PHOTORESISTOR));
     //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
-    run_comportement();
+    //run_comportement();
     last_sensor = millis();
   }
 
@@ -431,8 +486,6 @@ void loop(){
 
 
 
-  
-   
 
 }
 
