@@ -1,4 +1,4 @@
-# PAMIS_202
+# PAMIS_2024
 
 
 Limiter le courant des stepper à 0.6 A
