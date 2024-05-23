@@ -316,7 +316,7 @@ void run_comportement (){
         substate = 0;
         time_game = millis();
         #if defined(MILO)
-            delay(2000);
+            delay(4000);
         #elif defined(MAMAMIA)
             delay(1000);
         #endif
