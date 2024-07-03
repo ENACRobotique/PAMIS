@@ -5,14 +5,13 @@
 #include <stdlib.h>
 #include "base_roulante.h"
 #include <Wire.h>
-#include <VL53L0X.h>
-#include <VL53L1X.h>
+#include "vision.h"
 #include <Servo.h>
 
 #define LEVIER PA6
 #define PHOTORESISTOR PA4
 #define MIN_U_BATTERY 12
-int photoresistor_lim;
+static int photoresistor_lim = 700;
 
 
 
@@ -37,9 +36,6 @@ uint32_t time_game = 0;
 
 
 #if defined(MAMAMIA)
-VL53L0X sensor_right;
-VL53L0X sensor_left;
-VL53L0X sensor_middle;
 coord depart[2] = {
   {1500 - 225,175,M_PI/2}, 
   {1500 + 225,175,M_PI/2}
@@ -49,12 +45,7 @@ coord list_point[2][NB_POINTS] =  {
   {{1500-225,275,0}, {500, 275,0},{0,550,0}}, 
   {{1500 + 225, 275,0}, {2500, 275, 0},{3000,550,0}}
 };
-
-
 #elif defined(MILO)
-VL53L0X sensor_middle;
-VL53L0X sensor_left;
-VL53L1X sensor_right;
 coord depart[2] = {
   {1500 - 75, 175, M_PI/2},
   {1500 + 75, 175, M_PI/2}};
@@ -62,10 +53,6 @@ coord depart[2] = {
 coord list_point[2][NB_POINTS] =  {{{1500 - 75, 275, 0},{1500-737,275,0}, {1500-737, 175,0}}, 
                                   {{1500 + 75, 275,0},{1500+737,275,0}, {1500+737, 175, 0}}};
 #elif defined(MONA)
-VL53L0X sensor_middle;
-VL53L1X sensor_left;
-VL53L1X sensor_right;
-
 coord depart[2] = { 
   {1500 - 400,175,M_PI/2}, 
   {1500 + 400,175,M_PI/2}};
@@ -82,6 +69,7 @@ EtatRobot etat_robot = EtatRobot::RECEPTION_FINISHED;
 
 
 Base_roulante base_roulante;
+Vision vision;
 
 uint32_t last_blink=0;
 uint32_t last_odo=0;
@@ -207,59 +195,13 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PHOTORESISTOR, INPUT);
 
-  digitalWrite(MOT_ENABLE, LOW);
+  
 
 
   base_roulante.init();
 
   current_levier_position = digitalRead(LEVIER);
-  Serial.printf("DEBUT");
-  Serial.print(1);
-  while (digitalRead(LEVIER) == current_levier_position){
-
-  }
-  current_levier_position = digitalRead(LEVIER);
-  Serial.printf("RECEPTION_LED_INTENSITY \n");
-
-  delay(1000);
-  //on prend la moyenne de l'intensite sur 4 secondes
-  for (int i=0; i<50; i++){
-    moyenne_led_intensity += analogRead(PHOTORESISTOR);
-    Serial.printf("moy = %d \n", moyenne_led_intensity);
-    delay(30);
-  }
-  moyenne_led_intensity = moyenne_led_intensity/50;
-  //on leve le godet un peu
-  #if (!defined(MONA))
-     godet.attach(GODET);
-     godet.writeMicroseconds(2000);
-     delay(500);
-  #endif
-
-
-  Serial.printf("RECEPTION_LED_FINISHED \n");
-  while (digitalRead(LEVIER) == current_levier_position){
-
-  }
-  current_levier_position = digitalRead(LEVIER);
-  Serial.printf("RECEPTION_PLACE_INTENSITY \n");
-  delay(1000);
-  //on prend la moyenne de l'intensite sur 4 secondes
-   for (int i=0; i<50; i++){
-    moyenne_place_intensity += analogRead(PHOTORESISTOR);
-    delay(30);
-  }
-  moyenne_place_intensity = moyenne_led_intensity / 50;
-  //apres le temps on calcul somme des deux intensité sur 2 et on le met à la place de PHOTORESISTOR_INTENSITY_DEM
-  photoresistor_lim = (150 * moyenne_led_intensity + 50 * moyenne_place_intensity)/(2*100);
-  
-     #if defined(MAMAMIA)
-     delay(500);
-     godet.writeMicroseconds(760);
-  #elif defined(MILO)
-     delay(500);
-     godet.writeMicroseconds(700);
-  #endif
+ 
 }
 
 
@@ -454,9 +396,9 @@ void loop(){
   }
 
   if(millis() - last_sensor > 50) {
-    distance_right =sensor_right.readRangeContinuousMillimeters();
-    distance_left =sensor_left.readRangeContinuousMillimeters();
-    distance_middle = sensor_middle.readRangeContinuousMillimeters();
+    distance_right = vision.get_dist_right();
+    distance_left = vision.get_dist_left();
+    distance_middle = vision.get_dist_right();
     //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
     //Serial.printf("%d \n", analogRead(PHOTORESISTOR));
     //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
@@ -472,22 +414,6 @@ void loop(){
 
   base_roulante.update_commands();
 
-  // if(millis() - debug > 200){
-  //   coord current_coord =base_roulante.get_current_position();
-    
-  //   Serial.printf("la photoresistor : %d \n", current_led_intensity);
-  //   Serial.print(current_coord.x);
-  //   Serial.print("  ");
-  //   Serial.print(current_coord.y);
-  //   Serial.print("  ");
-  //   Serial.println(current_coord.theta);
-  //   debug = millis();
-  // }
-
-
-
 
 }
 
-//lire tension de batterie et faire clignoter beaucoups led quand plus de batterie  
-//arreter moteur quand y'a plus de batterie et arreter moteur quand pas besoin de rouler (au debut et a la fin)
