@@ -194,10 +194,7 @@ void setup() {
   
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PHOTORESISTOR, INPUT);
-
   
-
-
   base_roulante.init();
 
   current_levier_position = digitalRead(LEVIER);
@@ -220,6 +217,13 @@ void battery_checking(){
   }
 }
 
+void vTask_Avancer(void* dist){
+  Base_roulante::translate((float)dist);
+}
+
+void vTask_Tourner (void* angle){
+  Base_roulante::rotate((float)angle);
+}
 
 
 
