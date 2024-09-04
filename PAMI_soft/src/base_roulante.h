@@ -68,6 +68,8 @@ class Base_roulante {
         void translate_point(float x, float y);
         void odometry ();
         void translate(float distance);
+        void translate_block(float distance);
+        void rotate_block(float angle);
 
         coord get_current_position(){
             return current_coord;

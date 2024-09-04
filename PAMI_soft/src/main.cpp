@@ -8,6 +8,8 @@
 #include <VL53L0X.h>
 #include <VL53L1X.h>
 #include <Servo.h>
+#include <STM32FreeRTOS.h>
+
 
 #define LEVIER PA6
 #define PHOTORESISTOR PA4
@@ -30,7 +32,7 @@ Servo godet;
 #define BATTERYLVL PA7
 constexpr float F_BAT= 0.14838709677419354;
 
-uint32_t timeout = 10000;
+uint32_t timeout = 1000000;
 uint32_t time_game = 0;
 
 #define MAX_EVITEMENT 3
@@ -92,9 +94,9 @@ uint32_t debug = 0;
 
 uint32_t blink_period = 2000;
 int current_led_intensity = 0;
-int distance_right;
-int distance_left;
-int distance_middle;
+volatile int distance_right;
+volatile int distance_left;
+volatile int distance_middle;
 int lvl;
 float u_battery;
 
@@ -120,6 +122,11 @@ int moyenne_place_intensity = 0;
 
 uint16_t index_point = 0;
 
+void read_distance(void*);
+void odometry_task(void*);
+void battery_checking(void*);
+void update_command_task(void*);
+void procedure(void*);
 
 void deploie_godet(){
   #if defined (MILO)
@@ -211,55 +218,107 @@ void setup() {
 
 
   base_roulante.init();
+  delay(10);
 
-  current_levier_position = digitalRead(LEVIER);
-  Serial.printf("DEBUT");
-  Serial.print(1);
-  while (digitalRead(LEVIER) == current_levier_position){
+  // current_levier_position = digitalRead(LEVIER);
+  // Serial.printf("DEBUT");
+  // Serial.print(1);
+  // while (digitalRead(LEVIER) == current_levier_position){
 
-  }
-  current_levier_position = digitalRead(LEVIER);
-  Serial.printf("RECEPTION_LED_INTENSITY \n");
+  // }
+  // current_levier_position = digitalRead(LEVIER);
+  // Serial.printf("RECEPTION_LED_INTENSITY \n");
 
-  delay(1000);
-  //on prend la moyenne de l'intensite sur 4 secondes
-  for (int i=0; i<50; i++){
-    moyenne_led_intensity += analogRead(PHOTORESISTOR);
-    Serial.printf("moy = %d \n", moyenne_led_intensity);
-    delay(30);
-  }
-  moyenne_led_intensity = moyenne_led_intensity/50;
-  //on leve le godet un peu
-  #if (!defined(MONA))
-     godet.attach(GODET);
-     godet.writeMicroseconds(2000);
-     delay(500);
-  #endif
+  // delay(1000);
+  // //on prend la moyenne de l'intensite sur 4 secondes
+  // for (int i=0; i<50; i++){
+  //   moyenne_led_intensity += analogRead(PHOTORESISTOR);
+  //   Serial.printf("moy = %d \n", moyenne_led_intensity);
+  //   delay(30);
+  // }
+  // moyenne_led_intensity = moyenne_led_intensity/50;
+  // //on leve le godet un peu
+  // #if (!defined(MONA))
+  //    godet.attach(GODET);
+  //    godet.writeMicroseconds(2000);
+  //    delay(500);
+  // #endif
 
 
-  Serial.printf("RECEPTION_LED_FINISHED \n");
-  while (digitalRead(LEVIER) == current_levier_position){
+  // Serial.printf("RECEPTION_LED_FINISHED \n");
+  // while (digitalRead(LEVIER) == current_levier_position){
 
-  }
-  current_levier_position = digitalRead(LEVIER);
-  Serial.printf("RECEPTION_PLACE_INTENSITY \n");
-  delay(1000);
-  //on prend la moyenne de l'intensite sur 4 secondes
-   for (int i=0; i<50; i++){
-    moyenne_place_intensity += analogRead(PHOTORESISTOR);
-    delay(30);
-  }
-  moyenne_place_intensity = moyenne_led_intensity / 50;
-  //apres le temps on calcul somme des deux intensité sur 2 et on le met à la place de PHOTORESISTOR_INTENSITY_DEM
-  photoresistor_lim = (150 * moyenne_led_intensity + 50 * moyenne_place_intensity)/(2*100);
+  // }
+  // current_levier_position = digitalRead(LEVIER);
+  // Serial.printf("RECEPTION_PLACE_INTENSITY \n");
+  // delay(1000);
+  // //on prend la moyenne de l'intensite sur 4 secondes
+  //  for (int i=0; i<50; i++){
+  //   moyenne_place_intensity += analogRead(PHOTORESISTOR);
+  //   delay(30);
+  // }
+  // moyenne_place_intensity = moyenne_led_intensity / 50;
+  // //apres le temps on calcul somme des deux intensité sur 2 et on le met à la place de PHOTORESISTOR_INTENSITY_DEM
+  // photoresistor_lim = (150 * moyenne_led_intensity + 50 * moyenne_place_intensity)/(2*100);
   
-     #if defined(MAMAMIA)
-     delay(500);
-     godet.writeMicroseconds(760);
-  #elif defined(MILO)
-     delay(500);
-     godet.writeMicroseconds(700);
-  #endif
+  //    #if defined(MAMAMIA)
+  //    delay(500);
+  //    godet.writeMicroseconds(760);
+  // #elif defined(MILO)
+  //    delay(500);
+  //    godet.writeMicroseconds(700);
+  // #endif
+
+
+
+
+  xTaskCreate(
+    read_distance,
+    "READ_DISTANCE",
+    1024,
+    NULL,
+    2,
+    NULL
+  );
+
+  xTaskCreate(
+    odometry_task,
+    "ODOMETRY",
+    1024,
+    NULL,
+    3,
+    NULL
+  );
+
+  xTaskCreate(
+    battery_checking,
+    "BATTERY",
+    1024,
+    NULL,
+    1,
+    NULL
+  );
+
+  xTaskCreate(
+    update_command_task,
+    "UPDATE_COMMAND",
+    1024,
+    NULL,
+    1,
+    NULL
+  );
+
+  xTaskCreate(
+    procedure,
+    "procedure",
+    1024,
+    NULL,
+    1,
+    NULL
+  );
+
+  vTaskStartScheduler();
+
 }
 
 
@@ -269,11 +328,10 @@ void battery_checking(){
   lvl=analogRead(PA7);
   u_battery=lvl*3.3/(1023.*F_BAT);
   //Serial.println(u_battery);
-  if (u_battery<MIN_U_BATTERY){
+  if(u_battery<MIN_U_BATTERY) {
      digitalWrite(BUZZER,HIGH);
      //digitalWrite(MOT_ENABLE, HIGH);
-  }
-  else{
+  } else {
     digitalWrite(BUZZER,LOW);
   }
 }
@@ -290,7 +348,7 @@ void run_comportement (){
     digitalWrite(MOT_ENABLE, HIGH);
   }
 
-  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER)&& etat_robot != RECEPTION_FINISHED && etat_robot != RECEPTION_FINISHED && etat_robot != ETAT_FIN && !dernier_point){
+  if (((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT) && etat_robot != OBSTACLE_TOURNER)&& etat_robot != RECEPTION_FINISHED && etat_robot != RECEPTION_FINISHED && etat_robot != ETAT_FIN){
     etat_robot = OBSTACLE_TOURNER;
     base_roulante.stop();
     substate = 0;
@@ -307,6 +365,7 @@ void run_comportement (){
       //si photoresistor allume commence
       //Serial.printf("current_led_intensity: %d \n", current_led_intensity);
       //Serial.printf("photoresistor_lim : %d", photoresistor_lim);
+      current_led_intensity = analogRead(PHOTORESISTOR);
       if(current_led_intensity > photoresistor_lim) {
         team = !digitalRead(LEVIER);
         base_roulante.set_current_position(depart[team]);
@@ -435,56 +494,60 @@ void run_comportement (){
 }
 
 
-
-
-
-void loop(){
-  
-  if(millis() - last_blink > blink_period) {
-    digitalToggle(LED_BUILTIN);
-    last_blink = millis();
-    battery_checking();
-    
-  }
-
-  if(millis() - last_odo > 50) {
-    base_roulante.odometry();
-    last_odo = millis();
-    run_comportement();
-  }
-
-  if(millis() - last_sensor > 50) {
+void read_distance(void*) {
+  while(1){
     distance_right =sensor_right.readRangeContinuousMillimeters();
     distance_left =sensor_left.readRangeContinuousMillimeters();
     distance_middle = sensor_middle.readRangeContinuousMillimeters();
-    //Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
-    //Serial.printf("%d \n", analogRead(PHOTORESISTOR));
-    //Serial.printf("G: %d, R: %d \n", distance_left, distance_right);
-    //run_comportement();
-    last_sensor = millis();
+
+    if ((distance_left < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT)){
+     //stop mais pas de tourner
+    }
+
+    Serial.printf("G: %d, M: %d, R: %d \n", distance_left, distance_middle, distance_right);
+    vTaskDelay(50/portTICK_PERIOD_MS);
   }
+}
 
-  if (millis() - last_led_intensity > 50){
-     current_led_intensity = analogRead(PHOTORESISTOR);
-     //Serial.printf("valeur : %d \n", current_led_intensity);
-     last_led_intensity = millis();
+void odometry_task(void*){
+  while (1){
+    base_roulante.odometry();
+    vTaskDelay(50/portTICK_PERIOD_MS);
   }
+}
 
-  base_roulante.update_commands();
+void battery_checking(void*){
+  while(1){
+    digitalToggle(LED_BUILTIN);
+    battery_checking();
+    vTaskDelay(50/portTICK_PERIOD_MS);
+  }
+}
 
-  // if(millis() - debug > 200){
-  //   coord current_coord =base_roulante.get_current_position();
-    
-  //   Serial.printf("la photoresistor : %d \n", current_led_intensity);
-  //   Serial.print(current_coord.x);
-  //   Serial.print("  ");
-  //   Serial.print(current_coord.y);
-  //   Serial.print("  ");
-  //   Serial.println(current_coord.theta);
-  //   debug = millis();
+void update_command_task(void*){
+  while(1){
+    base_roulante.update_commands();
+    vTaskDelay(50/portTICK_PERIOD_MS);
+  }  
+}
+
+void procedure(void*){
+  while(1){
+    //a completer
+    base_roulante.translate_block(200);
+    base_roulante.rotate_block(M_PI/2);
+
+
+    vTaskDelay(50/portTICK_PERIOD_MS);
+  }
+}
+
+void loop(){
+
+  // if(millis() - last_odo > 50) {
+  //   last_odo = millis();
+  //   run_comportement();
   // }
-
-
 
 
 }

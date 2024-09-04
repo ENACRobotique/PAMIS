@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "base_roulante.h"
 #include <Arduino.h>
-
+#include <STM32FreeRTOS.h>
 
 #define MOT1_DIR PB5 
 #define MOT2_DIR PB4
@@ -49,6 +49,21 @@ void Base_roulante::update_commands (){
 bool Base_roulante::commands_finished(){
     return nb_elem == 0 && !controller.isRunning();
 }
+
+void Base_roulante::translate_block(float distance){
+    translate(distance);
+    while(controller.isRunning()){
+        vTaskDelay(10/portTICK_PERIOD_MS);
+    }
+}
+
+void Base_roulante::rotate_block(float angle){
+    rotate(angle);
+    while(controller.isRunning()){
+        vTaskDelay(10/portTICK_PERIOD_MS);
+    }
+}
+
 
 void Base_roulante::rotate(float angle) {
     double temp  = RAYON_PAMI * angle * STEP_PER_MM;
