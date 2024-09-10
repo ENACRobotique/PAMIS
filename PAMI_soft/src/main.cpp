@@ -9,7 +9,7 @@
 #include <VL53L1X.h>
 #include <Servo.h>
 
-#defin E
+
 #define LEVIER PA6
 #define PHOTORESISTOR PA4
 #define MIN_U_BATTERY 12
@@ -31,8 +31,6 @@ Servo godet;
 #define BATTERYLVL PA7
 constexpr float F_BAT= 0.14838709677419354;
 
-uint32_t timeout = 10000;
-uint32_t time_game = 0;
 
 #define MAX_EVITEMENT 3
 
@@ -91,13 +89,7 @@ y<-----
 
 
 
-void deploie_godet(){
-  #if defined (MILO)
-  godet.writeMicroseconds(2800);
-  #elif defined(MAMAMIA)
-  godet.writeMicroseconds(2800);
-  #endif
-}
+
 
 void setup() {
   pinMode(BUZZER,OUTPUT);
@@ -109,14 +101,6 @@ void setup() {
   pinMode(XSHUT_SENSOR2, OUTPUT);
   digitalWrite(XSHUT_SENSOR1, LOW);
   digitalWrite(XSHUT_SENSOR2, LOW);
-  
-  #if defined(MAMAMIA)
-  godet.attach(GODET);
-  delay(500);
-  godet.writeMicroseconds(2800);
-  delay(500);
-  #endif
-
 
 
 
@@ -153,24 +137,14 @@ void setup() {
   digitalWrite(MOT_ENABLE, HIGH);
 
   // setup left stepper
-              #if defined(MONA)
-  stepper_left.setAcceleration(STEPPER_MAX_ACC)
-              .setMaxSpeed(STEPPER_MAX_SPEED)
-              #else
-  stepper_left.setAcceleration(STEPPER_MAX_ACC)
-              .setMaxSpeed(STEPPER_MAX_SPEED)
-              #endif
+  stepper_left.setAcceleration(STEPPER_MAX_ACC/2)
+              .setMaxSpeed(STEPPER_MAX_SPEED/2)
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
-  // // setup right stepper
-              #if defined(MONA)
-              stepper_right.setAcceleration(STEPPER_MAX_ACC)
-              .setMaxSpeed(STEPPER_MAX_SPEED)
-              #else
- stepper_right.setAcceleration(STEPPER_MAX_ACC)
-              .setMaxSpeed(STEPPER_MAX_SPEED)
-              #endif
+  // setup right stepper
+              stepper_right.setAcceleration(STEPPER_MAX_ACC/2)
+              .setMaxSpeed(STEPPER_MAX_SPEED/2)
               .setPullInSpeed(10)
               .setInverseRotation(true);
   
@@ -200,7 +174,17 @@ void battery_checking(){
 }
 
 
+float random_angle (){
+  int rd_nb = (rand() % 30 - 150); // -150 <= nb < 150 
+  if (rd_nb < 0) {
+    rd_nb -= 30;
+  }else{
+    rd_nb += 30;
+  }
+  // -180< nb < -30 ou 30 < nb < 180
 
+  return(rd_nb*M_PI/180);
+}
 
 
 void run_comportement (){
@@ -224,19 +208,9 @@ static int substate = 0;
     case OBSTACLE_TOURNER:
       if (base_roulante.commands_finished()){
         if (substate == 0){
-          if (distance_left < DISTANCE_EVITEMENT && distance_right < DISTANCE_EVITEMENT){
+          if (distance_left < DISTANCE_EVITEMENT || distance_middle < DISTANCE_EVITEMENT || distance_right < DISTANCE_EVITEMENT){
             //signe en fonction de ou l'on sera sur la table (ou vers la cible en fonction du temps que ca prend)
-            base_roulante.addCommand({ROTATE,-M_PI/2});
-          }else if (distance_left < DISTANCE_EVITEMENT && distance_middle < DISTANCE_EVITEMENT){
-            base_roulante.addCommand({ROTATE,-M_PI/3});
-          }else if (distance_right < DISTANCE_EVITEMENT && distance_middle < DISTANCE_EVITEMENT){
-            base_roulante.addCommand({ROTATE,M_PI/3});
-          }else if (distance_left < DISTANCE_EVITEMENT){
-            base_roulante.addCommand({ROTATE,-M_PI/6});
-          }else if (distance_right < DISTANCE_EVITEMENT){
-            base_roulante.addCommand({ROTATE,-M_PI/6});
-          }else if (distance_middle < DISTANCE_EVITEMENT){
-            base_roulante.addCommand({ROTATE,-M_PI/4});
+            base_roulante.addCommand({ROTATE,random_angle()});
           }
             substate = 1;
           }else if (substate == 1){
