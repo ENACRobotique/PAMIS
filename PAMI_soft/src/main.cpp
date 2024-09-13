@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "base_roulante.h"
+#include "deplacement.h"
 #include <Wire.h>
 #include "vision.h"
 #include <Servo.h>
@@ -59,21 +60,7 @@ y<-----
 
 */
 
-void vTask_Deplacement (void* param){ 
-  while (1){
-    if (distance_left < DISTANCE_EVITEMENT || distance_middle < DISTANCE_EVITEMENT ||distance_right < DISTANCE_EVITEMENT){
-      base_roulante.stop();
-      Serial.println("trop pres d'un obstacle");
-      vTaskDelay(50);
-    }else{
-      base_roulante.translate(180);
-      vTaskDelay(pdMS_TO_TICKS(2000));
-      base_roulante.rotate(M_PI/2);
-      vTaskDelay(pdMS_TO_TICKS(1000));
-      Serial.println("deplacement");
-    }
-  }
-}
+
 
 
 void vTask_VoirObstacle (void* param){
