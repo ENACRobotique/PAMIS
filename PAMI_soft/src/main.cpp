@@ -93,8 +93,6 @@ y<-----
 
 void setup() {
   pinMode(BUZZER,OUTPUT);
-  pinMode(LEVIER, OUTPUT);
- digitalWrite(LEVIER,HIGH);
 
 
   pinMode(XSHUT_SENSOR1, OUTPUT);
