@@ -43,9 +43,9 @@ uint32_t debug = 0;
 
 uint32_t blink_period = 2000;
 int current_led_intensity = 0;
-int distance_right;
-int distance_left;
-int distance_middle;
+int distance_right =0;
+int distance_left =0;
+int distance_middle =0;
 int lvl;
 float u_battery;
 
@@ -59,56 +59,36 @@ y<-----
 
 */
 
-int team; // 1 = blue ; 2 = yellow
-
-bool dernier_point = false;
-
-int current_levier_position;
-int moyenne_led_intensity = 0;
-int moyenne_place_intensity = 0;
-
-uint16_t index_point = 0;
-
-TaskHandle_t TaskAvancer;
-TaskHandle_t TaskTourner;
-TaskHandle_t TaskVoirObsable;
-float dist = 1000.0;
-float angle = M_PI / 2;
-bool isAdvancing = false;
-bool isTurning = false;
-
-CmdType prochaine_commande = TRANSLATE;
-
-void vTask_Avancer(void* param){
-  base_roulante.translate(*(float*)param);
-  Serial.println("Avancer");
-  vTaskDelay(pdMS_TO_TICKS(4000)); // Délai pour avancer
-  //prochaine_commande = ROTATE;
-  vTaskDelete(NULL); // Supprimer la tâche après l'exécution
+void vTask_Deplacement (void* param){ 
+  while (1){
+    if (distance_left < DISTANCE_EVITEMENT || distance_middle < DISTANCE_EVITEMENT ||distance_right < DISTANCE_EVITEMENT){
+      base_roulante.stop();
+      Serial.println("trop pres d'un obstacle");
+      vTaskDelay(50);
+    }else{
+      base_roulante.translate(180);
+      vTaskDelay(pdMS_TO_TICKS(2000));
+      base_roulante.rotate(M_PI/2);
+      vTaskDelay(pdMS_TO_TICKS(1000));
+      Serial.println("deplacement");
+    }
+  }
 }
 
-void vTask_Tourner(void* param){
-  base_roulante.rotate(*(float*)param);
-  Serial.println("Tourner");
-  vTaskDelay(pdMS_TO_TICKS(4000)); // Délai pour tourner
-  prochaine_commande = TRANSLATE;
-  vTaskDelete(NULL); // Supprimer la tâche après l'exécution
-}
 
 void vTask_VoirObstacle (void* param){
-  for (;;){
-    Serial.println("Voir");
+  while (1){
     distance_right = vision.get_dist_right();
     distance_left = vision.get_dist_left();
     distance_middle = vision.get_dist_right();
+    Serial.println("Voir");
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
 
 void setup() {
   pinMode(BUZZER,OUTPUT);
-  pinMode(LEVIER, OUTPUT);
-  digitalWrite(LEVIER,HIGH);
+  pinMode(LEVIER, INPUT_PULLUP);
 
   pinMode(XSHUT_SENSOR1, OUTPUT);
   pinMode(XSHUT_SENSOR2, OUTPUT);
@@ -163,12 +143,13 @@ void setup() {
   base_roulante.init();
   digitalWrite(MOT_ENABLE, LOW);
 
-  current_levier_position = digitalRead(LEVIER);
 
+  
+  xTaskCreate(vTask_VoirObstacle, "Voir_obstacle", 1000, NULL, 1, NULL);
+  xTaskCreate(vTask_Deplacement, "deplacement", 1000, NULL, 2, NULL);
+  
   vTaskStartScheduler();
 
-
-  xTaskCreate(vTask_VoirObstacle, "VoirTask", 1000, NULL, 1, &TaskVoirObsable);
 }
 
 void battery_checking(){
@@ -182,30 +163,9 @@ void battery_checking(){
 }
 
 void loop() {
-  if (millis() - last_blink > blink_period) {
-    digitalToggle(LED_BUILTIN);
-    last_blink = millis();
-    battery_checking();   
-  }
-
-  if (millis() - last_odo > 50) {
-    base_roulante.odometry();
-
-    if (distance_left < 150 || distance_middle < 150 || distance_right < 150){
-      Serial.printf("stop");
-      //prochaine_commande = AUCUN;
-    }
-  }
-
-
-
-  if (prochaine_commande == TRANSLATE) {
-    xTaskCreate(vTask_Avancer, "AvancerTask", 1000, &dist, 2, &TaskAvancer);
-  }
-
-  if (prochaine_commande == ROTATE) {
-    xTaskCreate(vTask_Tourner, "TournerTask", 1000, &angle, 1, &TaskTourner);
-  }
-
-
+  // if (millis() - last_blink > blink_period) {
+  //   digitalToggle(LED_BUILTIN);
+  //   last_blink = millis();
+  //   battery_checking();   
+  // }
 }

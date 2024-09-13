@@ -4,7 +4,7 @@
 #include "TeensyStep.h"
 
 
-#define TAILLE_FILE 100
+#define TAILLE_FILE 500
 #define STEP_PER_MM 6.68
 #define STEPPER_MAX_ACC 10000
 #define STEPPER_MAX_SPEED 4000
