@@ -34,8 +34,6 @@ enum EtatRobot{
     RECEPTION_FINISHED,
     TOURNER,
     AVANCER,
-    OBSTACLE_TOURNER,
-    OBSTACLE_AVANCER,
     ETAT_FIN,
 };
 
