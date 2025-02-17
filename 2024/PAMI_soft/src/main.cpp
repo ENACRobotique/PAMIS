@@ -12,8 +12,8 @@
 
 
 coord depart =  {0,0,0}; 
-#define NB_POINTS 4
-coord list_point[NB_POINTS] = {{100, 0, 0},{750,800,0},{1200, 800,0},{1600,950,0}};
+#define NB_POINTS 1 //4
+coord list_point[NB_POINTS] = {{300,0,0}};//{{100, 0, 0},{750,800,0},{1200, 800,0},{1600,950,0}};
 
 
 EtatRobot etat_robot = EtatRobot::RECEPTION_FINISHED;
@@ -109,7 +109,7 @@ void run_comportement (){
     case ETAT_FIN:
       if (base_roulante.commands_finished() && mot_allumer){
         Serial.println("FIN");
-        digitalWrite(MOT_ENABLE, HIGH);
+        //digitalWrite(MOT_ENABLE, HIGH); //desactive les moteurs
         mot_allumer = 0;
         }
       break;
