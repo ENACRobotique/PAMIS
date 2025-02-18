@@ -5,8 +5,12 @@
 #include "pico/cyw43_arch.h"
 #include "hardware/uart.h"
 
-#include "VL53L1X_api.h"
-#include "VL53L1X_types.h"
+extern "C" {
+    #include "VL53L1X_api.h"
+    #include "VL53L1X_types.h"
+}
+
+
 
 
 // VL53L1x example:
@@ -69,9 +73,6 @@ int main()
 {
     stdio_init_all();
 
-    VL53L1X_Status_t status;
-    VL53L1X_Result_t results;
-
     // Initialise the Wi-Fi chip
     if (cyw43_arch_init()) {
         printf("Wi-Fi init failed\n");
@@ -79,17 +80,12 @@ int main()
     }
 
     // I2C Initialisation. Using it at 400Khz.
-    // i2c_init(I2C_PORT, 400*1000);
-    
+    //i2c_init(I2C_PORT, 400*1000);
+    i2c_init(I2C_PORT, VL53L1X_I2C_BAUDRATE);
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
     // gpio_pull_up(I2C_SDA);
     // gpio_pull_up(I2C_SCL);
-    // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
-
-    // Timer example code - This example fires off the callback after 2000ms
-    // add_alarm_in_ms(2000, alarm_callback, NULL, false);
-    // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
 
     // Enable wifi station
     cyw43_arch_enable_sta_mode();
@@ -121,6 +117,9 @@ int main()
     // For more examples of UART use see https://github.com/raspberrypi/pico-examples/tree/master/uart
 
     led_init();
+
+    VL53L1X_Status_t status;
+    VL53L1X_Result_t results;
 
 
     if (VL53L1X_I2C_Init(I2C_DEV_ADDR, I2C_PORT) < 0) {

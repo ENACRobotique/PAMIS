@@ -94,13 +94,6 @@ VL53L1X_Status_t VL53L1X_I2C_Init(uint16_t addr, i2c_inst_t* i2c_device) {
 
   i2c_dev = i2c_device;
 
-  // Setup i2c device
-  i2c_init(i2c_dev, VL53L1X_I2C_BAUDRATE);
-  gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
-  gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
-  gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
-  gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
-
   // Validate sensor model ID and Type
   uint16_t sensorId;
   status = VL53L1X_GetSensorId(addr, &sensorId);
