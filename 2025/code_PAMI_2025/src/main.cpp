@@ -1,39 +1,64 @@
 #include <Arduino.h>
-#undef LED1
-#undef LED2
-#define LED1 2
-#define LED2 3
-#define UARTTX 4
-#define UARTRX 5
-#define ENABLE1 6
-#define DIR2 8
-#define STEP2 9
-#define DIR1 0
-#define STEP1 1
-#define ENABLE2 15
-#define FDC1 17
-#define FDC2 18
-#define SHUTDOWN1 19
-#define SHUTDOWN2 22
-#define SHUTDOWN3 26
-#define SDA 20
-#define SCL 21
-#define SERVO 27
-#define BAT_MESURE 28
+#include "config.h"
+#include <Serial.h>
+#include <AccelStepper.h>
+
+
+AccelStepper stepper1(AccelStepper::DRIVER, STEP1, DIR1);
+AccelStepper stepper2(AccelStepper::DRIVER, STEP2, DIR2);
+
+#define LEN_POS_OBJ 2
+long pos_obj1[LEN_POS_OBJ] = {400, 0};
+long pos_obj2[LEN_POS_OBJ] = {-400, 0};
 
 
 void setup() {
   pinMode(LED1,OUTPUT);
   pinMode(LED2,OUTPUT);
 
+  pinMode(ENABLE1, OUTPUT);
+  pinMode(ENABLE2, OUTPUT);
+  digitalWrite(ENABLE1, LOW);
+  digitalWrite(ENABLE2, LOW);
+
+  Serial.begin(115200);
+
+  stepper1.setMaxSpeed(1000.0);
+  stepper1.setAcceleration(10000.0);
+  
+  stepper2.setMaxSpeed(1000.0);
+  stepper2.setAcceleration(10000.0);
+
+  stepper1.moveTo(pos_obj1[0]);
+  stepper2.moveTo(pos_obj2[0]);
+
 }
 
+
+
 void loop() {
-  digitalWrite(LED1,HIGH);
-  digitalWrite(LED2,HIGH);
-  delay(250);
-  digitalWrite(LED1,LOW);
-  digitalWrite(LED2,LOW);
-  delay(250);
+  static uint32_t time_blink = 0;
+  static int obji = 0;
+
+  if(millis()-time_blink > 250) {
+    digitalWrite(LED1, !digitalRead(LED1));
+    digitalWrite(LED2, !digitalRead(LED2));
+    time_blink = millis();
+  }
+
+
+  if(stepper1.distanceToGo() == 0 && stepper2.distanceToGo() == 0) {
+    obji = (obji + 1) % LEN_POS_OBJ;
+    stepper1.moveTo(pos_obj1[obji]);
+    stepper2.moveTo(pos_obj2[obji]);
+    
+    Serial.print(pos_obj1[obji]);
+    Serial.print(" ");
+    Serial.println(pos_obj2[obji]);
+  }
+
+  stepper1.run();
+  stepper2.run();
+
 }
 
