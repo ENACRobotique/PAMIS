@@ -22,6 +22,8 @@ private:
     pin_size_t en_right;
 
     SemaphoreHandle_t mutex;
+
+    bool stopped;
 };
 
 extern Locomotion locomotion;

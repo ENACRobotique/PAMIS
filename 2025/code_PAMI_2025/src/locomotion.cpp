@@ -1,5 +1,6 @@
 #include "locomotion.h"
 #include "config.h"
+#include "FreeRTOSConfig.h"
 
 
 
@@ -16,11 +17,11 @@ static void locomotion_run( void *arg );
 Locomotion::Locomotion(AccelStepper* step_left, AccelStepper* step_right, pin_size_t en_left, pin_size_t en_right):
     step_left(step_left), step_right(step_right), en_left(en_left), en_right(en_right)
 {
-    step_left->setAcceleration(1000.0);
+    step_left->setAcceleration(5000.0);
     step_left->setMaxSpeed(1000.0);
     
+    step_right->setAcceleration(5000.0);
     step_right->setMaxSpeed(1000.0);
-    step_right->setAcceleration(1000.0);
 
     mutex = xSemaphoreCreateMutex();
 }
@@ -32,10 +33,14 @@ void Locomotion::start()
     digitalWrite(en_left, LOW);
     digitalWrite(en_right, LOW);
 
-
+    TaskHandle_t xHandle;
     xTaskCreate(
         locomotion_run, "stepper_run", configMINIMAL_STACK_SIZE,
-        &locomotion, tskIDLE_PRIORITY + 3, NULL );
+        &locomotion, tskIDLE_PRIORITY + 3, &xHandle );
+
+    // run task on core 1
+    UBaseType_t uxCoreAffinityMask = (1 << 1 );  
+    vTaskCoreAffinitySet( xHandle, uxCoreAffinityMask ); 
 }
 
 void Locomotion::doStep()
@@ -51,6 +56,7 @@ void Locomotion::doStep()
 int Locomotion::translateBlocking(long steps)
 {
     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+        stopped = false;
         step_left->move(-steps);
         step_right->move(steps);
         xSemaphoreGive(mutex);
@@ -65,7 +71,9 @@ int Locomotion::translateBlocking(long steps)
         if(ended) {
             return 0;
         }
-        // retourner une erreur si stop() a été appelé.
+        if(stopped) {
+            return -1;
+        }
         taskYIELD();
     }
 }
@@ -75,6 +83,7 @@ void Locomotion::stop()
     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
         step_left->stop();
         step_right->stop();
+        stopped = true;
         xSemaphoreGive(mutex);
     }
 }

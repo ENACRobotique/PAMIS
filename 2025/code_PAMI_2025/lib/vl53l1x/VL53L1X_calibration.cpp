@@ -21,7 +21,7 @@
 #define MM_CONFIG__INNER_OFFSET_MM			0x0020
 #define MM_CONFIG__OUTER_OFFSET_MM 			0x0022
 
-int8_t VL53L1X_CalibrateOffset(uint16_t dev, uint16_t TargetDistInMm, int16_t *offset)
+int8_t VL53L1X_CalibrateOffset(VL53L1_DEV dev, uint16_t TargetDistInMm, int16_t *offset)
 {
 	uint8_t i, tmp;
 	int16_t AverageDistance = 0;
@@ -48,7 +48,7 @@ int8_t VL53L1X_CalibrateOffset(uint16_t dev, uint16_t TargetDistInMm, int16_t *o
 	return status;
 }
 
-int8_t VL53L1X_CalibrateXtalk(uint16_t dev, uint16_t TargetDistInMm, uint16_t *xtalk)
+int8_t VL53L1X_CalibrateXtalk(VL53L1_DEV dev, uint16_t TargetDistInMm, uint16_t *xtalk)
 {
 	uint8_t i, tmp;
 	float AverageSignalRate = 0;
