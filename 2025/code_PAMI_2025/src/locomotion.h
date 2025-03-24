@@ -4,14 +4,14 @@
 #include <FreeRTOS.h>
 #include "semphr.h"
 
-#define STEP_PER_MM 6.68 //A change
-#define RAYON_PAMI 4.725
+#define MM2STEP 20/3
+#define RAYON_PAMI 47.25
 
-typedef struct{
+typedef struct {
     float x;
     float y;
     float theta;
-  } coord;
+  }coord;
   
 
 class Locomotion {
@@ -24,12 +24,15 @@ public:
 
     int translateBlocking(long steps);
     int rotateBlocking(long steps);
+    int moveBlocking(coord target);
+
 
     coord getPositon(){return current_coord;};
     void odometry();
+    int etat = 0;
 
 private:
-
+    
     coord current_coord;
 
     AccelStepper* step_left;
