@@ -31,6 +31,38 @@ static void test_move( void *arg ) {
   }
 }
 
+static void test_rotate(void * args) {
+  for(;;) {
+    while(true) {
+      if(locomotion.rotateBlocking(1000)) {
+        while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
+          vTaskDelay(pdMS_TO_TICKS(200));
+        }
+      }
+      if(locomotion.rotateBlocking(-1000)) {
+        while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
+          vTaskDelay(pdMS_TO_TICKS(200));
+        }
+      }
+    }
+  }
+}
+
+
+// static void move_correctly(void * args){
+  
+// }
+
+
+void odometry(void*){
+  while (1){
+    locomotion.odometry();
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+}
+
+
+
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
   locomotion.stop();
@@ -79,9 +111,18 @@ void setup() {
 
 
   // create move test task
+  // xTaskCreate(
+  //   test_move, "test_move", configMINIMAL_STACK_SIZE,
+  //   NULL, tskIDLE_PRIORITY + 1, NULL
+  // );
   xTaskCreate(
-    test_move, "test_move", configMINIMAL_STACK_SIZE,
+    test_rotate, "test_rotate", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
+  );
+
+  xTaskCreate(
+    odometry, "odometry", configMINIMAL_STACK_SIZE,
+    NULL, 3, NULL
   );
 
 }
