@@ -5,7 +5,8 @@
 #include "semphr.h"
 
 #define MM2STEP (20/3)
-#define RAYON_PAMI 47.25
+#define RAYON_PAMI 51.55
+// (47.25*(12/11))
 
 /****************
     x
@@ -25,6 +26,16 @@ typedef struct {
     float theta;
   }coord;
   
+enum etat{
+    INIT,
+    TOURNE,
+    TOURNE_FINI,
+    TOUDRWA,
+    TOUDRWA_FINI,
+    FINITOPIPO,
+    AVOIDING,
+};
+
 
 class Locomotion {
 public:
@@ -35,13 +46,15 @@ public:
     void stop();
 
     int translateBlocking(long steps);
-    int rotateBlocking(long steps);
+    int rotateBlocking(float angle);
     int moveBlocking(coord target);
+    int move(coord * targets,int nb);
 
 
     coord getPositon(){return current_coord;};
     void odometry();
-    int etat = 0;
+    etat state = INIT;
+    int i=0;
     
 
 private:

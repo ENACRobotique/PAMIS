@@ -16,7 +16,7 @@ static void blinker( void *arg ) {
   }
 }
 
-static void test_move( void *arg ) {
+static void test_avance( void *arg ) {
   while(true) {
     if(locomotion.translateBlocking(4000)) {
       while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
@@ -32,24 +32,20 @@ static void test_move( void *arg ) {
 }
 
 static void test_rotate(void * args) {
+  locomotion.rotateBlocking(40*M_PI);
   while(true) {
-    if(locomotion.rotateBlocking(1000)) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
+    // if(locomotion.rotateBlocking(1000)) {
+    //   while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
         vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-    if(locomotion.rotateBlocking(-1000)) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
+    //   }
+    // }
   } 
 }
 
 static void test_moveB(void * args) {
   while(true) {
     //locomotion.moveBlocking({-2000,2000,0});
-    if(locomotion.moveBlocking({1000,0,0}))
+    if(locomotion.moveBlocking({1000,1000,0})){
       while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
         vTaskDelay(pdMS_TO_TICKS(200));
       }
@@ -60,7 +56,24 @@ static void test_moveB(void * args) {
       }
     }
   } 
+}
 
+  static void move(void * args) {
+    coord target[3] = {{1000,0,0},{1000,1000,0},{0,0,0}};
+    while(true) {
+      //locomotion.moveBlocking({-2000,2000,0});
+      if(locomotion.move(target, 2)){
+        while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
+          vTaskDelay(pdMS_TO_TICKS(200));
+        }
+      }
+      // if(locomotion.moveBlocking({1000,0,0})) {
+      //   while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
+      //     vTaskDelay(pdMS_TO_TICKS(200));
+      //   }
+      // }
+    } 
+  }
 
 // static void test_moveOnce( void *arg ) {
 //   while(true) {
@@ -88,7 +101,7 @@ void odometry(void*){
     // dtostrf(current_coord.theta, 13, 7, buffer); // Convertit le flottant en chaîne avec 7 chiffres après la virgule
     // Serial.println(buffer); // Affiche la chaîne formatée
     // Serial.printf("x: %f, y: %f, theta: %f \n",current_coord.x, current_coord.y, current_coord.theta);
-    vTaskDelay(pdMS_TO_TICKS(200));
+    vTaskDelay(pdMS_TO_TICKS(20));
   }
 }
 
@@ -153,7 +166,7 @@ void setup() {
   // );
 
   xTaskCreate(
-    test_moveB, "test_moveB", configMINIMAL_STACK_SIZE,
+    move, "move", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
   );
 
