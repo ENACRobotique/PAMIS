@@ -4,8 +4,20 @@
 #include <FreeRTOS.h>
 #include "semphr.h"
 
-#define MM2STEP 20/3
+#define MM2STEP (20/3)
 #define RAYON_PAMI 47.25
+
+/****************
+    x
+    ^
+    |
+    |   
+y<---
+
+*****************/
+
+
+
 
 typedef struct {
     float x;
@@ -30,10 +42,13 @@ public:
     coord getPositon(){return current_coord;};
     void odometry();
     int etat = 0;
+    
 
 private:
     
-    coord current_coord;
+    coord current_coord = {0,0,0};
+    float old_pos_1 = 0;
+    float old_pos_2 = 0;
 
     AccelStepper* step_left;
     AccelStepper* step_right;

@@ -4,9 +4,10 @@
 #include "math.h"
 
 
-
-long convertMmToStep(long mms){ return mms * MM2STEP;}
-long convertAngleToStep(long angle){ return RAYON_PAMI * angle * MM2STEP;}
+long convertMmToStep(float mms){ return mms * MM2STEP;}
+float convertStepToMm(long step){ return step / MM2STEP;}
+long convertAngleToStep(float angle){ return RAYON_PAMI * angle * MM2STEP;}
+float convertStepToAngle(long step){ return step / (RAYON_PAMI * MM2STEP);}
 
 AccelStepper stepper1(AccelStepper::DRIVER, STEP1, DIR1);
 AccelStepper stepper2(AccelStepper::DRIVER, STEP2, DIR2);
@@ -112,18 +113,19 @@ int Locomotion::moveBlocking(coord target){
     float dx=target.x-current_coord.x;
     float dy=target.y-current_coord.y;
     float dtheta=atan2(dy,dx)-current_coord.theta;
-    Serial.println(convertAngleToStep(dtheta));
-    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
-        stopped = false;
-        step_left->move(convertAngleToStep(dtheta));
-        step_right->move(convertAngleToStep(dtheta));
-        xSemaphoreGive(mutex);
+    while (etat == 0){
+        if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+            stopped = false;
+            step_left->move(convertAngleToStep(dtheta));
+            step_right->move(convertAngleToStep(dtheta));
+            xSemaphoreGive(mutex);
+            etat=1;
+        }
     }
-    etat =1;
     while(etat == 1) {
         bool ended = false;
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
-            ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
+            ended = step_left->distanceToGo()==0 && step_right->distanceToGo() == 0;
             xSemaphoreGive(mutex);
         }
         if(ended) {
@@ -134,13 +136,15 @@ int Locomotion::moveBlocking(coord target){
         }
         taskYIELD();
     }
-    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
-        stopped = false;
-        step_left->move(-sqrt(dy*dy+dx*dx));
-        step_right->move(sqrt(dy*dy+dx*dx));
-        xSemaphoreGive(mutex);
-    }
-    etat = 3;
+    while(etat==2){
+        if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+            stopped = false;
+            step_left->move(-convertMmToStep(sqrt(dy*dy+dx*dx)));
+            step_right->move(convertMmToStep(sqrt(dy*dy+dx*dx)));
+            xSemaphoreGive(mutex);
+            etat=3;
+        }
+    }   
     while(etat==3) {
         bool ended = false;
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
@@ -155,6 +159,13 @@ int Locomotion::moveBlocking(coord target){
         }
         taskYIELD();
     }
+    while(etat == 5) {
+        etat = 0;
+        Serial.print("pos x : ");
+        Serial.print(current_coord.x);
+        Serial.print(", pos y : ");
+        Serial.println(current_coord.y);
+    }
     return 0;    
 }
 
@@ -162,20 +173,21 @@ int Locomotion::moveBlocking(coord target){
 
 
 void Locomotion::odometry(){
-        static float old_pos_1 = 0;
-        static float old_pos_2 = 0;
-        float pos_1 = step_left->currentPosition(); //return current position in step
-        float pos_2 = step_right->currentPosition();
-    
-        float dpos_1 = (pos_1 - old_pos_1) / MM2STEP;
-        float dpos_2 = (pos_2 - old_pos_2) / MM2STEP; 
-    
-        current_coord.theta += (-dpos_1 - dpos_2) / (2 * RAYON_PAMI);
-        current_coord.x += ((dpos_1 - dpos_2)/2) * cos (current_coord.theta);
-        current_coord.y += ((dpos_1 - dpos_2)/2) * sin (current_coord.theta); 
-    
-        old_pos_1 = pos_1;
-        old_pos_2 = pos_2;
+
+    float pos_1 = -step_left->currentPosition(); //return current position in step
+    float pos_2 = step_right->currentPosition();
+
+
+
+    float dpos_1 = (pos_1 - old_pos_1); 
+    float dpos_2 = (pos_2 - old_pos_2) ; 
+
+    current_coord.theta += convertStepToAngle((dpos_1 - dpos_2) / 2 ); //en radian
+    current_coord.x += convertStepToMm((((dpos_1 + dpos_2)/2) * cos (current_coord.theta))); //in mm
+    current_coord.y += convertStepToMm(((dpos_1 + dpos_2)/2) * sin (current_coord.theta)); //in mm
+
+    old_pos_1 = pos_1;
+    old_pos_2 = pos_2;
   
  }
 
@@ -185,6 +197,7 @@ void Locomotion::stop(){
         step_right->stop();
         stopped = true;
         // odometry();
+        etat = 5;
         xSemaphoreGive(mutex);
     }
 }

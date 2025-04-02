@@ -48,12 +48,13 @@ static void test_rotate(void * args) {
 
 static void test_moveB(void * args) {
   while(true) {
-    if(locomotion.moveBlocking({200,200,0}))
+    //locomotion.moveBlocking({-2000,2000,0});
+    if(locomotion.moveBlocking({1000,0,0}))
       while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
         vTaskDelay(pdMS_TO_TICKS(200));
       }
     }
-    if(locomotion.moveBlocking({200,200,0})) {
+    if(locomotion.moveBlocking({1000,0,0})) {
       while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
         vTaskDelay(pdMS_TO_TICKS(200));
       }
@@ -76,18 +77,18 @@ static void test_moveB(void * args) {
 void odometry(void*){
   while (-1){
     locomotion.odometry();
-    // coord position=locomotion.getPositon();
+    coord current_coord=locomotion.getPositon();
     // Serial.print("pos x : ");
-    // Serial.print(position.x);
+    //Serial.println(current_coord.x);
     // Serial.print(", pos y : ");
-    // Serial.print(position.y);
+    // Serial.print(current_coord.y);
     // Serial.print(", theta : ");
 
     // char buffer[15]; // Un buffer suffisamment grand pour contenir le nombre formaté
-    // dtostrf(position.theta, 13, 7, buffer); // Convertit le flottant en chaîne avec 7 chiffres après la virgule
+    // dtostrf(current_coord.theta, 13, 7, buffer); // Convertit le flottant en chaîne avec 7 chiffres après la virgule
     // Serial.println(buffer); // Affiche la chaîne formatée
-    //Serial.printf("x: %f, y: %f, theta: %f \n",position.x, position.y, position.theta);
-    vTaskDelay(pdMS_TO_TICKS(20));
+    // Serial.printf("x: %f, y: %f, theta: %f \n",current_coord.x, current_coord.y, current_coord.theta);
+    vTaskDelay(pdMS_TO_TICKS(200));
   }
 }
 
@@ -132,6 +133,7 @@ void setup() {
 
   locomotion.start();
 
+  vTaskDelay(pdMS_TO_TICKS(1000));
 
   // create blinker task
   xTaskCreate(
@@ -151,7 +153,7 @@ void setup() {
   // );
 
   xTaskCreate(
-    test_moveB, "test_move", configMINIMAL_STACK_SIZE,
+    test_moveB, "test_moveB", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
   );
 
@@ -168,6 +170,6 @@ void loop() {
   static float w = 0;
   vTaskDelay(pdMS_TO_TICKS(50));
   uint16_t d = radar.getDistance(RADAR_LEFT, NULL);
-  Serial.print(locomotion.etat);
+  //Serial.print(locomotion.etat);
   //Serial.println(d);
 }
