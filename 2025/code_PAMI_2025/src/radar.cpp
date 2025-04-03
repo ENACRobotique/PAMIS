@@ -20,8 +20,26 @@ VL53L1_Dev_t vl53_left = {
     .last_dist = 0,
     .timestamp = 0,
 };
+// VL53L1_Dev_t vl53_front = {
+//     .addr = VL53L1_DEFAULT_ADDR,
+//     .shutdown_pin = SHUTDOWN2,
+//     .wire = &Wire,
+//     .alert_dist = 200,
+//     .last_dist = 0,
+//     .timestamp = 0,
+// };
+// VL53L1_Dev_t vl53_right = {
+//     .addr = VL53L1_DEFAULT_ADDR,
+//     .shutdown_pin = SHUTDOWN3,
+//     .wire = &Wire,
+//     .alert_dist = 200,
+//     .last_dist = 0,
+//     .timestamp = 0,
+// };
 
 Radar radar(&vl53_left, NULL, NULL);
+// Radar radar(&vl53_front, NULL, NULL);
+// Radar radar(&vl53_right, NULL, NULL);
 
 
 static void radar_run( void *arg );
@@ -113,7 +131,7 @@ void Radar::radar_measure(VL53L1_Dev_t* dev)
         dev->last_dist = 10000;
         dev->timestamp = xTaskGetTickCount();
     } else {
-        Serial.printf("VL53L1 ranging error: %d", ret);
+        //Serial.printf("VL53L1 ranging error: %d", ret);
     }
 }
 
@@ -142,6 +160,9 @@ uint16_t Radar::getDistance(enum eRadar sensor_id, uint32_t* timestamp)
     }
     return 0;
 }
+
+
+
 
 void Radar::setAlertDistances(uint16_t dl, uint16_t df, uint16_t dr) {
     if(radar_left) {

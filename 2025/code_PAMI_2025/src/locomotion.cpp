@@ -171,6 +171,7 @@ int Locomotion::moveBlocking(coord target){
 
 int Locomotion::move(coord * targets,int nb){
         if (i>2){return 0;}
+        Serial.println("testtest");
         float dx=targets[i].x-current_coord.x;
         float dy=targets[i].y-current_coord.y;
         float dtheta=atan2(dy,dx)-current_coord.theta;
@@ -223,20 +224,84 @@ int Locomotion::move(coord * targets,int nb){
         if (state==TOUDRWA_FINI){
             i+=1;
             Serial.println(i);
+            Serial.println(state);
+            Serial.println("test");
             state=INIT;
         }
-        while(state == AVOIDING) {
-            state = INIT;
-            Serial.print("pos x : ");
-            Serial.print(current_coord.x);
-            Serial.print(", pos y : ");
-            Serial.println(current_coord.y);
+        while(state == AVOIDINGTOURNE || state==AVOIDINGTOURNEFINI) {
+            Serial.println(state);
+            while(state==AVOIDINGTOURNE){
+                if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                    stopped = false;
+                    step_left->move(convertAngleToStep(M_PI/2));
+                    step_right->move(convertAngleToStep(M_PI/2));
+                    xSemaphoreGive(mutex);
+                    state=AVOIDINGTOURNEFINI;
+                    Serial.println(state);
+
+                }
+            }
+            while(state==AVOIDINGTOURNEFINI){
+                bool ended = false;
+                    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                        ended = step_left->distanceToGo()==0 && step_right->distanceToGo() == 0;
+                        xSemaphoreGive(mutex);
+                    }
+                    if(ended) {
+                        state =AVOIDINGTOUDRWA;
+                        Serial.println(state);
+
+                    }
+                    if(stopped) {
+                        return 1;
+                    }
+                    taskYIELD();
+            }
         }
+            while(state==AVOIDINGTOUDRWA || state==AVOIDINGTOUDRWAFINI){
+                while(state==AVOIDINGTOUDRWA){
+                    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                        stopped = false;
+                        step_left->move(-convertMmToStep(150));
+                        step_right->move(convertMmToStep(150));
+                        xSemaphoreGive(mutex);
+                        state=AVOIDINGTOUDRWAFINI;
+                        Serial.println(state);
+                }
+            }
+            Serial.println("CALMBEFORETHESTORM");
+                while(state==AVOIDINGTOUDRWAFINI){
+                    Serial.print("testavoidingtoudrwafini");
+                    bool ended = false;
+                    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                        ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
+                        xSemaphoreGive(mutex);
+                    }
+                    if(ended) {
+                        state=INIT;
+                        Serial.println(state);
+                        Serial.println("INIT done");
+
+                    }
+                    if(stopped) {
+                        return -1;
+                    }
+                    taskYIELD();
+                    Serial.println("TASKYIELDED");
+                }
+                Serial.println("CALMAFTERTHESTORM");
+            }
+            
+            
         return 0;    
     }
     
 
-
+int Locomotion::avoid(){
+    // Serial.println(state);
+    state=AVOIDINGTOURNE;
+    return 0;
+}
 
 
 void Locomotion::odometry(){
@@ -261,11 +326,14 @@ void Locomotion::odometry(){
 
 void Locomotion::stop(){
     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+        if(!(state==AVOIDINGTOURNE || state==AVOIDINGTOURNEFINI || state==AVOIDINGTOUDRWA || state==AVOIDINGTOUDRWAFINI)){
+
+        }
         step_left->stop();
         step_right->stop();
         stopped = true;
         // odometry();
-        state = AVOIDING;
+        // state = AVOIDING;
         xSemaphoreGive(mutex);
     }
 }

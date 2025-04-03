@@ -3,6 +3,8 @@
 #include <FreeRTOS.h>
 #include "semphr.h"
 
+#define NBRADAR 3
+
 typedef void(*radar_cb)();
 
 enum eRadar {

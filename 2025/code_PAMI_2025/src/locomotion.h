@@ -34,6 +34,10 @@ enum etat{
     TOUDRWA_FINI,
     FINITOPIPO,
     AVOIDING,
+    AVOIDINGTOURNE,
+    AVOIDINGTOURNEFINI,
+    AVOIDINGTOUDRWA,
+    AVOIDINGTOUDRWAFINI,
 };
 
 
@@ -49,6 +53,7 @@ public:
     int rotateBlocking(float angle);
     int moveBlocking(coord target);
     int move(coord * targets,int nb);
+    int avoid();
 
 
     coord getPositon(){return current_coord;};

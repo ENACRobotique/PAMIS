@@ -62,11 +62,14 @@ static void test_moveB(void * args) {
     coord target[3] = {{1000,0,0},{1000,1000,0},{0,0,0}};
     while(true) {
       //locomotion.moveBlocking({-2000,2000,0});
-      if(locomotion.move(target, 2)){
-        while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
+      // if(locomotion.move(target, 2)){
+      // }
+      locomotion.move(target,2);
+        while(radar.getDistance(RADAR_LEFT, NULL) < 100 ) {
+          locomotion.avoid();
+          Serial.print(locomotion.state);
           vTaskDelay(pdMS_TO_TICKS(200));
         }
-      }
       // if(locomotion.moveBlocking({1000,0,0})) {
       //   while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
       //     vTaskDelay(pdMS_TO_TICKS(200));
@@ -109,7 +112,8 @@ void odometry(void*){
 
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
-  locomotion.stop();
+  locomotion.avoid();
+  //locomotion.stop();
 }
 
 void setup() {
