@@ -20,26 +20,24 @@ VL53L1_Dev_t vl53_left = {
     .last_dist = 0,
     .timestamp = 0,
 };
-// VL53L1_Dev_t vl53_front = {
-//     .addr = VL53L1_DEFAULT_ADDR,
-//     .shutdown_pin = SHUTDOWN2,
-//     .wire = &Wire,
-//     .alert_dist = 200,
-//     .last_dist = 0,
-//     .timestamp = 0,
-// };
-// VL53L1_Dev_t vl53_right = {
-//     .addr = VL53L1_DEFAULT_ADDR,
-//     .shutdown_pin = SHUTDOWN3,
-//     .wire = &Wire,
-//     .alert_dist = 200,
-//     .last_dist = 0,
-//     .timestamp = 0,
-// };
+VL53L1_Dev_t vl53_front = {
+    .addr = VL53L1_DEFAULT_ADDR,
+    .shutdown_pin = SHUTDOWN2,
+    .wire = &Wire,
+    .alert_dist = 200,
+    .last_dist = 0,
+    .timestamp = 0,
+};
+VL53L1_Dev_t vl53_right = {
+    .addr = VL53L1_DEFAULT_ADDR,
+    .shutdown_pin = SHUTDOWN3,
+    .wire = &Wire,
+    .alert_dist = 200,
+    .last_dist = 0,
+    .timestamp = 0,
+};
 
-Radar radar(&vl53_left, NULL, NULL);
-// Radar radar(&vl53_front, NULL, NULL);
-// Radar radar(&vl53_right, NULL, NULL);
+Radar radar(&vl53_left, &vl53_front, &vl53_right);
 
 
 static void radar_run( void *arg );

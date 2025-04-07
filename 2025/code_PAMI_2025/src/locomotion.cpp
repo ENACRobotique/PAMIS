@@ -2,6 +2,7 @@
 #include "config.h"
 #include "FreeRTOSConfig.h"
 #include "math.h"
+#include "radar.h"
 
 
 long convertMmToStep(float mms){ return mms * MM2STEP;}
@@ -223,21 +224,19 @@ int Locomotion::move(coord * targets,int nb){
         }
         if (state==TOUDRWA_FINI){
             i+=1;
-            Serial.println(i);
-            Serial.println(state);
-            Serial.println("test");
+            // Serial.println(i);
+            // Serial.println(state);
+            // Serial.println("test");
             state=INIT;
         }
         while(state == AVOIDINGTOURNE || state==AVOIDINGTOURNEFINI) {
-            Serial.println(state);
             while(state==AVOIDINGTOURNE){
                 if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                     stopped = false;
-                    step_left->move(convertAngleToStep(M_PI/2));
-                    step_right->move(convertAngleToStep(M_PI/2));
+                    step_left->move(convertAngleToStep(M_PI/2)*(1-2*(side==GAUCHE)));
+                    step_right->move(convertAngleToStep(M_PI/2)*(1-2*(side==GAUCHE)));
                     xSemaphoreGive(mutex);
                     state=AVOIDINGTOURNEFINI;
-                    Serial.println(state);
 
                 }
             }
@@ -249,7 +248,6 @@ int Locomotion::move(coord * targets,int nb){
                     }
                     if(ended) {
                         state =AVOIDINGTOUDRWA;
-                        Serial.println(state);
 
                     }
                     if(stopped) {
@@ -266,12 +264,9 @@ int Locomotion::move(coord * targets,int nb){
                         step_right->move(convertMmToStep(150));
                         xSemaphoreGive(mutex);
                         state=AVOIDINGTOUDRWAFINI;
-                        Serial.println(state);
                 }
             }
-            Serial.println("CALMBEFORETHESTORM");
                 while(state==AVOIDINGTOUDRWAFINI){
-                    Serial.print("testavoidingtoudrwafini");
                     bool ended = false;
                     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                         ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
@@ -279,17 +274,13 @@ int Locomotion::move(coord * targets,int nb){
                     }
                     if(ended) {
                         state=INIT;
-                        Serial.println(state);
-                        Serial.println("INIT done");
 
                     }
                     if(stopped) {
                         return -1;
                     }
                     taskYIELD();
-                    Serial.println("TASKYIELDED");
                 }
-                Serial.println("CALMAFTERTHESTORM");
             }
             
             
@@ -297,9 +288,11 @@ int Locomotion::move(coord * targets,int nb){
     }
     
 
-int Locomotion::avoid(){
+int Locomotion::avoid(String where){
     // Serial.println(state);
     state=AVOIDINGTOURNE;
+    if(where=="droite"){side=DROITE;};
+    if(where=="gauche"){side=GAUCHE;};
     return 0;
 }
 

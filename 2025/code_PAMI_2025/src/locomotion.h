@@ -40,6 +40,12 @@ enum etat{
     AVOIDINGTOUDRWAFINI,
 };
 
+enum sidE{
+    NONE,
+    DROITE,
+    GAUCHE,
+};
+
 
 class Locomotion {
 public:
@@ -53,12 +59,13 @@ public:
     int rotateBlocking(float angle);
     int moveBlocking(coord target);
     int move(coord * targets,int nb);
-    int avoid();
+    int avoid(String where);
 
 
     coord getPositon(){return current_coord;};
     void odometry();
     etat state = INIT;
+    sidE side=NONE;
     int i=0;
     
 
