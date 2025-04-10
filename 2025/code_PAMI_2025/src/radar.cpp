@@ -7,14 +7,14 @@
 #include <Arduino.h>
 
 
-#define RADAR_LEFT_ADDR 0x30
+#define RADAR_LEFT_ADDR 0x32
 #define RADAR_FRONT_ADDR 0x31
-#define RADAR_RIGHT_ADDR 0x32
+#define RADAR_RIGHT_ADDR 0x30
 
 
 VL53L1_Dev_t vl53_left = {
     .addr = VL53L1_DEFAULT_ADDR,
-    .shutdown_pin = SHUTDOWN1,
+    .shutdown_pin = SHUTDOWN3,
     .wire = &Wire,
     .alert_dist = 200,
     .last_dist = 0,
@@ -30,7 +30,7 @@ VL53L1_Dev_t vl53_front = {
 };
 VL53L1_Dev_t vl53_right = {
     .addr = VL53L1_DEFAULT_ADDR,
-    .shutdown_pin = SHUTDOWN3,
+    .shutdown_pin = SHUTDOWN1,
     .wire = &Wire,
     .alert_dist = 200,
     .last_dist = 0,
@@ -39,6 +39,7 @@ VL53L1_Dev_t vl53_right = {
 
 Radar radar(&vl53_left, &vl53_front, &vl53_right);
 
+// Radar radar(&vl53_left,&vl53_front, NULL);
 
 static void radar_run( void *arg );
 static uint8_t sensor_get_distance(VL53L1_Dev_t* dev, uint16_t* distance);
@@ -54,11 +55,11 @@ int Radar::init()
         digitalWrite(radar_left->shutdown_pin , LOW);
     }
     if(radar_front) {
-        pinMode(radar_left->shutdown_pin, OUTPUT);
+        pinMode(radar_front->shutdown_pin, OUTPUT);
         digitalWrite(radar_front->shutdown_pin , LOW);
     }
     if(radar_right) {
-        pinMode(radar_left->shutdown_pin, OUTPUT);
+        pinMode(radar_right->shutdown_pin, OUTPUT);
         digitalWrite(radar_right->shutdown_pin , LOW);
     }
     
@@ -70,10 +71,10 @@ int Radar::init()
         status |= sensor_init(radar_left, RADAR_LEFT_ADDR);
     }
     if(radar_front) {
-        status |= sensor_init(radar_front, RADAR_LEFT_ADDR);
+        status |= sensor_init(radar_front, RADAR_FRONT_ADDR);
     }
     if(radar_right) {
-        status |= sensor_init(radar_right, RADAR_LEFT_ADDR);
+        status |= sensor_init(radar_right, RADAR_RIGHT_ADDR);
     }
 
     return status;
@@ -115,6 +116,9 @@ void Radar::radarLoop()
     if(alert && alert_cb) {
         alert_cb();
     }
+
+    Serial.printf("gauche : %u, mid : %u, droite : %u \n", radar.getDistance(RADAR_LEFT, NULL), radar.getDistance(RADAR_FRONT, NULL), radar.getDistance(RADAR_RIGHT, NULL));
+    //Serial.print(locomotion.etat);
 }
 
 void Radar::radar_measure(VL53L1_Dev_t* dev)
@@ -129,7 +133,10 @@ void Radar::radar_measure(VL53L1_Dev_t* dev)
         dev->last_dist = 10000;
         dev->timestamp = xTaskGetTickCount();
     } else {
-        //Serial.printf("VL53L1 ranging error: %d", ret);
+        // Serial.printf("VL53L1 ranging error: %d\n", ret);
+        dev->last_dist = 10000;
+     //   dev->timestamp = xTaskGetTickCount();
+
     }
 }
 
@@ -210,6 +217,12 @@ static VL53L1X_ERROR sensor_init(VL53L1_Dev_t* dev, uint8_t new_addr) {
 static uint8_t sensor_get_distance(VL53L1_Dev_t* dev, uint16_t* distance) {
     uint8_t dataReady = 0;
     VL53L1X_ERROR status;
+    VL53L1X_ERROR status2;
+    VL53L1X_ERROR status3;
+    VL53L1X_ERROR status4;
+    VL53L1X_ERROR status5;
+    VL53L1X_ERROR status6;
+
 
     TickType_t time_start = xTaskGetTickCount();
 
@@ -225,17 +238,25 @@ static uint8_t sensor_get_distance(VL53L1_Dev_t* dev, uint16_t* distance) {
         return -1;
     }
 
+    if(status)
+        Serial.printf("data pourrie, %d", status);
+
     uint16_t SignalRate;
     uint16_t AmbientRate;
     uint16_t SpadNum; 
     uint8_t RangeStatus;
 
     status = VL53L1X_GetRangeStatus(dev, &RangeStatus);
-    status = VL53L1X_GetDistance(dev, distance);
-    // status = VL53L1X_GetSignalRate(dev, &SignalRate);
-    // status = VL53L1X_GetAmbientRate(dev, &AmbientRate);
-    // status = VL53L1X_GetSpadNb(dev, &SpadNum);
-    status = VL53L1X_ClearInterrupt(dev); /* clear interrupt has to be called to enable next interrupt*/
-    
+    status2 = VL53L1X_GetDistance(dev, distance);
+    status3 = VL53L1X_GetSignalRate(dev, &SignalRate);
+    status4 = VL53L1X_GetAmbientRate(dev, &AmbientRate);
+    status5 = VL53L1X_GetSpadNb(dev, &SpadNum);
+    status6 = VL53L1X_ClearInterrupt(dev); /* clear interrupt has to be called to enable next interrupt*/
+    //Serial.printf("RangeStatus%d Distance%d SignalRate%d  AmbientRate%d SpadNb%d\n", status, status2, status3, status4, status5);
+    // if(RangeStatus == 0)
+    //     Serial.printf("D:%d\t SR:%d\tAR: %d\tSN:%d\tCI: %d\n", *distance, SignalRate, AmbientRate, SpadNum, status6);
+
+
+ 
     return RangeStatus; 
 }

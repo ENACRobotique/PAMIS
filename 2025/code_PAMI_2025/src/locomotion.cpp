@@ -116,6 +116,7 @@ int Locomotion::moveBlocking(coord target){
     float dtheta=atan2(dy,dx)-current_coord.theta;
     while (state == INIT){
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+            Serial.println("gonna tourne");
             stopped = false;
             step_left->move(convertAngleToStep(dtheta));
             step_right->move(convertAngleToStep(dtheta));
@@ -128,9 +129,12 @@ int Locomotion::moveBlocking(coord target){
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
             ended = step_left->distanceToGo()==0 && step_right->distanceToGo() == 0;
             xSemaphoreGive(mutex);
+            Serial.println("tourne");
         }
         if(ended) {
             state =TOURNE_FINI;
+            Serial.println("tourne fini");
+
         }
         if(stopped) {
             return 1;
@@ -140,6 +144,7 @@ int Locomotion::moveBlocking(coord target){
     while(state==TOURNE_FINI){
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
             stopped = false;
+            Serial.println("gonna toudrwa");
             step_left->move(-convertMmToStep(sqrt(dy*dy+dx*dx)));
             step_right->move(convertMmToStep(sqrt(dy*dy+dx*dx)));
             xSemaphoreGive(mutex);
@@ -151,9 +156,13 @@ int Locomotion::moveBlocking(coord target){
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
             ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
             xSemaphoreGive(mutex);
+            Serial.println("toudrwa");
+
         }
         if(ended) {
             state=TOUDRWA_FINI;
+            Serial.println("toudrwafini");
+
         }
         if(stopped) {
             return -1;
@@ -169,18 +178,28 @@ int Locomotion::moveBlocking(coord target){
     }
     return 0;    
 }
+float angleLegal(float angle){
+    if (angle>M_PI){
+        angle = angleLegal(angle-2*M_PI);
+    }else if (angle < -M_PI){
+        angle = angleLegal(angle+2*M_PI);
+    }
+    return angle;
+}
 
 int Locomotion::move(coord * targets,int nb){
         if (i>2){return 0;}
         Serial.println("testtest");
         float dx=targets[i].x-current_coord.x;
         float dy=targets[i].y-current_coord.y;
-        float dtheta=atan2(dy,dx)-current_coord.theta;
+        float dtheta=angleLegal(atan2(dy,dx)-current_coord.theta);
         while(state==INIT){
             if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                 stopped = false;
                 step_left->move(convertAngleToStep(dtheta));
                 step_right->move(convertAngleToStep(dtheta));
+                Serial.println("gonna tourne");
+
                 xSemaphoreGive(mutex);
                 state=TOURNE;
             }
@@ -190,9 +209,13 @@ int Locomotion::move(coord * targets,int nb){
             if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                 ended = step_left->distanceToGo()==0 && step_right->distanceToGo() == 0;
                 xSemaphoreGive(mutex);
+                //Serial.println("tourne");
+
             }
             if(ended) {
                 state =TOURNE_FINI;
+                Serial.println("tournefini");
+
             }
             if(stopped) {
                 return 1;
@@ -204,6 +227,8 @@ int Locomotion::move(coord * targets,int nb){
                 stopped = false;
                 step_left->move(-convertMmToStep(sqrt(dy*dy+dx*dx)));
                 step_right->move(convertMmToStep(sqrt(dy*dy+dx*dx)));
+                Serial.println("gonna toudrwa");
+
                 xSemaphoreGive(mutex);
                 state=TOUDRWA;
             }
@@ -213,9 +238,13 @@ int Locomotion::move(coord * targets,int nb){
             if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                 ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
                 xSemaphoreGive(mutex);
+               // Serial.println("toudrwa");
+
             }
             if(ended) {
                 state=TOUDRWA_FINI;
+                Serial.println("toudrwafini");
+
             }
             if(stopped) {
                 return -1;
@@ -233,8 +262,9 @@ int Locomotion::move(coord * targets,int nb){
             while(state==AVOIDINGTOURNE){
                 if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                     stopped = false;
-                    step_left->move(convertAngleToStep(M_PI/2)*(1-2*(side==GAUCHE)));
-                    step_right->move(convertAngleToStep(M_PI/2)*(1-2*(side==GAUCHE)));
+                    Serial.printf(" esquive %d \n",side);
+                    step_left->move(convertAngleToStep(M_PI/2)*(1-side));
+                    step_right->move(convertAngleToStep(M_PI/2)*(1-side));
                     xSemaphoreGive(mutex);
                     state=AVOIDINGTOURNEFINI;
 
@@ -260,8 +290,8 @@ int Locomotion::move(coord * targets,int nb){
                 while(state==AVOIDINGTOUDRWA){
                     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                         stopped = false;
-                        step_left->move(-convertMmToStep(150));
-                        step_right->move(convertMmToStep(150));
+                        step_left->move(-convertMmToStep(200));
+                        step_right->move(convertMmToStep(200));
                         xSemaphoreGive(mutex);
                         state=AVOIDINGTOUDRWAFINI;
                 }
@@ -287,12 +317,12 @@ int Locomotion::move(coord * targets,int nb){
         return 0;    
     }
     
-
 int Locomotion::avoid(String where){
     // Serial.println(state);
     state=AVOIDINGTOURNE;
     if(where=="droite"){side=DROITE;};
     if(where=="gauche"){side=GAUCHE;};
+    if(where=="urgentManoeuverRequired"){side=DERRIERE;};
     return 0;
 }
 

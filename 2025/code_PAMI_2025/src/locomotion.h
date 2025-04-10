@@ -5,7 +5,7 @@
 #include "semphr.h"
 
 #define MM2STEP (20/3)
-#define RAYON_PAMI 51.55
+#define RAYON_PAMI 49.94 //48.33 //51.55
 // (47.25*(12/11))
 
 /****************
@@ -41,9 +41,10 @@ enum etat{
 };
 
 enum sidE{
-    NONE,
     DROITE,
+    NONE,
     GAUCHE,
+    DERRIERE,
 };
 
 

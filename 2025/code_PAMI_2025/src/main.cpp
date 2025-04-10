@@ -114,17 +114,22 @@ void odometry(void*){
 
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
-  while(!(locomotion.state==AVOIDINGTOURNE || locomotion.state==AVOIDINGTOURNEFINI || locomotion.state==AVOIDINGTOUDRWA || locomotion.state==AVOIDINGTOUDRWAFINI)) {
-    if(!(radar.getDistance(RADAR_FRONT, NULL) < 100 and radar.getDistance(RADAR_LEFT, NULL) < 100 and radar.getDistance(RADAR_RIGHT, NULL) < 100)){
-      if(radar.getDistance(RADAR_LEFT, NULL) < 100 and !(radar.getDistance(RADAR_RIGHT, NULL) < 100)){
-        locomotion.avoid("droite");
-      }
-      //if(radar.getDistance(RADAR_RIGHT, NULL) < 100)
-      else {
-        locomotion.avoid("gauche");
-      };
+  if(!(locomotion.state==AVOIDINGTOURNE || locomotion.state==AVOIDINGTOURNEFINI || locomotion.state==AVOIDINGTOUDRWA || locomotion.state==AVOIDINGTOUDRWAFINI)) {
+    if(!(radar.getDistance(RADAR_FRONT, NULL) < 100 && radar.getDistance(RADAR_LEFT, NULL) < 100 && radar.getDistance(RADAR_RIGHT, NULL) < 100)){
+        if(radar.getDistance(RADAR_LEFT, NULL) < 100 && !(radar.getDistance(RADAR_RIGHT, NULL) < 100)){
+          locomotion.avoid("droite");
+        }
+        //if(radar.getDistance(RADAR_RIGHT, NULL) < 100)
+        else if(radar.getDistance(RADAR_RIGHT, NULL) < 100 && !(radar.getDistance(RADAR_LEFT, NULL) < 100)) {
+          locomotion.avoid("gauche");
+        };
+    }else{
+      locomotion.avoid("gauche");
+
     };
-  }
+  } else if(radar.getDistance(RADAR_LEFT,NULL)<20 || radar.getDistance(RADAR_FRONT,NULL)<20 || radar.getDistance(RADAR_RIGHT,NULL)<20 ){
+    locomotion.avoid("urgentManoeuverRequired");
+  };
   //locomotion.stop();
 }
 
@@ -148,14 +153,13 @@ void setup() {
   Wire.setSCL(SCL);
   Wire.setClock(100000);
   Wire.begin();
-  
+  Serial.println("begin");
 
   if(radar.init()) {
     Serial.println("[ERROR] initializing radar.");
   } else {
     Serial.println("[OK] Radar initialized.");
   }
-
   radar.setAlertDistances(100, 100, 100);
   radar.setAlertCallback(radar_alert_cb);
   radar.start();
@@ -197,8 +201,6 @@ void setup() {
 
 void loop() {
   static float w = 0;
-  vTaskDelay(pdMS_TO_TICKS(50));
-  uint16_t d = radar.getDistance(RADAR_LEFT, NULL);
-  //Serial.print(locomotion.etat);
+  vTaskDelay(pdMS_TO_TICKS(2000));
   //Serial.println(d);
 }
