@@ -11,7 +11,6 @@
 #define RADAR_FRONT_ADDR 0x31
 #define RADAR_RIGHT_ADDR 0x30
 
-
 VL53L1_Dev_t vl53_left = {
     .addr = VL53L1_DEFAULT_ADDR,
     .shutdown_pin = SHUTDOWN3,

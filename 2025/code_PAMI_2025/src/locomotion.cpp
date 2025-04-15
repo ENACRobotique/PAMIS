@@ -312,18 +312,90 @@ int Locomotion::move(coord * targets,int nb){
                     taskYIELD();
                 }
             }
-            
+        while(state==SUIVILIGNES || state==SUIVILIGNES2 || state==SUIVILIGNES25 || state==SUIVILIGNESFINI){
+
+            while(state==SUIVILIGNES){
+                eRadar radarEnQuestion;
+                if(side==GAUCHE){radarEnQuestion=RADAR_LEFT;}
+                else if(side==DROITE){radarEnQuestion=RADAR_RIGHT;}
+                if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                    stopped = false;
+                    double angle=atan2(sin(ANGLERF2RL),((radar.getDistance(RADAR_FRONT,NULL)+RF2CENTER)/(radar.getDistance(radarEnQuestion,NULL)+RL2CENTER))-cos(ANGLERF2RL));
+                    Serial.println("angle");
+                    Serial.println(angle);
+                    step_left->move(convertAngleToStep(angle));
+                    step_right->move(convertAngleToStep(angle));
+                    xSemaphoreGive(mutex);
+                    state=SUIVILIGNES2;
+                    
+                }
+            }
+            while(state==SUIVILIGNES2){
+                bool ended = false;
+                if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                    ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
+                    xSemaphoreGive(mutex);
+                }
+                if(ended) {
+                    state=SUIVILIGNES25;
+                    
+                }
+                if(stopped) {
+                    return -1;
+                }
+                taskYIELD();
+            }
+            while(state==SUIVILIGNES25){
+                eRadar radarEnQuestion;
+                if(side==GAUCHE){radarEnQuestion=RADAR_LEFT;}
+                else if(side==DROITE){radarEnQuestion=RADAR_RIGHT;}
+                while(radar.getDistance(radarEnQuestion,NULL)<200){
+                    Serial.println("in fonc");
+                    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                        stopped = false;
+                        double distanceToEndOfWall=cos(ANGLERF2RL)*radar.getDistance(radarEnQuestion,NULL)+RADARTOROUES;
+                        Serial.println("distanceToEndOfWall");
+                        Serial.println(convertMmToStep(distanceToEndOfWall));
+                        step_left->move(-convertMmToStep(distanceToEndOfWall));
+                        step_right->move(convertMmToStep(distanceToEndOfWall));
+                        xSemaphoreGive(mutex);
+                        state=SUIVILIGNESFINI;
+                    }
+                }
+                while(state==SUIVILIGNESFINI){
+                    bool ended = false;
+                    if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
+                        ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
+                        xSemaphoreGive(mutex);
+                    }
+                    if(ended) {
+                        state=INIT;
+                        
+                    }
+                    if(stopped) {
+                        return -1;
+                    }
+                    taskYIELD();
+                }
+            }
+        }
+        
             
         return 0;    
     }
     
-int Locomotion::avoid(String where){
+void Locomotion::avoid(String where){
     // Serial.println(state);
     state=AVOIDINGTOURNE;
     if(where=="droite"){side=DROITE;};
     if(where=="gauche"){side=GAUCHE;};
     if(where=="urgentManoeuverRequired"){side=DERRIERE;};
-    return 0;
+}
+
+void Locomotion::suiviLignes(sidE siDe){
+    state=SUIVILIGNES;
+    side=siDe;
+
 }
 
 

@@ -4,6 +4,10 @@
 #include "semphr.h"
 
 #define NBRADAR 3
+#define RF2CENTER 58.69358
+#define RL2CENTER 58.33013
+#define ANGLERF2RL (M_PI/6)
+#define RADARTOROUES 60
 
 typedef void(*radar_cb)();
 

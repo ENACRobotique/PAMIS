@@ -38,6 +38,10 @@ enum etat{
     AVOIDINGTOURNEFINI,
     AVOIDINGTOUDRWA,
     AVOIDINGTOUDRWAFINI,
+    SUIVILIGNES,
+    SUIVILIGNES2,
+    SUIVILIGNES25,
+    SUIVILIGNESFINI,
 };
 
 enum sidE{
@@ -55,12 +59,13 @@ public:
     void start();
     void doStep();
     void stop();
-
+    
     int translateBlocking(long steps);
     int rotateBlocking(float angle);
     int moveBlocking(coord target);
     int move(coord * targets,int nb);
-    int avoid(String where);
+    void avoid(String where);
+    void suiviLignes(sidE side);
 
 
     coord getPositon(){return current_coord;};
