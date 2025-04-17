@@ -178,6 +178,7 @@ int Locomotion::moveBlocking(coord target){
     }
     return 0;    
 }
+
 float angleLegal(float angle){
     if (angle>M_PI){
         angle = angleLegal(angle-2*M_PI);
@@ -263,8 +264,8 @@ int Locomotion::move(coord * targets,int nb){
                 if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                     stopped = false;
                     Serial.printf(" esquive %d \n",side);
-                    step_left->move(convertAngleToStep(M_PI/2)*(1-side));
-                    step_right->move(convertAngleToStep(M_PI/2)*(1-side));
+                    step_left->move(convertAngleToStep(angleRecommande*M_PI/6)*(1-side));
+                    step_right->move(convertAngleToStep(angleRecommande*M_PI/6)*(1-side));
                     xSemaphoreGive(mutex);
                     state=AVOIDINGTOURNEFINI;
 
@@ -321,8 +322,6 @@ int Locomotion::move(coord * targets,int nb){
                 if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                     stopped = false;
                     double angle=atan2(sin(ANGLERF2RL),((radar.getDistance(RADAR_FRONT,NULL)+RF2CENTER)/(radar.getDistance(radarEnQuestion,NULL)+RL2CENTER))-cos(ANGLERF2RL));
-                    Serial.println("angle");
-                    Serial.println(angle);
                     step_left->move(convertAngleToStep(angle));
                     step_right->move(convertAngleToStep(angle));
                     xSemaphoreGive(mutex);
@@ -350,7 +349,6 @@ int Locomotion::move(coord * targets,int nb){
                 if(side==GAUCHE){radarEnQuestion=RADAR_LEFT;}
                 else if(side==DROITE){radarEnQuestion=RADAR_RIGHT;}
                 while(radar.getDistance(radarEnQuestion,NULL)<200){
-                    Serial.println("in fonc");
                     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                         stopped = false;
                         double distanceToEndOfWall=cos(ANGLERF2RL)*radar.getDistance(radarEnQuestion,NULL)+RADARTOROUES;
@@ -359,9 +357,9 @@ int Locomotion::move(coord * targets,int nb){
                         step_left->move(-convertMmToStep(distanceToEndOfWall));
                         step_right->move(convertMmToStep(distanceToEndOfWall));
                         xSemaphoreGive(mutex);
-                        state=SUIVILIGNESFINI;
                     }
                 }
+                state=SUIVILIGNESFINI;
                 while(state==SUIVILIGNESFINI){
                     bool ended = false;
                     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
@@ -384,9 +382,10 @@ int Locomotion::move(coord * targets,int nb){
         return 0;    
     }
     
-void Locomotion::avoid(String where){
+void Locomotion::avoid(String where,angleRecommandation angle){
     // Serial.println(state);
     state=AVOIDINGTOURNE;
+    angleRecommande=angle;
     if(where=="droite"){side=DROITE;};
     if(where=="gauche"){side=GAUCHE;};
     if(where=="urgentManoeuverRequired"){side=DERRIERE;};
@@ -395,7 +394,6 @@ void Locomotion::avoid(String where){
 void Locomotion::suiviLignes(sidE siDe){
     state=SUIVILIGNES;
     side=siDe;
-
 }
 
 
@@ -421,9 +419,9 @@ void Locomotion::odometry(){
 
 void Locomotion::stop(){
     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
-        if(!(state==AVOIDINGTOURNE || state==AVOIDINGTOURNEFINI || state==AVOIDINGTOUDRWA || state==AVOIDINGTOUDRWAFINI)){
+        // if(!(state==AVOIDINGTOURNE || state==AVOIDINGTOURNEFINI || state==AVOIDINGTOUDRWA || state==AVOIDINGTOUDRWAFINI)){
 
-        }
+        // }
         step_left->stop();
         step_right->stop();
         stopped = true;

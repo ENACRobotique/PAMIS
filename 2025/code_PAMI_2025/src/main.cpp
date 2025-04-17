@@ -114,17 +114,24 @@ void odometry(void*){
 
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
-  if(!(locomotion.state==AVOIDINGTOURNE || locomotion.state==AVOIDINGTOURNEFINI || locomotion.state==AVOIDINGTOUDRWA || locomotion.state==AVOIDINGTOUDRWAFINI || locomotion.state==SUIVILIGNES || locomotion.state==SUIVILIGNES2 || locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)) {
+  if(locomotion.state==INIT || locomotion.state==TOURNE || locomotion.state==TOURNE_FINI || locomotion.state==TOUDRWA || locomotion.state==TOUDRWA_FINI || locomotion.state==FINITOPIPO){ //!(locomotion.state==AVOIDINGTOURNE || locomotion.state==AVOIDINGTOURNEFINI || locomotion.state==AVOIDINGTOUDRWA || locomotion.state==AVOIDINGTOUDRWAFINI || locomotion.state==SUIVILIGNES || locomotion.state==SUIVILIGNES2 || locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)) {
     if(radar.getDistance(RADAR_FRONT,NULL)<100){
-      if(radar.getDistance(RADAR_LEFT,NULL)<100 && radar.getDistance(RADAR_RIGHT,NULL)>=100)    {locomotion.avoid("gauche");}
-      else                                                                                      {locomotion.avoid("droite");}
-    } else if(radar.getDistance(RADAR_LEFT,NULL)<100){
-        if(radar.getDistance(RADAR_FRONT,NULL)<500)   {locomotion.suiviLignes(GAUCHE);}
-        else                                          {locomotion.avoid("droite");} // todo
-    } else if(radar.getDistance(RADAR_RIGHT,NULL)<100){
-        if(radar.getDistance(RADAR_FRONT,NULL)<500)   {locomotion.suiviLignes(DROITE);}
-        else                                          {locomotion.avoid("gauche");} // todo
+      if(radar.getDistance(RADAR_LEFT,NULL)<100 && !(radar.getDistance(RADAR_RIGHT,NULL)<100))    {locomotion.avoid("droite",ANGLE90);}
+      else                                                                                      {locomotion.avoid("gauche",ANGLE90);}
+    } 
+    else if(radar.getDistance(RADAR_LEFT,NULL)<100){
+      if(radar.getDistance(RADAR_FRONT,NULL)<500)   {locomotion.suiviLignes(GAUCHE);}
+      else                                          {locomotion.avoid("droite",ANGLE30);}
+    } 
+    else if(radar.getDistance(RADAR_RIGHT,NULL)<100){
+      if(radar.getDistance(RADAR_FRONT,NULL)<500)   {locomotion.suiviLignes(DROITE);}
+      else                                          {locomotion.avoid("gauche",ANGLE30);}
     }
+    else{locomotion.avoid("gauche",ANGLE90);}
+  } 
+  else if(radar.getDistance(RADAR_LEFT,NULL)<40 || radar.getDistance(RADAR_FRONT,NULL)<40 || radar.getDistance(RADAR_RIGHT,NULL)<40 ){
+    locomotion.avoid("urgentManoeuverRequired",ANGLE90);
+  };
 
     // if(!(radar.getDistance(RADAR_FRONT, NULL) < 100 && radar.getDistance(RADAR_LEFT, NULL) < 100 && radar.getDistance(RADAR_RIGHT, NULL) < 100)){
     //     if(radar.getDistance(RADAR_LEFT, NULL) < 100 && !(radar.getDistance(RADAR_RIGHT, NULL) < 100)){
@@ -137,9 +144,6 @@ static void radar_alert_cb() {
     // }else{
     //   locomotion.avoid("gauche");
 
-  } else if(radar.getDistance(RADAR_LEFT,NULL)<20 || radar.getDistance(RADAR_FRONT,NULL)<20 || radar.getDistance(RADAR_RIGHT,NULL)<20 ){
-    locomotion.avoid("urgentManoeuverRequired");
-  };
   //locomotion.stop();
 }
 
