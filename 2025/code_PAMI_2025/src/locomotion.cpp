@@ -322,8 +322,8 @@ int Locomotion::move(coord * targets,int nb){
                 if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
                     stopped = false;
                     double angle=atan2(sin(ANGLERF2RL),((radar.getDistance(RADAR_FRONT,NULL)+RF2CENTER)/(radar.getDistance(radarEnQuestion,NULL)+RL2CENTER))-cos(ANGLERF2RL));
-                    step_left->move(convertAngleToStep(angle));
-                    step_right->move(convertAngleToStep(angle));
+                    step_left->move(convertAngleToStep(angle)*(side-1));
+                    step_right->move(convertAngleToStep(angle)*(side-1));
                     xSemaphoreGive(mutex);
                     state=SUIVILIGNES2;
                     
