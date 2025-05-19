@@ -45,10 +45,10 @@ enum etat{
 };
 
 enum sidE{
-    DROITE,
-    NONE,
     GAUCHE,
+    DROITE,
     DERRIERE,
+    NONE,
 };
 
 enum angleRecommandation{
@@ -70,16 +70,16 @@ public:
     int rotateBlocking(float angle);
     int moveBlocking(coord target);
     int move(coord * targets,int nb);
-    void avoid(String where,angleRecommandation angle);
+    int superstar(coord coords);
+    void avoid(float angle);
     void suiviLignes(sidE side);
-
-
+    void initPos(coord init){current_coord = init;};
     coord getPositon(){return current_coord;};
     void odometry();
     etat state = INIT;
     sidE side=NONE;
-    angleRecommandation angleRecommande=ANGLE90;
-    int i=0;
+    float avoid_angle=0;
+    int target_idx=0;
     
 
 private:

@@ -6,7 +6,8 @@
 #include "Wire.h"
 #include "locomotion.h"
 #include "radar.h"
-
+#define DISTANCEEVITEMENT 200
+coord startPos={2925,1625,M_PI};
 
 // task qui fait clignoter une LED en continu.
 static void blinker( void *arg ) {
@@ -59,37 +60,11 @@ static void test_moveB(void * args) {
 }
 
   static void move(void * args) {
-    coord target[3] = {{1000,0,0},{1000,1000,0},{0,0,0}};
+    coord target[1] = {{1150,1400,0}};
     while(true) {
-      //locomotion.moveBlocking({-2000,2000,0});
-      // if(locomotion.move(target, 2)){
-      // }
-      locomotion.move(target,2);
-        // while(radar.getDistance(RADAR_LEFT, NULL) < 100 ) {
-        //   while(!(locomotion.state==AVOIDINGTOURNE || locomotion.state==AVOIDINGTOURNEFINI || locomotion.state==AVOIDINGTOUDRWA || locomotion.state==AVOIDINGTOUDRWAFINI)) {
-        //     locomotion.avoid();
-        //     Serial.print(locomotion.state);
-        //     vTaskDelay(pdMS_TO_TICKS(200));
-        //   }
-        // }
-      // if(locomotion.moveBlocking({1000,0,0})) {
-      //   while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-      //     vTaskDelay(pdMS_TO_TICKS(200));
-      //   }
-      // }
+      locomotion.move(target, 1);
     } 
   }
-
-// static void test_moveOnce( void *arg ) {
-//   while(true) {
-//     locomotion.translateBlocking(10000);
-//     vTaskDelay(pdMS_TO_TICKS(2000));
-//   }
-// }
-
-// static void move_correctly(void * args){
-  
-// }
 
 
 void odometry(void*){
@@ -114,44 +89,64 @@ void odometry(void*){
 
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
-  if(locomotion.state==INIT || locomotion.state==TOURNE || locomotion.state==TOURNE_FINI || locomotion.state==TOUDRWA || locomotion.state==TOUDRWA_FINI || locomotion.state==FINITOPIPO){ //!(locomotion.state==AVOIDINGTOURNE || locomotion.state==AVOIDINGTOURNEFINI || locomotion.state==AVOIDINGTOUDRWA || locomotion.state==AVOIDINGTOUDRWAFINI || locomotion.state==SUIVILIGNES || locomotion.state==SUIVILIGNES2 || locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)) {
-    if(radar.getDistance(RADAR_FRONT,NULL)<100){
-      if(radar.getDistance(RADAR_LEFT,NULL)<100 && !(radar.getDistance(RADAR_RIGHT,NULL)<100))    {locomotion.avoid("droite",ANGLE90);}
-      else                                                                                      {locomotion.avoid("gauche",ANGLE90);}
-    } 
-    else if(radar.getDistance(RADAR_LEFT,NULL)<100){
-      if(radar.getDistance(RADAR_FRONT,NULL)<500)   {locomotion.suiviLignes(GAUCHE);}
-      else                                          {locomotion.avoid("droite",ANGLE30);}
-    } 
-    else if(radar.getDistance(RADAR_RIGHT,NULL)<100){
-      if(radar.getDistance(RADAR_FRONT,NULL)<500)   {locomotion.suiviLignes(DROITE);}
-      else                                          {locomotion.avoid("gauche",ANGLE30);}
+
+  bool doit = 
+    locomotion.state==INIT ||
+    locomotion.state==TOURNE ||
+    locomotion.state==TOURNE_FINI ||
+    locomotion.state==TOUDRWA ||
+    locomotion.state==TOUDRWA_FINI ||
+    locomotion.state==FINITOPIPO ||
+    locomotion.state==AVOIDINGTOUDRWA ||
+    locomotion.state==AVOIDINGTOUDRWAFINI ||
+    locomotion.state==SUIVILIGNES25 ||
+    locomotion.state==SUIVILIGNESFINI;
+
+  if(!doit){
+    return;
+  }
+
+  locomotion.stop();
+
+  bool front_close = radar.getDistance(RADAR_FRONT,NULL) < DISTANCEEVITEMENT;
+  bool left_close = radar.getDistance(RADAR_LEFT,NULL) < DISTANCEEVITEMENT;
+  bool right_close = radar.getDistance(RADAR_RIGHT,NULL) < DISTANCEEVITEMENT;
+  bool front_far = radar.getDistance(RADAR_FRONT,NULL) < 500;
+  bool left_far = radar.getDistance(RADAR_LEFT,NULL) < 150;
+  bool right_far = radar.getDistance(RADAR_RIGHT,NULL) < 150;
+  
+  if(front_close){
+    if(left_far && !right_far){
+      locomotion.avoid(M_PI/2);
+    } else {
+      locomotion.avoid(-M_PI/2);
     }
-    else{locomotion.avoid("gauche",ANGLE90);}
   } 
-  else if(radar.getDistance(RADAR_LEFT,NULL)<40 || radar.getDistance(RADAR_FRONT,NULL)<40 || radar.getDistance(RADAR_RIGHT,NULL)<40 ){
-    locomotion.avoid("urgentManoeuverRequired",ANGLE90);
-  };
-
-    // if(!(radar.getDistance(RADAR_FRONT, NULL) < 100 && radar.getDistance(RADAR_LEFT, NULL) < 100 && radar.getDistance(RADAR_RIGHT, NULL) < 100)){
-    //     if(radar.getDistance(RADAR_LEFT, NULL) < 100 && !(radar.getDistance(RADAR_RIGHT, NULL) < 100)){
-    //       locomotion.avoid("droite");
-    //     }
-    //     //if(radar.getDistance(RADAR_RIGHT, NULL) < 100)
-    //     else if(radar.getDistance(RADAR_RIGHT, NULL) < 100 && !(radar.getDistance(RADAR_LEFT, NULL) < 100)) {
-    //       locomotion.avoid("gauche");
-    //     };
-    // }else{
-    //   locomotion.avoid("gauche");
-
-  //locomotion.stop();
+  else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
+    // locomotion.stop();
+    if(front_far){
+      locomotion.suiviLignes(GAUCHE);
+    } else {
+      locomotion.avoid(-M_PI/6);
+    }
+  } 
+  else if(right_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
+    // locomotion.stop();
+    if(front_far){
+      locomotion.suiviLignes(DROITE);
+    } else {
+      locomotion.avoid(M_PI/6);
+    }
+  }
+  else{
+    locomotion.avoid(M_PI/2);
+  }
 }
 
 void setup() {
   // LEDs OUTPUT
   pinMode(LED1,OUTPUT);
   pinMode(LED2,OUTPUT);
-
   Serial.begin(115200);
 
   // countdown to start
@@ -174,12 +169,12 @@ void setup() {
   } else {
     Serial.println("[OK] Radar initialized.");
   }
-  radar.setAlertDistances(100, 100, 100);
+  radar.setAlertDistances(DISTANCEEVITEMENT, DISTANCEEVITEMENT, DISTANCEEVITEMENT);
   radar.setAlertCallback(radar_alert_cb);
   radar.start();
 
   locomotion.start();
-
+  locomotion.initPos(startPos);
   vTaskDelay(pdMS_TO_TICKS(1000));
 
   // create blinker task
