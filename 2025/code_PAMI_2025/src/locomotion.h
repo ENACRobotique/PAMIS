@@ -81,8 +81,8 @@ public:
     float avoid_angle=0;
     int target_idx=0;
     
-
-private:
+    
+    private:
     
     coord current_coord = {0,0,0};
     float old_pos_1 = 0;

@@ -116,7 +116,7 @@ void Radar::radarLoop()
         alert_cb();
     }
 
-    Serial.printf("gauche : %u, mid : %u, droite : %u \n", radar.getDistance(RADAR_LEFT, NULL), radar.getDistance(RADAR_FRONT, NULL), radar.getDistance(RADAR_RIGHT, NULL));
+    // Serial.printf("gauche : %u, mid : %u, droite : %u \n", radar.getDistance(RADAR_LEFT, NULL), radar.getDistance(RADAR_FRONT, NULL), radar.getDistance(RADAR_RIGHT, NULL));
     //Serial.print(locomotion.etat);
 }
 

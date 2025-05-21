@@ -6,9 +6,24 @@
 #include "Wire.h"
 #include "locomotion.h"
 #include "radar.h"
-#define DISTANCEEVITEMENT 200
-coord startPos={2925,1625,M_PI};
-
+#include "time.h"
+#define DISTANCEEVITEMENT 100
+#define JIMMY
+#if defined(BOWIE)
+bool hDecale=false;
+coord target[1] = {{1150,1400,0}};
+#elif defined(JIMMY)
+bool hDecale=true;
+coord target[1] = {{2000,1100,0}};
+#elif defined(STEVE)
+bool hDecale=false;
+coord target[1] = {{2850,1400,0}};
+#elif defined(JOHNNY)
+bool hDecale=true;
+coord target[1] = {{2850,1400,0}};
+#endif
+// coord target[1] = {{0,0,0}};
+int nb=1;
 // task qui fait clignoter une LED en continu.
 static void blinker( void *arg ) {
   while(true) {
@@ -60,9 +75,16 @@ static void test_moveB(void * args) {
 }
 
   static void move(void * args) {
-    coord target[1] = {{1150,1400,0}};
+    // coord target[1] = {{1150,1400,0}};
     while(true) {
       locomotion.move(target, 1);
+      coord current_coords=locomotion.getPositon();
+      // Serial.print(", pos x : ");
+      // Serial.println(current_coords.x);
+      // Serial.print(", pos y : ");
+      // Serial.print(current_coords.y);
+      // Serial.print(", theta : ");
+      // Serial.print(current_coords.theta);
     } 
   }
 
@@ -72,7 +94,7 @@ void odometry(void*){
     locomotion.odometry();
     coord current_coord=locomotion.getPositon();
     // Serial.print("pos x : ");
-    //Serial.println(current_coord.x);
+    // Serial.println(current_coord.x);
     // Serial.print(", pos y : ");
     // Serial.print(current_coord.y);
     // Serial.print(", theta : ");
@@ -85,7 +107,35 @@ void odometry(void*){
   }
 }
 
+void clock(void *){
+  time_t t=time(NULL);
+  bool endMatch=false;
+  while (not endMatch){
+    Serial.print(difftime(time(NULL),t));
+    if (difftime(time(NULL),t)>=15){
+      endMatch=true;
+    }
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+  while(true){
+    locomotion.stop();
+  }
 
+
+  // int i=0;
+  // time_t t=time(NULL);
+  // while (i<15) {
+  //   if (time(NULL)-t>1){
+  //     i+=1;
+  //     t=time(NULL);
+  //     Serial.print((int)i);
+  //   }
+  //   vTaskDelay(pdMS_TO_TICKS(50));
+  // }
+  // while(true){
+  //   locomotion.stop();
+  // }
+}
 
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
@@ -114,12 +164,23 @@ static void radar_alert_cb() {
   bool front_far = radar.getDistance(RADAR_FRONT,NULL) < 500;
   bool left_far = radar.getDistance(RADAR_LEFT,NULL) < 150;
   bool right_far = radar.getDistance(RADAR_RIGHT,NULL) < 150;
+  bool equipebleue=right_far && !left_far;
+  bool equipejaune=left_far && !right_far;
+  bool equipeEnQuestion;
+  int avoidSide;
+  if(digitalRead(FDC1)==LOW){
+    equipeEnQuestion=equipebleue;
+    avoidSide=1;
+  } else {
+    equipeEnQuestion=equipejaune;
+    avoidSide=-1;
+  }
   
   if(front_close){
-    if(left_far && !right_far){
-      locomotion.avoid(M_PI/2);
+    if(equipeEnQuestion){
+      locomotion.avoid(avoidSide*M_PI/2);
     } else {
-      locomotion.avoid(-M_PI/2);
+      locomotion.avoid(-avoidSide*M_PI/2);
     }
   } 
   else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
@@ -147,23 +208,20 @@ void setup() {
   // LEDs OUTPUT
   pinMode(LED1,OUTPUT);
   pinMode(LED2,OUTPUT);
+  pinMode(FDC1,INPUT_PULLUP);
+  pinMode(FDC2,INPUT_PULLUP);
   Serial.begin(115200);
-
   // countdown to start
   vTaskDelay(pdMS_TO_TICKS(100));
-  for(int i=3; i>0; i--) {
-    Serial.println(i);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-  }
-
-
+  
+  
   // init I2C
   Wire.setSDA(SDA);
   Wire.setSCL(SCL);
   Wire.setClock(100000);
   Wire.begin();
   Serial.println("begin");
-
+  
   if(radar.init()) {
     Serial.println("[ERROR] initializing radar.");
   } else {
@@ -172,28 +230,44 @@ void setup() {
   radar.setAlertDistances(DISTANCEEVITEMENT, DISTANCEEVITEMENT, DISTANCEEVITEMENT);
   radar.setAlertCallback(radar_alert_cb);
   radar.start();
-
+  
   locomotion.start();
+  coord startPos={0,0,0};
+  if(digitalRead(FDC1)==LOW){
+    startPos={75,1625,0}; // equipe bleue si FDC1 est LOW
+    Serial.println("equipe bleue");
+  } else {
+    startPos={2925,1625,M_PI}; // equipe jaune par défaut
+    Serial.println("equipe jaune");
+  }
   locomotion.initPos(startPos);
   vTaskDelay(pdMS_TO_TICKS(1000));
+  
+  if (digitalRead(FDC2)==LOW){
+    Serial.println("tirrette detected");
+  } else if(digitalRead(FDC2)==HIGH){
+    Serial.println("tirrette NOT detected");
+  }
+  while(digitalRead(FDC2)==LOW){
+    Serial.println("waiting for tirrette");
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+  // vTaskDelay(pdMS_TO_TICKS(85000));
 
+  if(hDecale){
+
+    for(int i=3; i>0; i--) {
+      Serial.println(i);
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+  }
+  
   // create blinker task
   xTaskCreate(
     blinker, "blinker", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
   );
-
-
-  // create move test task
-  // xTaskCreate(
-  //   test_move, "test_move", configMINIMAL_STACK_SIZE,
-  //   NULL, tskIDLE_PRIORITY + 1, NULL
-  // );
-  // xTaskCreate(
-  //   test_rotate, "test_rotate", configMINIMAL_STACK_SIZE,
-  //   NULL, tskIDLE_PRIORITY + 1, NULL
-  // );
-
+  
   xTaskCreate(
     move, "move", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
@@ -202,6 +276,11 @@ void setup() {
   xTaskCreate(
     odometry, "odometry", configMINIMAL_STACK_SIZE,
     NULL, 0, NULL
+  );
+
+  xTaskCreate(
+    clock, "clock", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY + 2, NULL
   );
 
 }

@@ -338,8 +338,8 @@ int Locomotion::move(coord* targets,int nb){
                     xSemaphoreTake(mutex, portMAX_DELAY);
                     stopped = false;
                     double distanceToEndOfWall=cos(ANGLERF2RL)*radar.getDistance(radarEnQuestion,NULL)+RADARTOROUES;
-                    Serial.println("distanceToEndOfWall");
-                    Serial.println(convertMmToStep(distanceToEndOfWall));
+                    // Serial.println("distanceToEndOfWall");
+                    // Serial.println(convertMmToStep(distanceToEndOfWall));
                     step_left->move(-convertMmToStep(distanceToEndOfWall));
                     step_right->move(convertMmToStep(distanceToEndOfWall));
                     xSemaphoreGive(mutex);
@@ -401,14 +401,9 @@ void Locomotion::odometry(){
 
 void Locomotion::stop(){
     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
-        // if(!(state==AVOIDINGTOURNE || state==AVOIDINGTOURNEFINI || state==AVOIDINGTOUDRWA || state==AVOIDINGTOUDRWAFINI)){
-
-        // }
         step_left->stop();
         step_right->stop();
         stopped = true;
-        // odometry();
-        // state = AVOIDING;
         xSemaphoreGive(mutex);
     }
 }
