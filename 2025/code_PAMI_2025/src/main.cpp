@@ -7,14 +7,18 @@
 #include "locomotion.h"
 #include "radar.h"
 #include "time.h"
+#include "Servo.h"
 #define DISTANCEEVITEMENT 100
 #define JIMMY
+// Servo SERVO;
 #if defined(BOWIE)
 bool hDecale=false;
-coord target[1] = {{1150,1400,0}};
+coord startPos={(75,1650,0)};
+coord target[1] = {{1500,1400,0}};
 #elif defined(JIMMY)
 bool hDecale=true;
-coord target[1] = {{2000,1100,0}};
+coord startPos={(75,1500,0)};
+coord target[1] = {{1850,1450,0}};
 #elif defined(STEVE)
 bool hDecale=false;
 coord target[1] = {{2850,1400,0}};
@@ -232,12 +236,12 @@ void setup() {
   radar.start();
   
   locomotion.start();
-  coord startPos={0,0,0};
+  // coord startPos={0,0,0};
   if(digitalRead(FDC1)==LOW){
-    startPos={75,1625,0}; // equipe bleue si FDC1 est LOW
+    startPos={3000-startPos.x,startPos.y,M_PI}; // equipe bleue si FDC1 est LOW
     Serial.println("equipe bleue");
   } else {
-    startPos={2925,1625,M_PI}; // equipe jaune par défaut
+    // startPos={2925,1625,M_PI}; // equipe jaune par défaut
     Serial.println("equipe jaune");
   }
   locomotion.initPos(startPos);
@@ -254,9 +258,19 @@ void setup() {
   }
   // vTaskDelay(pdMS_TO_TICKS(85000));
 
+  for(int i=2; i>0; i--) {
+    Serial.println(i);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+
+  xTaskCreate(
+    clock, "clock", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY + 2, NULL
+  );
+
   if(hDecale){
 
-    for(int i=3; i>0; i--) {
+    for(int i=2; i>0; i--) {
       Serial.println(i);
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -278,10 +292,6 @@ void setup() {
     NULL, 0, NULL
   );
 
-  xTaskCreate(
-    clock, "clock", configMINIMAL_STACK_SIZE,
-    NULL, tskIDLE_PRIORITY + 2, NULL
-  );
 
 }
 
