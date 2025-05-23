@@ -3,7 +3,7 @@
 #include "FreeRTOSConfig.h"
 #include "math.h"
 #include "radar.h"
-#define ACCELMAX 20000.0
+#define ACCELMAX 15000.0
 #define VMAX 2000
 long convertMmToStep(float mms){ return mms * MM2STEP;}
 float convertStepToMm(long step){ return step / MM2STEP;}
@@ -310,7 +310,7 @@ int Locomotion::move(coord* targets,int nb){
                 stopped = false;
                 double angle=atan2(sin(ANGLERF2RL),((radar.getDistance(RADAR_FRONT,NULL)+RF2CENTER)/(radar.getDistance(radarEnQuestion,NULL)+RL2CENTER))-cos(ANGLERF2RL));
                 if(side==GAUCHE){angle=-angle;}
-                step_left->move(convertAngleToStep(angle)); //si side==GAUCHE, angle<0 sinon side==DROITE, angle>0
+                step_left->move(convertAngleToStep(angle));
                 step_right->move(convertAngleToStep(angle));
                 xSemaphoreGive(mutex);
                 state=SUIVILIGNES2;
@@ -334,15 +334,17 @@ int Locomotion::move(coord* targets,int nb){
                 eRadar radarEnQuestion;
                 if(side==GAUCHE){radarEnQuestion=RADAR_LEFT;}
                 else if(side==DROITE){radarEnQuestion=RADAR_RIGHT;}
-                while(radar.getDistance(radarEnQuestion,NULL)<200){
+                int dist_radar=radar.getDistance(radarEnQuestion,NULL);
+                while(dist_radar<200){
                     xSemaphoreTake(mutex, portMAX_DELAY);
                     stopped = false;
-                    double distanceToEndOfWall=cos(ANGLERF2RL)*radar.getDistance(radarEnQuestion,NULL)+RADARTOROUES;
+                    double distanceToEndOfWall=cos(ANGLERF2RL)*dist_radar+RADARTOROUES;
                     // Serial.println("distanceToEndOfWall");
                     // Serial.println(convertMmToStep(distanceToEndOfWall));
                     step_left->move(-convertMmToStep(distanceToEndOfWall));
                     step_right->move(convertMmToStep(distanceToEndOfWall));
                     xSemaphoreGive(mutex);
+                    dist_radar=radar.getDistance(radarEnQuestion,NULL);
                 }
                 state=SUIVILIGNESFINI;
                 while(state==SUIVILIGNESFINI){

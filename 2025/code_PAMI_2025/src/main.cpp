@@ -10,15 +10,19 @@
 #include "Servo.h"
 #define DISTANCEEVITEMENT 100
 #define JIMMY
+#define nb 1
 // Servo SERVO;
+
 #if defined(BOWIE)
 bool hDecale=false;
-coord startPos={(75,1650,0)};
+coord startPos={75,1650,0};
 coord target[1] = {{1500,1400,0}};
 #elif defined(JIMMY)
 bool hDecale=true;
-coord startPos={(75,1500,0)};
+coord startPos={75,1500,0};
 coord target[1] = {{1850,1450,0}};
+//startPos={(500,500,0)};
+// coord target[1] = {{1000,0,0}};
 #elif defined(STEVE)
 bool hDecale=false;
 coord target[1] = {{2850,1400,0}};
@@ -27,7 +31,7 @@ bool hDecale=true;
 coord target[1] = {{2850,1400,0}};
 #endif
 // coord target[1] = {{0,0,0}};
-int nb=1;
+// int nb=1;
 // task qui fait clignoter une LED en continu.
 static void blinker( void *arg ) {
   while(true) {
@@ -214,9 +218,6 @@ void setup() {
   pinMode(LED2,OUTPUT);
   pinMode(FDC1,INPUT_PULLUP);
   pinMode(FDC2,INPUT_PULLUP);
-  Serial.begin(115200);
-  // countdown to start
-  vTaskDelay(pdMS_TO_TICKS(100));
   
   
   // init I2C
@@ -224,6 +225,9 @@ void setup() {
   Wire.setSCL(SCL);
   Wire.setClock(100000);
   Wire.begin();
+  Serial.begin(115200);
+  // countdown to start
+  vTaskDelay(pdMS_TO_TICKS(1000));
   Serial.println("begin");
   
   if(radar.init()) {
@@ -239,12 +243,20 @@ void setup() {
   // coord startPos={0,0,0};
   if(digitalRead(FDC1)==LOW){
     startPos={3000-startPos.x,startPos.y,M_PI}; // equipe bleue si FDC1 est LOW
+    target[0] = {3000-target[0].x,target[0].y,0};
     Serial.println("equipe bleue");
   } else {
     // startPos={2925,1625,M_PI}; // equipe jaune par défaut
     Serial.println("equipe jaune");
   }
+  // Serial.println(startPos.x);
+  // Serial.println(startPos.y);
+  // Serial.println(startPos.theta);
   locomotion.initPos(startPos);
+  // coord Robert=locomotion.getPositon();
+  // Serial.println(Robert.x);
+  // Serial.println(Robert.y);
+  // Serial.println(Robert.theta);
   vTaskDelay(pdMS_TO_TICKS(1000));
   
   if (digitalRead(FDC2)==LOW){

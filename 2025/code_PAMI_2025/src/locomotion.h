@@ -4,7 +4,7 @@
 #include <FreeRTOS.h>
 #include "semphr.h"
 
-#define MM2STEP (20/3)
+#define MM2STEP (6.68)
 #define RAYON_PAMI 49.94 //48.33 //51.55
 // (47.25*(12/11))
 
