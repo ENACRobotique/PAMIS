@@ -5,8 +5,7 @@
 #include "semphr.h"
 
 #define MM2STEP (6.68)
-#define RAYON_PAMI 49.94 //48.33 //51.55
-// (47.25*(12/11))
+#define RAYON_PAMI 46.5 //49.94
 
 /****************
     x
@@ -65,12 +64,12 @@ public:
     void start();
     void doStep();
     void stop();
-    
     int translateBlocking(long steps);
     int rotateBlocking(float angle);
     int moveBlocking(coord target);
     int move(coord * targets,int nb);
-    int superstar(coord coords);
+    int superstar(coord* targets, int nb);
+
     void avoid(float angle);
     void suiviLignes(sidE side);
     void initPos(coord init){current_coord = init;};

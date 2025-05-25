@@ -8,27 +8,33 @@
 #include "radar.h"
 #include "time.h"
 #include "Servo.h"
-#define DISTANCEEVITEMENT 100
-#define JIMMY
-#define nb 1
+#define DISTANCEEVITEMENT 200
+#define JOHNNY
+
+
 // Servo SERVO;
 
 #if defined(BOWIE)
+#define NB_TARGET 1
 bool hDecale=false;
 coord startPos={75,1650,0};
-coord target[1] = {{1500,1400,0}};
+coord target[NB_TARGET] = {{1500,1400,0}};
 #elif defined(JIMMY)
+#define NB_TARGET 1
 bool hDecale=true;
 coord startPos={75,1500,0};
-coord target[1] = {{1850,1450,0}};
+coord target[NB_TARGET] = {{1850,1450,0}};
 //startPos={(500,500,0)};
 // coord target[1] = {{1000,0,0}};
 #elif defined(STEVE)
+#define NB_TARGET 1
 bool hDecale=false;
-coord target[1] = {{2850,1400,0}};
+coord target[NB_TARGET] = {{2850,1400,0}};
 #elif defined(JOHNNY)
-bool hDecale=true;
-coord target[1] = {{2850,1400,0}};
+#define NB_TARGET 4
+bool hDecale=false;
+coord startPos={75,1960,-M_PI/2};
+coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,1680,0}};
 #endif
 // coord target[1] = {{0,0,0}};
 // int nb=1;
@@ -85,8 +91,12 @@ static void test_moveB(void * args) {
   static void move(void * args) {
     // coord target[1] = {{1150,1400,0}};
     while(true) {
-      locomotion.move(target, 1);
-      coord current_coords=locomotion.getPositon();
+      #if defined(JOHNNY)
+      locomotion.superstar(target, NB_TARGET);
+      #else
+      locomotion.move(target, NB_TARGET);
+      #endif
+      //coord current_coords=locomotion.getPositon();
       // Serial.print(", pos x : ");
       // Serial.println(current_coords.x);
       // Serial.print(", pos y : ");
@@ -147,6 +157,11 @@ void clock(void *){
 
 static void radar_alert_cb() {
   digitalWrite(LED2, !digitalRead(LED2));
+  #if defined(JOHNNY)
+  locomotion.stop();
+  locomotion.avoid(0);
+  #else
+  
 
   bool doit = 
     locomotion.state==INIT ||
@@ -210,6 +225,7 @@ static void radar_alert_cb() {
   else{
     locomotion.avoid(M_PI/2);
   }
+  #endif
 }
 
 void setup() {
@@ -242,8 +258,10 @@ void setup() {
   locomotion.start();
   // coord startPos={0,0,0};
   if(digitalRead(FDC1)==LOW){
-    startPos={3000-startPos.x,startPos.y,M_PI}; // equipe bleue si FDC1 est LOW
-    target[0] = {3000-target[0].x,target[0].y,0};
+    startPos={3000-startPos.x,startPos.y,float(M_PI)-startPos.theta}; // equipe bleue si FDC1 est LOW
+    for (int i =0; i<NB_TARGET; i++){
+      target[i] = {3000-target[i].x,target[i].y,target[i].theta};
+    }
     Serial.println("equipe bleue");
   } else {
     // startPos={2925,1625,M_PI}; // equipe jaune par défaut

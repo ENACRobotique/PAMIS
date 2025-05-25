@@ -3,8 +3,18 @@
 #include "FreeRTOSConfig.h"
 #include "math.h"
 #include "radar.h"
+
+#define JOHNNY
+#if defined(JOHNNY)
+#define ACCELMAX 2000.0
+#define VMAX 1500
+#else
 #define ACCELMAX 15000.0
 #define VMAX 2000
+#endif
+
+
+
 long convertMmToStep(float mms){ return mms * MM2STEP;}
 float convertStepToMm(long step){ return step / MM2STEP;}
 long convertAngleToStep(float angle){ return RAYON_PAMI * angle * MM2STEP;}
@@ -368,7 +378,83 @@ int Locomotion::move(coord* targets,int nb){
         return 0;    
     }
 
-int Locomotion::superstar(coord coords){return 0;}
+
+int Locomotion::superstar(coord* targets, int nb){
+    if (target_idx>=nb){return 0;}
+    float dx=targets[target_idx].x-current_coord.x;
+    float dy=targets[target_idx].y-current_coord.y;
+    float dtheta=angleLegal(atan2(dy,dx)-current_coord.theta);
+
+    while(state==INIT) {
+        xSemaphoreTake(mutex, portMAX_DELAY);
+        stopped = false;
+        if (targets[target_idx].theta != 0){
+            dtheta = angleLegal(dtheta + M_PI);
+            }
+        step_left->move(convertAngleToStep(dtheta));
+        step_right->move(convertAngleToStep(dtheta));
+        Serial.println("gonna tourne");
+        xSemaphoreGive(mutex);
+        state=TOURNE;
+    }
+    while(state == TOURNE) {
+        bool ended = false;
+        xSemaphoreTake(mutex, portMAX_DELAY);
+        ended = step_left->distanceToGo()==0 && step_right->distanceToGo() == 0;
+        xSemaphoreGive(mutex);
+        //Serial.println("tourne");
+        if(ended) {
+            state =TOURNE_FINI;
+            Serial.println("tournefini");
+
+        }
+        if(stopped) {
+            return 1;
+        }
+        taskYIELD();
+    }
+    while(state==TOURNE_FINI){
+        xSemaphoreTake(mutex, portMAX_DELAY);
+        stopped = false;
+        long dist = convertMmToStep(sqrt(dy*dy+dx*dx));
+        if (targets[target_idx].theta != 0){
+            dist = -dist;
+            }
+        step_left->move(-dist);
+        step_right->move(dist);
+        Serial.println("gonna toudrwa");
+        xSemaphoreGive(mutex);
+        state=TOUDRWA;
+    }   
+    while(state==TOUDRWA) {
+        bool ended = false;
+        xSemaphoreTake(mutex, portMAX_DELAY);
+        ended = step_left->distanceToGo() == 0 && step_right->distanceToGo() == 0;
+        xSemaphoreGive(mutex);
+        if(ended) {
+            state=TOUDRWA_FINI;
+            Serial.println("toudrwafini");
+
+        }
+        if(stopped) {
+            return -1;
+        }
+        taskYIELD();
+    }
+    if (state==TOUDRWA_FINI){
+        target_idx+=1;
+        // Serial.println(target_idx);
+        // Serial.println(state);
+        // Serial.println("test");
+        state=INIT;
+    }
+    while(state==AVOIDINGTOURNE){
+        state=INIT;
+        vTaskDelay(pdMS_TO_TICKS(200));
+        taskYIELD();
+    }  
+    return 0;    
+}
 
 void Locomotion::avoid(float angle){
     state=AVOIDINGTOURNE;
