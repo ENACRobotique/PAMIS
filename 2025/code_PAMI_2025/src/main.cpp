@@ -8,31 +8,36 @@
 #include "radar.h"
 #include "time.h"
 #include "Servo.h"
-#define DISTANCEEVITEMENT 200
-#define JOHNNY
+#define DISTANCEEVITEMENT 100
+#define DISTANCE_FIN 50
+#define BLUE 1
+#define YELLOW 2
+
+#define BOWIE
 
 
 // Servo SERVO;
 
 #if defined(BOWIE)
-#define NB_TARGET 1
+#define NB_TARGET 3
 bool hDecale=false;
-coord startPos={75,1650,0};
-coord target[NB_TARGET] = {{1500,1400,0}};
+coord startPos={75,1800,0};
+coord target[NB_TARGET] = {{175,1800,0},{300,1400,0},{1350,1400,0}};
 #elif defined(JIMMY)
-#define NB_TARGET 1
-bool hDecale=true;
+#define NB_TARGET 3
+bool hDecale=false;
 coord startPos={75,1500,0};
-coord target[NB_TARGET] = {{1850,1450,0}};
+coord target[NB_TARGET] = {{175,1500,0},{300,1450,0},{1850,1450,0}};
 //startPos={(500,500,0)};
 // coord target[1] = {{1000,0,0}};
 #elif defined(STEVE)
-#define NB_TARGET 1
-bool hDecale=false;
-coord target[NB_TARGET] = {{2850,1400,0}};
+#define NB_TARGET 3
+bool hDecale=true;
+coord startPos={75,1650,0};
+coord target[NB_TARGET] = {{175,1650,0},{300,1450,0},{1150,1450,0}};
 #elif defined(JOHNNY)
 #define NB_TARGET 4
-bool hDecale=false;
+bool hDecale=true;
 coord startPos={75,1960,-M_PI/2};
 coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,1680,0}};
 #endif
@@ -42,7 +47,7 @@ coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,
 static void blinker( void *arg ) {
   while(true) {
     digitalWrite(LED1, !digitalRead(LED1));
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(4000));
   }
 }
 
@@ -185,25 +190,20 @@ static void radar_alert_cb() {
   bool left_close = radar.getDistance(RADAR_LEFT,NULL) < DISTANCEEVITEMENT;
   bool right_close = radar.getDistance(RADAR_RIGHT,NULL) < DISTANCEEVITEMENT;
   bool front_far = radar.getDistance(RADAR_FRONT,NULL) < 500;
-  bool left_far = radar.getDistance(RADAR_LEFT,NULL) < 150;
-  bool right_far = radar.getDistance(RADAR_RIGHT,NULL) < 150;
-  bool equipebleue=right_far && !left_far;
-  bool equipejaune=left_far && !right_far;
-  bool equipeEnQuestion;
-  int avoidSide;
+  
+
+  int equipe;
   if(digitalRead(FDC1)==LOW){
-    equipeEnQuestion=equipebleue;
-    avoidSide=1;
+    equipe=BLUE;
   } else {
-    equipeEnQuestion=equipejaune;
-    avoidSide=-1;
+    equipe=YELLOW;
   }
   
   if(front_close){
-    if(equipeEnQuestion){
-      locomotion.avoid(avoidSide*M_PI/2);
+    if(equipe == BLUE){
+      locomotion.avoid(M_PI/2);
     } else {
-      locomotion.avoid(-avoidSide*M_PI/2);
+      locomotion.avoid(-M_PI/2);
     }
   } 
   else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
@@ -223,7 +223,7 @@ static void radar_alert_cb() {
     }
   }
   else{
-    locomotion.avoid(M_PI/2);
+    // locomotion.avoid(M_PI/2);
   }
   #endif
 }
@@ -258,7 +258,7 @@ void setup() {
   locomotion.start();
   // coord startPos={0,0,0};
   if(digitalRead(FDC1)==LOW){
-    startPos={3000-startPos.x,startPos.y,float(M_PI)-startPos.theta}; // equipe bleue si FDC1 est LOW
+    startPos={3000-startPos.x,startPos.y,(float)M_PI-startPos.theta}; // equipe bleue si FDC1 est LOW
     for (int i =0; i<NB_TARGET; i++){
       target[i] = {3000-target[i].x,target[i].y,target[i].theta};
     }
@@ -297,6 +297,10 @@ void setup() {
     clock, "clock", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 2, NULL
   );
+  xTaskCreate(
+    blinker, "blinker", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY + 1, NULL
+  );
 
   if(hDecale){
 
@@ -307,10 +311,6 @@ void setup() {
   }
   
   // create blinker task
-  xTaskCreate(
-    blinker, "blinker", configMINIMAL_STACK_SIZE,
-    NULL, tskIDLE_PRIORITY + 1, NULL
-  );
   
   xTaskCreate(
     move, "move", configMINIMAL_STACK_SIZE,
