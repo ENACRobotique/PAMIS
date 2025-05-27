@@ -4,7 +4,6 @@
 #include "math.h"
 #include "radar.h"
 
-#define JOHNNY
 #if defined(JOHNNY)
 #define ACCELMAX 2000.0
 #define VMAX 1500
@@ -199,6 +198,7 @@ float angleLegal(float angle){
 }
 
 int Locomotion::move(coord* targets,int nb){
+        if(finDuMatch){return 0;}
         if (target_idx>=nb){return 0;}
         float dx=targets[target_idx].x-current_coord.x;
         float dy=targets[target_idx].y-current_coord.y;
@@ -380,6 +380,7 @@ int Locomotion::move(coord* targets,int nb){
 
 
 int Locomotion::superstar(coord* targets, int nb){
+    if(finDuMatch){return 0;}
     if (target_idx>=nb){return 0;}
     float dx=targets[target_idx].x-current_coord.x;
     float dy=targets[target_idx].y-current_coord.y;
@@ -492,6 +493,7 @@ void Locomotion::stop(){
         step_left->stop();
         step_right->stop();
         stopped = true;
+        state = STOPPED;
         xSemaphoreGive(mutex);
     }
 }
@@ -502,4 +504,10 @@ static void locomotion_run( void *arg ) {
         loco->doStep();
         taskYIELD();
     }
+}
+
+
+void Locomotion:: resume()
+{
+    state=INIT;
 }

@@ -12,11 +12,8 @@
 #define DISTANCE_FIN 50
 #define BLUE 1
 #define YELLOW 2
+Servo servobras;
 
-#define BOWIE
-
-
-// Servo SERVO;
 
 #if defined(BOWIE)
 #define NB_TARGET 3
@@ -47,7 +44,7 @@ coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,
 static void blinker( void *arg ) {
   while(true) {
     digitalWrite(LED1, !digitalRead(LED1));
-    vTaskDelay(pdMS_TO_TICKS(4000));
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
 
@@ -140,8 +137,13 @@ void clock(void *){
     }
     vTaskDelay(pdMS_TO_TICKS(50));
   }
+  locomotion.stop();
+  locomotion.finDuMatch=true;
   while(true){
-    locomotion.stop();
+    servobras.writeMicroseconds(2000);
+    vTaskDelay(pdMS_TO_TICKS(750));
+    servobras.writeMicroseconds(1000);
+    vTaskDelay(pdMS_TO_TICKS(750));
   }
 
 
@@ -151,12 +153,7 @@ void clock(void *){
   //   if (time(NULL)-t>1){
   //     i+=1;
   //     t=time(NULL);
-  //     Serial.print((int)i);
-  //   }
-  //   vTaskDelay(pdMS_TO_TICKS(50));
-  // }
-  // while(true){
-  //   locomotion.stop();
+  //     Serial.print((int)i);void resume();
   // }
 }
 
@@ -178,55 +175,70 @@ static void radar_alert_cb() {
     locomotion.state==AVOIDINGTOUDRWA ||
     locomotion.state==AVOIDINGTOUDRWAFINI ||
     locomotion.state==SUIVILIGNES25 ||
+    locomotion.state==STOPPED||
     locomotion.state==SUIVILIGNESFINI;
 
   if(!doit){
     return;
   }
 
-  locomotion.stop();
-
   bool front_close = radar.getDistance(RADAR_FRONT,NULL) < DISTANCEEVITEMENT;
   bool left_close = radar.getDistance(RADAR_LEFT,NULL) < DISTANCEEVITEMENT;
   bool right_close = radar.getDistance(RADAR_RIGHT,NULL) < DISTANCEEVITEMENT;
   bool front_far = radar.getDistance(RADAR_FRONT,NULL) < 500;
   
-
+  // coord pos = locomotion.getPositon();
+  // coord tgt_pos = target[NB_TARGET-1];
+  // float dist = sqrt(pow((pos.x-tgt_pos.x), 2) + pow((pos.y-tgt_pos.y), 2)) + RAYON_PAMI;
+  
   int equipe;
   if(digitalRead(FDC1)==LOW){
     equipe=BLUE;
   } else {
     equipe=YELLOW;
   }
-  
-  if(front_close){
-    if(equipe == BLUE){
-      locomotion.avoid(M_PI/2);
-    } else {
-      locomotion.avoid(-M_PI/2);
-    }
-  } 
-  else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
-    // locomotion.stop();
-    if(front_far){
-      locomotion.suiviLignes(GAUCHE);
-    } else {
-      locomotion.avoid(-M_PI/6);
-    }
-  } 
-  else if(right_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
-    // locomotion.stop();
-    if(front_far){
-      locomotion.suiviLignes(DROITE);
-    } else {
-      locomotion.avoid(M_PI/6);
-    }
+
+  if ((front_close or right_close or left_close))// and (dist <=DISTANCE_FIN)){
+  {
+    locomotion.stop();
   }
-  else{
-    // locomotion.avoid(M_PI/2);
+  else 
+  {
+    locomotion.resume();
   }
+
+  // else 
+  // if(front_close){
+  //   if(equipe == BLUE){
+  //     locomotion.avoid(M_PI/2);
+  //   } else {
+  //     locomotion.avoid(-M_PI/2);
+  //   }
+  // } 
+  // else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
+  //   // locomotion.stop();
+  //   if(front_far){
+  //     locomotion.suiviLignes(GAUCHE);
+  //   } else {
+  //     locomotion.avoid(-M_PI/6);
+  //   }
+  // } 
+  // else if(right_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
+  //   // locomotion.stop();
+  //   if(front_far){
+  //     locomotion.suiviLignes(DROITE);
+  //   } else {
+  //     locomotion.avoid(M_PI/6);
+  //   }
+  // }
+  // else{
+  //   // locomotion.avoid(M_PI/2);
+  // }
   #endif
+
+  
 }
+
 
 void setup() {
   // LEDs OUTPUT
@@ -267,6 +279,7 @@ void setup() {
     // startPos={2925,1625,M_PI}; // equipe jaune par défaut
     Serial.println("equipe jaune");
   }
+  servobras.attach(SERVO);
   // Serial.println(startPos.x);
   // Serial.println(startPos.y);
   // Serial.println(startPos.theta);
@@ -287,12 +300,12 @@ void setup() {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
   // vTaskDelay(pdMS_TO_TICKS(85000));
-
+  
   for(int i=2; i>0; i--) {
     Serial.println(i);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
-
+  
   xTaskCreate(
     clock, "clock", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 2, NULL

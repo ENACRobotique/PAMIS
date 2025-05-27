@@ -1,6 +1,11 @@
 
 #pragma once
 
+#define BOWIE
+// #define STEVIE
+// #define JHONNY
+// #define JIMMMY
+
 #undef LED1
 #define LED1 2
 

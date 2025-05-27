@@ -41,6 +41,7 @@ enum etat{
     SUIVILIGNES2,
     SUIVILIGNES25,
     SUIVILIGNESFINI,
+    STOPPED,
 };
 
 enum sidE{
@@ -64,12 +65,12 @@ public:
     void start();
     void doStep();
     void stop();
+    void resume();
     int translateBlocking(long steps);
     int rotateBlocking(float angle);
     int moveBlocking(coord target);
     int move(coord * targets,int nb);
     int superstar(coord* targets, int nb);
-
     void avoid(float angle);
     void suiviLignes(sidE side);
     void initPos(coord init){current_coord = init;};
@@ -79,6 +80,7 @@ public:
     sidE side=NONE;
     float avoid_angle=0;
     int target_idx=0;
+    bool finDuMatch=false;
     
     
     private:
