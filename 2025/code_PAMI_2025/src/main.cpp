@@ -164,6 +164,7 @@ static void radar_alert_cb() {
   locomotion.avoid(0);
   #else
   
+  if(100<locomotion.getPositon().x<100 and 100<locomotion.getPositon().y<100){return;} // si on est dans la zone d'arrivé et qu'on veut esquiver, on le fait pas
 
   bool doit = 
     locomotion.state==INIT ||
