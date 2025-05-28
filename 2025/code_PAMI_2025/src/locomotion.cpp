@@ -6,7 +6,7 @@
 
 #if defined(JOHNNY)
 #define ACCELMAX 5000.0
-#define VMAX 2500
+#define VMAX 3000
 #else
 #define ACCELMAX 15000.0
 #define VMAX 2500

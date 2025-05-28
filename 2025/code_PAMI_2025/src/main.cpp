@@ -9,6 +9,8 @@
 #include "time.h"
 #include "Servo.h"
 #define DISTANCEEVITEMENT 100
+#define DISTANCEEVITEMENT_JHONNY 100
+#define DISTANCEEVITEMENT 100
 #define DISTANCE_FIN 150
 #define BLUE 1
 #define YELLOW 2
@@ -36,7 +38,7 @@ coord startPos={75,1725,0};
 coord target[NB_TARGET] = {{450,1725,0},{650,1450,0},{1350,1450,0}};
 #elif defined(JOHNNY)
 #define NB_TARGET 4
-int hDecale=2;
+int hDecale=3;
 coord startPos={75,1960,-M_PI/2};
 coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,1680,0}};
 #endif
@@ -165,6 +167,7 @@ static void radar_alert_cb() {
   #else
   
   // Serial.print("HE IS ALIVE");
+  #if not defined(JHONNY)
   coord tgt_pos = target[NB_TARGET-1];
   float x = locomotion.getPositon().x;
   float y = locomotion.getPositon().y;
@@ -172,7 +175,7 @@ static void radar_alert_cb() {
   if(dist <= DISTANCE_FIN){
     locomotion.stop();
     return;} // si on est proche du point d'arrivé et qu'on veut esquiver, on s'arrête
-
+  #endif
   bool doit = 
     locomotion.state==INIT ||
     locomotion.state==TOUDRWA ||
@@ -268,7 +271,11 @@ void setup() {
   } else {
     Serial.println("[OK] Radar initialized.");
   }
+  #if defined(JOHNNY)
+  radar.setAlertDistances(DISTANCEEVITEMENT_JHONNY, DISTANCEEVITEMENT, DISTANCEEVITEMENT_JHONNY);
+  #else
   radar.setAlertDistances(DISTANCEEVITEMENT, DISTANCEEVITEMENT, DISTANCEEVITEMENT);
+  #endif
   radar.setAlertCallback(radar_alert_cb);
   
   locomotion.start();
@@ -284,7 +291,11 @@ void setup() {
     Serial.println("equipe jaune");
   }
   servobras.attach(SERVO);
+  #if defined(JOHNNY)
+  servobras.writeMicroseconds(1800);
+  #else
   servobras.writeMicroseconds(1000);
+  #endif
   vTaskDelay(pdMS_TO_TICKS(500));
   //servobras.writeMicroseconds(1000);
   // Serial.println(startPos.x);
@@ -336,8 +347,6 @@ void setup() {
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
   }
-  
-  // create blinker task
   
   xTaskCreate(
     move, "move", configMINIMAL_STACK_SIZE,
