@@ -9,32 +9,34 @@
 #include "time.h"
 #include "Servo.h"
 #define DISTANCEEVITEMENT 100
-#define DISTANCE_FIN 50
+#define DISTANCE_FIN 150
 #define BLUE 1
 #define YELLOW 2
+#define TIRETTE_IN LOW
+#define TIRETTE_OUT HIGH
 Servo servobras;
 
 
 #if defined(BOWIE)
 #define NB_TARGET 3
-bool hDecale=false;
-coord startPos={75,1800,0};
-coord target[NB_TARGET] = {{175,1800,0},{300,1400,0},{1350,1400,0}};
+int hDecale = 0;
+coord startPos={75,1840,0};
+coord target[NB_TARGET] = {{400,1840,0},{650,1400,0},{1850,1400,0}};
 #elif defined(JIMMY)
 #define NB_TARGET 3
-bool hDecale=false;
-coord startPos={75,1500,0};
-coord target[NB_TARGET] = {{175,1500,0},{300,1450,0},{1850,1450,0}};
+coord target[NB_TARGET] = {{500,1615,0},{800,1450,0},{1150,1450,0}};
+int hDecale = 4;
+coord startPos={75,1615,0};
 //startPos={(500,500,0)};
 // coord target[1] = {{1000,0,0}};
 #elif defined(STEVE)
 #define NB_TARGET 3
-bool hDecale=true;
-coord startPos={75,1650,0};
-coord target[NB_TARGET] = {{175,1650,0},{300,1450,0},{1150,1450,0}};
+int hDecale=2;
+coord startPos={75,1725,0};
+coord target[NB_TARGET] = {{450,1725,0},{650,1450,0},{1350,1450,0}};
 #elif defined(JOHNNY)
 #define NB_TARGET 4
-bool hDecale=true;
+int hDecale=2;
 coord startPos={75,1960,-M_PI/2};
 coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,1680,0}};
 #endif
@@ -129,16 +131,14 @@ void odometry(void*){
 
 void clock(void *){
   time_t t=time(NULL);
-  bool endMatch=false;
-  while (not endMatch){
-    Serial.print(difftime(time(NULL),t));
-    if (difftime(time(NULL),t)>=15){
-      endMatch=true;
+  while (!locomotion.finDuMatch){
+    // Serial.print(difftime(time(NULL),t));
+    if (time(NULL)-t >=15){
+      locomotion.finDuMatch=true;
     }
     vTaskDelay(pdMS_TO_TICKS(50));
   }
-  locomotion.stop();
-  locomotion.finDuMatch=true;
+  
   while(true){
     servobras.writeMicroseconds(2000);
     vTaskDelay(pdMS_TO_TICKS(750));
@@ -164,12 +164,17 @@ static void radar_alert_cb() {
   locomotion.avoid(0);
   #else
   
-  if(100<locomotion.getPositon().x<100 and 100<locomotion.getPositon().y<100){return;} // si on est dans la zone d'arrivé et qu'on veut esquiver, on le fait pas
+  // Serial.print("HE IS ALIVE");
+  coord tgt_pos = target[NB_TARGET-1];
+  float x = locomotion.getPositon().x;
+  float y = locomotion.getPositon().y;
+  float dist = sqrt(pow((x-tgt_pos.x), 2) + pow((y-tgt_pos.y), 2));
+  if(dist <= DISTANCE_FIN){
+    locomotion.stop();
+    return;} // si on est proche du point d'arrivé et qu'on veut esquiver, on s'arrête
 
   bool doit = 
     locomotion.state==INIT ||
-    locomotion.state==TOURNE ||
-    locomotion.state==TOURNE_FINI ||
     locomotion.state==TOUDRWA ||
     locomotion.state==TOUDRWA_FINI ||
     locomotion.state==FINITOPIPO ||
@@ -188,10 +193,6 @@ static void radar_alert_cb() {
   bool right_close = radar.getDistance(RADAR_RIGHT,NULL) < DISTANCEEVITEMENT;
   bool front_far = radar.getDistance(RADAR_FRONT,NULL) < 500;
   
-  // coord pos = locomotion.getPositon();
-  // coord tgt_pos = target[NB_TARGET-1];
-  // float dist = sqrt(pow((pos.x-tgt_pos.x), 2) + pow((pos.y-tgt_pos.y), 2)) + RAYON_PAMI;
-  
   int equipe;
   if(digitalRead(FDC1)==LOW){
     equipe=BLUE;
@@ -199,42 +200,42 @@ static void radar_alert_cb() {
     equipe=YELLOW;
   }
 
-  if ((front_close or right_close or left_close))// and (dist <=DISTANCE_FIN)){
-  {
-    locomotion.stop();
-  }
-  else 
-  {
-    locomotion.resume();
-  }
+  // if ((front_close or right_close or left_close))// and (dist <=DISTANCE_FIN)){
+  // {
+  //   locomotion.stop();
+  // }
+  // else 
+  // {
+  //   locomotion.resume();
+  // }
 
   // else 
-  // if(front_close){
-  //   if(equipe == BLUE){
-  //     locomotion.avoid(M_PI/2);
-  //   } else {
-  //     locomotion.avoid(-M_PI/2);
-  //   }
-  // } 
-  // else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
-  //   // locomotion.stop();
-  //   if(front_far){
-  //     locomotion.suiviLignes(GAUCHE);
-  //   } else {
-  //     locomotion.avoid(-M_PI/6);
-  //   }
-  // } 
-  // else if(right_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
-  //   // locomotion.stop();
-  //   if(front_far){
-  //     locomotion.suiviLignes(DROITE);
-  //   } else {
-  //     locomotion.avoid(M_PI/6);
-  //   }
-  // }
-  // else{
-  //   // locomotion.avoid(M_PI/2);
-  // }
+  if(front_close){
+    if(equipe == BLUE){
+      locomotion.avoid(M_PI/2);
+    } else {
+      locomotion.avoid(-M_PI/2);
+    }
+  } 
+  else if(left_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
+    // locomotion.stop();
+    if(front_far){
+      locomotion.suiviLignes(GAUCHE);
+    } else {
+      locomotion.avoid(-M_PI/6);
+    }
+  } 
+  else if(right_close and !(locomotion.state==SUIVILIGNES25 || locomotion.state==SUIVILIGNESFINI)){
+    // locomotion.stop();
+    if(front_far){
+      locomotion.suiviLignes(DROITE);
+    } else {
+      locomotion.avoid(M_PI/6);
+    }
+  }
+  else{
+    // locomotion.avoid(M_PI/2);
+  }
   #endif
 
   
@@ -246,9 +247,12 @@ void setup() {
   pinMode(LED1,OUTPUT);
   pinMode(LED2,OUTPUT);
   pinMode(FDC1,INPUT_PULLUP);
-  pinMode(FDC2,INPUT_PULLUP);
+  pinMode(TIRETTE,INPUT_PULLUP);
   
-  
+  xTaskCreate(
+    blinker, "blinker", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY + 1, NULL
+  );
   // init I2C
   Wire.setSDA(SDA);
   Wire.setSCL(SCL);
@@ -266,7 +270,6 @@ void setup() {
   }
   radar.setAlertDistances(DISTANCEEVITEMENT, DISTANCEEVITEMENT, DISTANCEEVITEMENT);
   radar.setAlertCallback(radar_alert_cb);
-  radar.start();
   
   locomotion.start();
   // coord startPos={0,0,0};
@@ -281,6 +284,9 @@ void setup() {
     Serial.println("equipe jaune");
   }
   servobras.attach(SERVO);
+  servobras.writeMicroseconds(1000);
+  vTaskDelay(pdMS_TO_TICKS(500));
+  //servobras.writeMicroseconds(1000);
   // Serial.println(startPos.x);
   // Serial.println(startPos.y);
   // Serial.println(startPos.theta);
@@ -291,13 +297,23 @@ void setup() {
   // Serial.println(Robert.theta);
   vTaskDelay(pdMS_TO_TICKS(1000));
   
-  if (digitalRead(FDC2)==LOW){
-    Serial.println("tirrette detected");
-  } else if(digitalRead(FDC2)==HIGH){
-    Serial.println("tirrette NOT detected");
-  }
-  while(digitalRead(FDC2)==LOW){
+  // if (digitalRead(FDC2)==TIRETTE_IN){
+  //   Serial.println("tirrette detected");
+  // } else if(digitalRead(FDC2)==TIRETTE_OUT){
+  //   Serial.println("tirrette NOT detected");
+  // }
+
+  while(digitalRead(TIRETTE)==TIRETTE_OUT){
+    servobras.writeMicroseconds(2000);
+    vTaskDelay(pdMS_TO_TICKS(750));
+    servobras.writeMicroseconds(1000);
+    vTaskDelay(pdMS_TO_TICKS(750));
     Serial.println("waiting for tirrette");
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+
+  while(digitalRead(TIRETTE)==TIRETTE_IN){
+    Serial.println("waiting for tirrette in");
     vTaskDelay(pdMS_TO_TICKS(100));
   }
   // vTaskDelay(pdMS_TO_TICKS(85000));
@@ -311,14 +327,11 @@ void setup() {
     clock, "clock", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 2, NULL
   );
-  xTaskCreate(
-    blinker, "blinker", configMINIMAL_STACK_SIZE,
-    NULL, tskIDLE_PRIORITY + 1, NULL
-  );
+
 
   if(hDecale){
 
-    for(int i=2; i>0; i--) {
+    for(int i=hDecale; i>0; i--) {
       Serial.println(i);
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -330,6 +343,7 @@ void setup() {
     move, "move", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
   );
+  radar.start();
 
   xTaskCreate(
     odometry, "odometry", configMINIMAL_STACK_SIZE,
@@ -342,7 +356,6 @@ void setup() {
 
 
 void loop() {
-  static float w = 0;
   vTaskDelay(pdMS_TO_TICKS(2000));
   //Serial.println(d);
 }

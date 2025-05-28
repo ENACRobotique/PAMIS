@@ -88,7 +88,7 @@ public:
     coord current_coord = {0,0,0};
     float old_pos_1 = 0;
     float old_pos_2 = 0;
-
+    TaskHandle_t xHandle;
     AccelStepper* step_left;
     AccelStepper* step_right;
     pin_size_t en_left;

@@ -36,3 +36,4 @@
 
 #define BAT_MESURE 28
 
+#define TIRETTE FDC2

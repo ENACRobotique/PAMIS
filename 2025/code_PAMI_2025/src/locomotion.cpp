@@ -5,11 +5,11 @@
 #include "radar.h"
 
 #if defined(JOHNNY)
-#define ACCELMAX 2000.0
-#define VMAX 1500
+#define ACCELMAX 5000.0
+#define VMAX 2500
 #else
 #define ACCELMAX 15000.0
-#define VMAX 2000
+#define VMAX 2500
 #endif
 
 
@@ -48,7 +48,6 @@ void Locomotion::start(){
     digitalWrite(en_left, LOW);
     digitalWrite(en_right, LOW);
 
-    TaskHandle_t xHandle;
     xTaskCreate(
         locomotion_run, "stepper_run", configMINIMAL_STACK_SIZE,
         &locomotion, tskIDLE_PRIORITY + 3, &xHandle );
@@ -198,8 +197,11 @@ float angleLegal(float angle){
 }
 
 int Locomotion::move(coord* targets,int nb){
-        if(finDuMatch){return 0;}
-        if (target_idx>=nb){return 0;}
+        if(finDuMatch || (target_idx >= nb)){
+            vTaskDelay(pdMS_TO_TICKS(200));
+            Serial.printf("fin: %d\n", finDuMatch);
+            return 0;
+        }
         float dx=targets[target_idx].x-current_coord.x;
         float dy=targets[target_idx].y-current_coord.y;
         float dtheta=angleLegal(atan2(dy,dx)-current_coord.theta);
@@ -380,8 +382,10 @@ int Locomotion::move(coord* targets,int nb){
 
 
 int Locomotion::superstar(coord* targets, int nb){
-    if(finDuMatch){return 0;}
-    if (target_idx>=nb){return 0;}
+    if(finDuMatch || (target_idx >= nb)){
+        vTaskDelay(pdMS_TO_TICKS(200));
+        return 0;
+    }
     float dx=targets[target_idx].x-current_coord.x;
     float dy=targets[target_idx].y-current_coord.y;
     float dtheta=angleLegal(atan2(dy,dx)-current_coord.theta);
@@ -500,7 +504,7 @@ void Locomotion::stop(){
 
 static void locomotion_run( void *arg ) {
     Locomotion* loco = (Locomotion*) arg;
-    while(true) {
+    while(!loco->finDuMatch) {
         loco->doStep();
         taskYIELD();
     }

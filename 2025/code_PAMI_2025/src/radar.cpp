@@ -53,10 +53,12 @@ int Radar::init()
         pinMode(radar_left->shutdown_pin, OUTPUT);
         digitalWrite(radar_left->shutdown_pin , LOW);
     }
+    #if not defined(JOHNNY)
     if(radar_front) {
         pinMode(radar_front->shutdown_pin, OUTPUT);
         digitalWrite(radar_front->shutdown_pin , LOW);
     }
+    #endif
     if(radar_right) {
         pinMode(radar_right->shutdown_pin, OUTPUT);
         digitalWrite(radar_right->shutdown_pin , LOW);
@@ -69,9 +71,11 @@ int Radar::init()
     if(radar_left) {
         status |= sensor_init(radar_left, RADAR_LEFT_ADDR);
     }
+    #if not defined(JOHNNY)
     if(radar_front) {
         status |= sensor_init(radar_front, RADAR_FRONT_ADDR);
     }
+    #endif
     if(radar_right) {
         status |= sensor_init(radar_right, RADAR_RIGHT_ADDR);
     }
@@ -103,10 +107,12 @@ void Radar::radarLoop()
         radar_measure(radar_left);
         alert |= radar_left->last_dist < radar_left->alert_dist;
     }
+    #if not defined(JOHNNY)
     if(radar_front) {
         radar_measure(radar_front);
         alert |= radar_front->last_dist < radar_front->alert_dist;
     }
+    #endif
     if(radar_right) {
         radar_measure(radar_right);
         alert |= radar_right->last_dist < radar_right->alert_dist;
@@ -149,10 +155,13 @@ uint16_t Radar::getDistance(enum eRadar sensor_id, uint32_t* timestamp)
         if(timestamp) {*timestamp = radar_left->timestamp;}
         return radar_left->last_dist;
         break;
+    
+    #if not defined(JOHNNY)
     case RADAR_FRONT:
     if(timestamp) {*timestamp = radar_front->timestamp;}
     return radar_front->last_dist;
         break;
+    #endif
     case RADAR_RIGHT:
         if(timestamp) {*timestamp = radar_right->timestamp;}
         return radar_right->last_dist;
@@ -172,9 +181,11 @@ void Radar::setAlertDistances(uint16_t dl, uint16_t df, uint16_t dr) {
     if(radar_left) {
         radar_left->alert_dist = dl;
     }
+    #if not defined(JOHNNY)
     if(radar_front) {
         radar_front->alert_dist = df;
     }
+    #endif
     if(radar_right) {
         radar_right->alert_dist = dr;
     }
