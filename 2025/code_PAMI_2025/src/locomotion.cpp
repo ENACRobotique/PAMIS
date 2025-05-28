@@ -493,6 +493,9 @@ void Locomotion::odometry(){
 
 
 void Locomotion::stop(){
+    step_left->setAcceleration(5*ACCELMAX);
+    step_right->setAcceleration(5*ACCELMAX);
+    
     if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
         step_left->stop();
         step_right->stop();
@@ -500,6 +503,8 @@ void Locomotion::stop(){
         state = STOPPED;
         xSemaphoreGive(mutex);
     }
+    step_left->setAcceleration(ACCELMAX);
+    step_right->setAcceleration(ACCELMAX);
 }
 
 static void locomotion_run( void *arg ) {
