@@ -382,6 +382,8 @@ int Locomotion::move(coord* targets,int nb){
 
 
 int Locomotion::superstar(coord* targets, int nb){
+    if (target_idx==0){radar.setAlertDistances(0,0,0);}
+
     if(finDuMatch || (target_idx >= nb)){
         vTaskDelay(pdMS_TO_TICKS(200));
         return 0;
@@ -419,6 +421,9 @@ int Locomotion::superstar(coord* targets, int nb){
         taskYIELD();
     }
     while(state==TOURNE_FINI){
+        if (target_idx!=0){
+            radar.setAlertDistances(DISTANCEEVITEMENT_JHONNY,DISTANCEEVITEMENT_JHONNY,DISTANCEEVITEMENT_JHONNY);
+        }
         xSemaphoreTake(mutex, portMAX_DELAY);
         stopped = false;
         long dist = convertMmToStep(sqrt(dy*dy+dx*dx));

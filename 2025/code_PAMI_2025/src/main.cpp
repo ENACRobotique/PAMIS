@@ -8,8 +8,6 @@
 #include "radar.h"
 #include "time.h"
 #include "Servo.h"
-#define DISTANCEEVITEMENT 150
-#define DISTANCEEVITEMENT_JHONNY 150
 // #define DISTANCEEVITEMENT 100
 #define DISTANCE_FIN 150
 #define BLUE 1
