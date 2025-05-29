@@ -35,10 +35,10 @@ int hDecale=2;
 coord startPos={75,1725,0};
 coord target[NB_TARGET] = {{450,1725,0},{650,1450,0},{1350,1450,0}};
 #elif defined(JOHNNY)
-#define NB_TARGET 4
+#define NB_TARGET 5
 int hDecale=3;
 coord startPos={75,1960,-M_PI/2};
-coord target[NB_TARGET] = {{75,1910,0},{1280,1910,0}, {1280, 2050, M_PI}, {1280,1680,0}};
+coord target[NB_TARGET] = {{75,1910,0},{500,1910,0}, {1280,1910,0}, {1280, 2030, M_PI}, {1280,1670,0}};
 #endif
 // coord target[1] = {{0,0,0}};
 // int nb=1;
@@ -50,49 +50,7 @@ static void blinker( void *arg ) {
   }
 }
 
-static void test_avance( void *arg ) {
-  while(true) {
-    if(locomotion.translateBlocking(4000)) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-    if(locomotion.translateBlocking(-4000)) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-  }
-}
-
-static void test_rotate(void * args) {
-  locomotion.rotateBlocking(40*M_PI);
-  while(true) {
-    // if(locomotion.rotateBlocking(1000)) {
-    //   while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-    //   }
-    // }
-  } 
-}
-
-static void test_moveB(void * args) {
-  while(true) {
-    //locomotion.moveBlocking({-2000,2000,0});
-    if(locomotion.moveBlocking({1000,1000,0})){
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-    if(locomotion.moveBlocking({1000,0,0})) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-  } 
-}
-
-  static void move(void * args) {
+static void move(void * args) {
     // coord target[1] = {{1150,1400,0}};
     while(true) {
       #if defined(JOHNNY)
@@ -165,7 +123,7 @@ static void radar_alert_cb() {
   #else
   
   // Serial.print("HE IS ALIVE");
-  #if not defined(JHONNY)
+  #if not defined(JOHNNY)
   coord tgt_pos = target[NB_TARGET-1];
   float x = locomotion.getPositon().x;
   float y = locomotion.getPositon().y;

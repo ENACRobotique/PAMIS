@@ -6,9 +6,9 @@
 #include "config.h"
 
 #if defined (JOHNNY)
-    #define MM2STEP (6.68*2)
+    #define MM2STEP (6.68*2*(90.0/83.0))
 #else
-#define MM2STEP (6.68)
+    #define MM2STEP (6.68)
 #endif
 
 #define RAYON_PAMI 46 //49.94
