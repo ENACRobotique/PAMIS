@@ -8,7 +8,6 @@
 #include "radar.h"
 #include "time.h"
 #include "Servo.h"
-// #define DISTANCEEVITEMENT 100
 #define DISTANCE_FIN 150
 #define BLUE 1
 #define YELLOW 2
@@ -17,28 +16,28 @@
 Servo servobras;
 
 
-#if defined(BOWIE)
-#define NB_TARGET 3
-int hDecale = 0;
-coord startPos={75,1840,0};
-coord target[NB_TARGET] = {{400,1840,0},{650,1400,0},{1850,1400,0}};
-#elif defined(JIMMY)
-#define NB_TARGET 3
-coord target[NB_TARGET] = {{500,1615,0},{800,1450,0},{1150,1450,0}};
-int hDecale = 4;
+// #if defined(BOWIE)
+// #define NB_TARGET 3
+// int hDecale = 0;
+// coord startPos={75,1840,0};
+// coord target[NB_TARGET] = {{400,1840,0},{650,1400,0},{1850,1400,0}};
+#if defined(JIMMY)
+#define NB_TARGET 2
 coord startPos={75,1615,0};
+coord target[NB_TARGET] = {{300,1615,0},{900,1500,0}};
+int hDecale = 4;
 //startPos={(500,500,0)};
 // coord target[1] = {{1000,0,0}};
 #elif defined(STEVE)
 #define NB_TARGET 3
-int hDecale=2;
-coord startPos={75,1725,0};
-coord target[NB_TARGET] = {{450,1725,0},{650,1450,0},{1350,1450,0}};
+int hDecale=0;
+coord startPos={75,1750,0};
+coord target[NB_TARGET] = {{300,1750,0},{650,1400,0},{1220,1330,0}};
 #elif defined(JOHNNY)
-#define NB_TARGET 5
-int hDecale=3;
-coord startPos={75,1960,-M_PI/2};
-coord target[NB_TARGET] = {{75,1910,0},{500,1910,0}, {1280,1910,0}, {1280, 2030, M_PI}, {1280,1670,0}};
+#define NB_TARGET 4
+int hDecale=0;
+coord startPos={75,1910,0};
+coord target[NB_TARGET] = { {600,1910,0}, {1280,1910,0}, {1280, 2030, M_PI}, {1280,1670,0}};
 #endif
 // coord target[1] = {{0,0,0}};
 // int nb=1;

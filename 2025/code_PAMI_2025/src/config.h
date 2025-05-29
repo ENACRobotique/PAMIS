@@ -1,12 +1,12 @@
 
 #pragma once
 
-#define BOWIE
+// // #define BOWIE
 // #define STEVE
 // #define JOHNNY
 // #define JIMMY
 
-#define DISTANCEEVITEMENT 150
+#define DISTANCEEVITEMENT 120
 #define DISTANCEEVITEMENT_JHONNY 150
 
 #undef LED1
