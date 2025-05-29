@@ -329,7 +329,7 @@ void setup() {
   }
   // vTaskDelay(pdMS_TO_TICKS(85000));
   
-  for(int i=2; i>0; i--) {
+  for(int i=85; i>0; i--) {
     Serial.println(i);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
