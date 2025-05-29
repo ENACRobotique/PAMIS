@@ -24,7 +24,7 @@ Servo servobras;
 #if defined(JIMMY)
 #define NB_TARGET 2
 coord startPos={75,1615,0};
-coord target[NB_TARGET] = {{300,1615,0},{900,1500,0}};
+coord target[NB_TARGET] = {{400,1615,0},{900,1600,0}};
 int hDecale = 4;
 //startPos={(500,500,0)};
 // coord target[1] = {{1000,0,0}};
@@ -32,7 +32,7 @@ int hDecale = 4;
 #define NB_TARGET 3
 int hDecale=0;
 coord startPos={75,1750,0};
-coord target[NB_TARGET] = {{300,1750,0},{650,1400,0},{1220,1330,0}};
+coord target[NB_TARGET] = {{450,1750,0},{650,1430,0},{1220,1330,0}};
 #elif defined(JOHNNY)
 #define NB_TARGET 4
 int hDecale=0;
@@ -236,10 +236,16 @@ void setup() {
   locomotion.start();
   // coord startPos={0,0,0};
   if(digitalRead(FDC1)==LOW){
-    startPos={3000-startPos.x,startPos.y,(float)M_PI-startPos.theta}; // equipe bleue si FDC1 est LOW
-    for (int i =0; i<NB_TARGET; i++){
-      target[i] = {3000-target[i].x,target[i].y,target[i].theta};
-    }
+    #if defined(JIMMY)
+      startPos={2925,1615,(float)M_PI};
+      target[0] = {2600,1615,0};
+      target [1] = {2100,1500,0};
+    #else
+      startPos={3000-startPos.x,startPos.y,(float)M_PI-startPos.theta}; // equipe bleue si FDC1 est LOW
+      for (int i =0; i<NB_TARGET; i++){
+        target[i] = {3000-target[i].x,target[i].y,target[i].theta};
+      }
+    #endif
     Serial.println("equipe bleue");
   } else {
     // startPos={2925,1625,M_PI}; // equipe jaune par défaut

@@ -197,6 +197,13 @@ float angleLegal(float angle){
 }
 
 int Locomotion::move(coord* targets,int nb){
+        #if defined(STEVE)
+            if (target_idx < 2){radar.setAlertDistances(0,0,0);}
+            else {radar.setAlertDistances(30, DISTANCEEVITEMENT, 30);}
+        #elif defined(JIMMY)
+            radar.setAlertDistances(0,0,0);
+
+        #endif
         if(finDuMatch || (target_idx >= nb)){
             vTaskDelay(pdMS_TO_TICKS(200));
             Serial.printf("fin: %d\n", finDuMatch);
