@@ -3,9 +3,15 @@
 #include <AccelStepper.h>
 #include <FreeRTOS.h>
 #include "semphr.h"
+#include "config.h"
 
+#if defined (JOHNNY)
+    #define MM2STEP (6.68*2)
+#else
 #define MM2STEP (6.68)
-#define RAYON_PAMI 46.5 //49.94
+#endif
+
+#define RAYON_PAMI 46 //49.94
 
 /****************
     x
