@@ -4,9 +4,9 @@
 #include <FreeRTOS.h>
 #include "semphr.h"
 
-#define MM2STEP (20/3)
-#define RAYON_PAMI 49.94 //48.33 //51.55
-// (47.25*(12/11))
+
+constexpr float MM2STEP = ((8*200)/(M_PI*76.1));
+#define RAYON_PAMI 67
 
 /****************
     x
@@ -17,7 +17,7 @@ y<---
 
 *****************/
 
-
+long convertMmToStep(float mms);
 
 
 typedef struct {

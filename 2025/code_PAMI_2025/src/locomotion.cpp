@@ -4,7 +4,7 @@
 #include "math.h"
 #include "radar.h"
 #define ACCELMAX 20000.0
-#define VMAX 2000
+#define VMAX 8000
 long convertMmToStep(float mms){ return mms * MM2STEP;}
 float convertStepToMm(long step){ return step / MM2STEP;}
 long convertAngleToStep(float angle){ return RAYON_PAMI * angle * MM2STEP;}
@@ -118,8 +118,9 @@ int Locomotion::moveBlocking(coord target){
         if(xSemaphoreTake(mutex, portMAX_DELAY)  == pdTRUE) {
             Serial.println("gonna tourne");
             stopped = false;
-            step_left->move(convertAngleToStep(dtheta));
-            step_right->move(convertAngleToStep(dtheta));
+            long nb_steps = convertAngleToStep(dtheta);
+            step_left->move(nb_steps);
+            step_right->move(nb_steps);
             xSemaphoreGive(mutex);
             state=TOURNE;
         }
@@ -193,11 +194,14 @@ int Locomotion::move(coord* targets,int nb){
         float dx=targets[target_idx].x-current_coord.x;
         float dy=targets[target_idx].y-current_coord.y;
         float dtheta=angleLegal(atan2(dy,dx)-current_coord.theta);
+        Serial.println(dtheta);
         while(state==INIT) {
             xSemaphoreTake(mutex, portMAX_DELAY);
             stopped = false;
-            step_left->move(convertAngleToStep(dtheta));
-            step_right->move(convertAngleToStep(dtheta));
+            long nb_steps = convertAngleToStep(dtheta);
+            step_left->move(nb_steps);
+            step_right->move(nb_steps);
+            Serial.println(nb_steps);
             Serial.println("gonna tourne");
             xSemaphoreGive(mutex);
             state=TOURNE;

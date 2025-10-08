@@ -7,7 +7,8 @@
 #include "locomotion.h"
 #include "radar.h"
 #define DISTANCEEVITEMENT 200
-coord startPos={2925,1625,M_PI};
+//coord startPos={2925,1625,M_PI};
+coord startPos={0,0,0};
 
 // task qui fait clignoter une LED en continu.
 static void blinker( void *arg ) {
@@ -17,54 +18,35 @@ static void blinker( void *arg ) {
   }
 }
 
-static void test_avance( void *arg ) {
+static void move(void * args) {
+  // coord target[2] = {
+  //   {1000,0,0},
+  //   {1000,500,0},
+  // };
   while(true) {
-    if(locomotion.translateBlocking(4000)) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-    if(locomotion.translateBlocking(-4000)) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-  }
-}
+    //locomotion.move(target, sizeof(target)/sizeof(target[0]));
 
-static void test_rotate(void * args) {
-  locomotion.rotateBlocking(40*M_PI);
-  while(true) {
-    // if(locomotion.rotateBlocking(1000)) {
-    //   while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-    //   }
-    // }
+    // locomotion.rotateBlocking(10*2*M_PI);
+    // vTaskDelay(pdMS_TO_TICKS(20000));
+
+   
+    locomotion.translateBlocking(convertMmToStep(2000));
+    vTaskDelay(pdMS_TO_TICKS(200));
+    
+    locomotion.rotateBlocking(M_PI);
+    vTaskDelay(pdMS_TO_TICKS(200));
+
+    locomotion.translateBlocking(convertMmToStep(2000));
+    vTaskDelay(pdMS_TO_TICKS(200));
+    
+    locomotion.rotateBlocking(-M_PI);
+    vTaskDelay(pdMS_TO_TICKS(200));
+
+    // locomotion.translateBlocking(convertMmToStep(2000));
+    // vTaskDelay(pdMS_TO_TICKS(200));
+   
   } 
 }
-
-static void test_moveB(void * args) {
-  while(true) {
-    //locomotion.moveBlocking({-2000,2000,0});
-    if(locomotion.moveBlocking({1000,1000,0})){
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-    if(locomotion.moveBlocking({1000,0,0})) {
-      while(radar.getDistance(RADAR_LEFT, NULL) < 100) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-      }
-    }
-  } 
-}
-
-  static void move(void * args) {
-    coord target[1] = {{1150,1400,0}};
-    while(true) {
-      locomotion.move(target, 1);
-    } 
-  }
 
 
 void odometry(void*){
@@ -150,8 +132,7 @@ void setup() {
   Serial.begin(115200);
 
   // countdown to start
-  vTaskDelay(pdMS_TO_TICKS(100));
-  for(int i=3; i>0; i--) {
+  for(int i=2; i>0; i--) {
     Serial.println(i);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
@@ -164,35 +145,24 @@ void setup() {
   Wire.begin();
   Serial.println("begin");
 
-  if(radar.init()) {
-    Serial.println("[ERROR] initializing radar.");
-  } else {
-    Serial.println("[OK] Radar initialized.");
-  }
-  radar.setAlertDistances(DISTANCEEVITEMENT, DISTANCEEVITEMENT, DISTANCEEVITEMENT);
-  radar.setAlertCallback(radar_alert_cb);
-  radar.start();
+  // if(radar.init()) {
+  //   Serial.println("[ERROR] initializing radar.");
+  // } else {
+  //   Serial.println("[OK] Radar initialized.");
+  // }
+  // radar.setAlertDistances(DISTANCEEVITEMENT, DISTANCEEVITEMENT, DISTANCEEVITEMENT);
+  // radar.setAlertCallback(radar_alert_cb);
+  // radar.start();
 
   locomotion.start();
   locomotion.initPos(startPos);
-  vTaskDelay(pdMS_TO_TICKS(1000));
+  //vTaskDelay(pdMS_TO_TICKS(1000));
 
   // create blinker task
   xTaskCreate(
     blinker, "blinker", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY + 1, NULL
   );
-
-
-  // create move test task
-  // xTaskCreate(
-  //   test_move, "test_move", configMINIMAL_STACK_SIZE,
-  //   NULL, tskIDLE_PRIORITY + 1, NULL
-  // );
-  // xTaskCreate(
-  //   test_rotate, "test_rotate", configMINIMAL_STACK_SIZE,
-  //   NULL, tskIDLE_PRIORITY + 1, NULL
-  // );
 
   xTaskCreate(
     move, "move", configMINIMAL_STACK_SIZE,
