@@ -46,5 +46,5 @@ void telelogs_send_float(const char* name, float value) {
     char buffer[50];
     int len = snprintf(buffer, 50, "%s:%f\n", name, value);
     int err = sendto(sock, buffer, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
-    ESP_LOG_BUFFER_CHAR("", buffer, len);
+    //ESP_LOG_BUFFER_CHAR("", buffer, len);
 }

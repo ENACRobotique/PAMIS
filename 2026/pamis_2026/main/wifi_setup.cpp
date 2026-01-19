@@ -27,19 +27,19 @@ static void ip_event_cb(void *arg, esp_event_base_t event_base, int32_t event_id
     switch (event_id)
     {
     case (IP_EVENT_STA_GOT_IP):
-        ip_event_got_ip_t *event_ip = (ip_event_got_ip_t *)event_data;
+        {ip_event_got_ip_t *event_ip = (ip_event_got_ip_t *)event_data;
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event_ip->ip_info.ip));
         wifi_retry_count = 0;
-        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);}
         break;
     case (IP_EVENT_STA_LOST_IP):
         ESP_LOGI(TAG, "Lost IP");
         break;
     case (IP_EVENT_GOT_IP6):
-        ip_event_got_ip6_t *event_ip6 = (ip_event_got_ip6_t *)event_data;
+        {ip_event_got_ip6_t *event_ip6 = (ip_event_got_ip6_t *)event_data;
         ESP_LOGI(TAG, "Got IPv6: " IPV6STR, IPV62STR(event_ip6->ip6_info.ip));
         wifi_retry_count = 0;
-        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);}
         break;
     default:
         ESP_LOGI(TAG, "IP event not handled");
@@ -128,14 +128,10 @@ esp_err_t wifi_init(void)
     return ret;
 }
 
-esp_err_t wifi_connect(char* wifi_ssid, char* wifi_password)
+esp_err_t wifi_connect(const char* wifi_ssid, const char* wifi_password)
 {
-    wifi_config_t wifi_config = {
-        .sta = {
-            // this sets the weakest authmode accepted in fast scan mode (default)
-            .threshold.authmode = WIFI_AUTHMODE,
-        },
-    };
+    wifi_config_t wifi_config = {0};
+    wifi_config.sta.threshold.authmode = WIFI_AUTHMODE;
 
     strncpy((char*)wifi_config.sta.ssid, wifi_ssid, sizeof(wifi_config.sta.ssid));
     strncpy((char*)wifi_config.sta.password, wifi_password, sizeof(wifi_config.sta.password));

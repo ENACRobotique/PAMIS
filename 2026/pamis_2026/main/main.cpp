@@ -17,11 +17,15 @@
 #include "driver/gpio.h"
 #include "wifi_setup.h"
 #include "telelogs.h"
+#include "locomotion.h"
 
-#define LED1 5
-#define LED2 6
+constexpr gpio_num_t LED1 = GPIO_NUM_5;
+constexpr gpio_num_t LED2 = GPIO_NUM_6;
 
 #define TAG ""
+
+
+Locomotion locomotion;
 
 static void blinker1(void* arg) {
     while(true) {
@@ -33,17 +37,18 @@ static void blinker1(void* arg) {
 }
 
 static void blinker2(void* arg) {
+    // locomotion.moveBlocking(0, 2*M_PI * 10);
+    // vTaskDelay(10000 / portTICK_PERIOD_MS);
     while(true) {
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        gpio_set_level(LED2, 1);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        gpio_set_level(LED2, 0);
+        locomotion.moveBlocking(300, 0);
+        locomotion.moveBlocking(0, M_PI_2);
     }
 }
 
 
 
-void app_main(void)
+
+extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "Starting tutorial...");
     ESP_ERROR_CHECK(wifi_init());
@@ -69,6 +74,8 @@ void app_main(void)
     }
 
     telelogs_init();
+
+    locomotion.init();
 
 
     printf("Hello world!\n");
@@ -117,7 +124,7 @@ void app_main(void)
 
 
     xTaskCreate( blinker1, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    xTaskCreate( blinker2, "Blinker2", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate( blinker2, "Blinker2", configMINIMAL_STACK_SIZE+2048, NULL, 1, NULL);
 
     float val = 0;
     while(1) {
