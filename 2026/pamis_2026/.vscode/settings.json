@@ -16,5 +16,5 @@
     "--query-driver=**",
     "--compile-commands-dir=/home/robot/projects/PAMIS/2026/pamis_2026/build"
   ],
-  "idf.flashType": "JTAG"
+  "idf.flashType": "UART"
 }
