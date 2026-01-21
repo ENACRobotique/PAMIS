@@ -15,7 +15,14 @@
 #define STEP_LOGE(...) ESP_LOGE(__VA_ARGS__)
 #endif
 
-bool state = 0;
+// Convert normal value to fixed-point value
+#define Q(n) ((n)*(1<<16) + 0.5)
+
+//Convert fixed-point value to normal value.
+#define F(bfp) ((bfp)/(1<<16))
+
+
+// bool state = 0;
 
 // PUBLIC definitions
 
@@ -56,16 +63,15 @@ void Stepper::init()
 {
     bsem = xSemaphoreCreateBinary();
 
+    // Set SETP, DIR, and ENABLE pins as OUTPUT.
     uint64_t mask = (1ULL << conf.stepPin) | (1ULL << conf.dirPin) | (1ULL << conf.enPin); // put output gpio pins in bitmask
     gpio_config_t gpio_conf = {
-        // config gpios
         .pin_bit_mask = mask,
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,
     };
-    // set the gpios as per gpio_conf
     ESP_ERROR_CHECK(gpio_config(&gpio_conf));
 
     gptimer_config_t timer_conf = {
@@ -91,9 +97,9 @@ esp_err_t Stepper::runPos(int32_t nb_steps)
         return ESP_OK;
     }
 
-    // TODO que faire ?fonction appelée alors que le mouvement précédent n'est pas termminé
+    // TODO que faire ? Fonction appelée alors que le mouvement précédent n'est pas termminé
     if (ctrl.status > IDLE)
-    { // we are running, we need to adjust steps accordingly, for now just stop the movement
+    {
         STEP_LOGW("Stepper", "Finising previous move, this command will be ignored");
         return ESP_ERR_NOT_SUPPORTED;
     }
@@ -101,6 +107,7 @@ esp_err_t Stepper::runPos(int32_t nb_steps)
     if (ctrl.status == DISABLED) { // if motor is disabled, enable it
         enableMotor();
     }
+
     ctrl.status = ACC;
     setDir(nb_steps < 0); // set CCW if <0, else set CW
 
@@ -109,29 +116,28 @@ esp_err_t Stepper::runPos(int32_t nb_steps)
     ctrl.steps_total = abs(nb_steps);
     ctrl.status = ACC;
     ctrl.n = 1;
-    /* Période initiale (step 1) */
-    ctrl.T = sqrtf(2.0f / ctrl.acc);
+    // Initial period (step 1)
+    // Convert ctrl.T to fixed-point representation, so later operations are more precise
+    ctrl.T = (uint32_t)Q(sqrtf(2.0f / ctrl.acc) * TIMER_F);
 
-    /* Vitesse max */
-    ctrl.T_min = 1.0f / ctrl.v_max;
+    // period at max speed
+    ctrl.T_min = (uint32_t)Q(TIMER_F / ctrl.v_max);
 
-    /* Steps nécessaires pour atteindre v_max */
-    uint32_t n_vmax = (uint32_t)((ctrl.v_max * ctrl.v_max) / (2.0f * ctrl.acc));
+    // number of steps to reach v_max
+    uint32_t n_vmax = (ctrl.v_max * ctrl.v_max) / (2 * ctrl.acc);
 
     if (2 * n_vmax < ctrl.steps_total) {
-        /* Trapézoïdal */
+        /* Trapezoïdal */
         ctrl.n_acc = n_vmax;
         ctrl.n_dec = n_vmax;
     } else {
-        /* Triangulaire */
+        /* Triangular */
         ctrl.n_acc = ctrl.steps_total / 2;
         ctrl.n_dec = ctrl.n_acc;
     }
 
-
-    //calc(abs(relative)); // calculate velocity profile
-
-    alarm_cfg.alarm_count  = ctrl.T * TIMER_F;
+    // Initial period. Convert back from fixed-point to normal number.
+    alarm_cfg.alarm_count  = F(ctrl.T);
     gptimer_set_alarm_action(timer_handle, &alarm_cfg);
     gptimer_enable(timer_handle);
     return gptimer_start(timer_handle);
@@ -161,12 +167,12 @@ void Stepper::setSpeedMm(double speed, double acc, double dec)
 
 void Stepper::setStepsPerMm(double steps)
 {
-    ctrl.stepsPerMm = steps * conf.miStep;
+    ctrl.stepsPerMm = steps * (int)conf.miStep;
 }
 
 double Stepper::getStepsPerMm()
 {
-    return ctrl.stepsPerMm / conf.miStep;
+    return ctrl.stepsPerMm / (int)conf.miStep;
 }
 
 uint8_t Stepper::getState()
@@ -250,8 +256,7 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
     //GPIO.out_w1ts = (1ULL << conf.stepPin);
     GPIO.out1_w1ts.val = 1 << (conf.stepPin - 32);
     
-    // add and substract one step
-
+    // add one step
     ctrl.steps_done++;
 
     // update current position
@@ -276,7 +281,10 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
             break;
         }
 
-        ctrl.T -= (2.0 * ctrl.T) / (4.0 * ctrl.n + 1);
+        // decrease period so the stepper accelerate
+        // decrease the period less and less to keep the acceleration somewhat constant.
+        // computed in  fixed-point representation so the amount being substracted stays > 1
+        ctrl.T -= (2 * ctrl.T) / (4 * ctrl.n + 1);
         if (ctrl.T < ctrl.T_min) {
             ctrl.T = ctrl.T_min;
         }
@@ -289,7 +297,7 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
         }
     break;
     case DEC:
-        ctrl.T += (2.0 * ctrl.T) / (4.0 * ctrl.n + 1);
+        ctrl.T += (2 * ctrl.T) / (4 * ctrl.n + 1);
         ctrl.n--;
         break;
     
@@ -310,21 +318,35 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
 
     GPIO.out1_w1tc.val = 1 << (conf.stepPin - 32);
 
-    alarm_cfg.alarm_count = ctrl.T * TIMER_F;
+    // convert back from fixed-point to normal value
+    alarm_cfg.alarm_count = F(ctrl.T);
     gptimer_set_alarm_action(timer_handle, &alarm_cfg);
     return 1;
 }
 
 void Stepper::stopSlow() {
-    if(ctrl.status == ACC or ctrl.status == COAST) {
-        ctrl.status = DEC;
-        uint32_t n = ctrl.n < ctrl.n_acc ? ctrl.n: ctrl.n_acc;
-
-        uint32_t v = sqrt(2 * ctrl.acc * n);
-        uint32_t n_dec = (uint32_t)((v*v) / (2.0f * ctrl.acc));
-
-        ctrl.steps_total = ctrl.steps_done + n_dec;
+    //smallest n corresponding to the top speed until now.
+    uint32_t n;
+    
+    if(ctrl.status == ACC ) {
+        // still accelerating, top speed is now.
+        n = ctrl.n;
+    } else if (ctrl.status == COAST) {
+        // constant speed, take the last step of ACC
+        n = ctrl.n_acc;
+    } else {
+        // not in ACC nor in COAST, nothing to do to stop.
+        return;
     }
+
+    // top speed
+    uint32_t v = sqrt(2 * ctrl.acc * n);
+    // in how many steps can we stop ?
+    uint32_t n_dec = (uint32_t)((v*v) / (2.0f * ctrl.acc));
+    // then there is this many steps to do, no more.
+    ctrl.steps_total = ctrl.steps_done + n_dec;
+    // let's brake !
+    ctrl.status = DEC;
 }
 
 BaseType_t Stepper::waitFinishedTimeout(TickType_t xTicksToWait) {

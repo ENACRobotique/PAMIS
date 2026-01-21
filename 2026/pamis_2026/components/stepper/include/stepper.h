@@ -67,8 +67,8 @@ typedef struct
     uint32_t n;
     uint32_t n_acc;          // nombre de steps d'accélération
     uint32_t n_dec;          // nombre de steps de décélération
-    double T;                 // période courante (s)
-    double T_min;             // période min (vitesse max)
+    uint32_t T;                 // période courante (s)
+    uint32_t T_min;             // période min (vitesse max)
 } ctrl_var_t;
 
 class Stepper
