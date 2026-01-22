@@ -45,6 +45,11 @@ void Locomotion::move(float lenght, float angle) {
     float lenght_right = lenght + angle * WHEELBASE / 2.0f;
     step_left.runPosMm(lenght_left);
     step_right.runPosMm(lenght_right);
+
+    // TODO: tout pourri juste pour tester
+    pos.x += lenght * cos(pos.theta);
+    pos.y += lenght * sin(pos.theta);
+    pos.theta += angle;
 }
 
 void Locomotion::moveBlocking(float lenght, float angle) {
@@ -52,6 +57,13 @@ void Locomotion::moveBlocking(float lenght, float angle) {
     waitFinishedTimeout(portMAX_DELAY);
 }
 
+void Locomotion::enableSteppers(bool enable) {
+    if(enable) {
+        step_left.enableMotor();
+    } else {  
+        step_left.disableMotor();
+    }
+}
 
 bool Locomotion::moving() {
     bool left_moving = step_left.getState() != motor_status::IDLE && step_left.getState() != motor_status::DISABLED;

@@ -18,9 +18,9 @@
 #include "wifi_setup.h"
 #include "telelogs.h"
 #include "locomotion.h"
+#include "websocket_server.h"
+#include "pins_config.h"
 
-constexpr gpio_num_t LED1 = GPIO_NUM_5;
-constexpr gpio_num_t LED2 = GPIO_NUM_6;
 
 #define TAG ""
 
@@ -40,8 +40,9 @@ static void blinker2(void* arg) {
     // locomotion.moveBlocking(0, 2*M_PI * 10);
     // vTaskDelay(10000 / portTICK_PERIOD_MS);
     while(true) {
-        locomotion.moveBlocking(300, 0);
-        locomotion.moveBlocking(0, M_PI_2);
+        // locomotion.moveBlocking(300, 0);
+        // locomotion.moveBlocking(0, M_PI_2);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -82,7 +83,7 @@ extern "C" void app_main(void)
 
     gpio_config_t io_conf = {
         .pin_bit_mask = (1 << LED1) | (1 << LED2),
-        .mode = GPIO_MODE_OUTPUT,
+        .mode = GPIO_MODE_INPUT_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,
@@ -91,7 +92,8 @@ extern "C" void app_main(void)
     gpio_config(&io_conf);
 
 
-    
+    start_web_server();
+
 
 
     /* Print chip information */
@@ -123,18 +125,23 @@ extern "C" void app_main(void)
 
 
 
+
+
     xTaskCreate( blinker1, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate( blinker2, "Blinker2", configMINIMAL_STACK_SIZE+2048, NULL, 1, NULL);
 
     float val = 0;
     while(1) {
-        val+= 2.3;
-        telelogs_send_float("test", val);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        ws_async_send_robot_pos();
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        
+        // val+= 2.3;
+        // telelogs_send_float("test", val);
+        // vTaskDelay(100 / portTICK_PERIOD_MS);
 
-        if(val > (float)rand()*50.0/RAND_MAX) {
-            val = 0;
-        }
+        // if(val > (float)rand()*50.0/RAND_MAX) {
+        //     val = 0;
+        // }
     }
 
     //esp_restart();
