@@ -54,25 +54,35 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Starting tutorial...");
     ESP_ERROR_CHECK(wifi_init());
 
-    esp_err_t ret = wifi_connect(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to connect to Wi-Fi network");
+    char* ssid = read_string_from_nvs("sta_ssid");
+    char* password = read_string_from_nvs("sta_password");
+
+    if(ssid == NULL || password == NULL) {
+        ESP_LOGE("NVS", "Failed to fetch WiFi credentials, using default credentials");
+        ssid = CONFIG_WIFI_STA_SSID;
+        password = CONFIG_WIFI_STA_PASSWORD;
     }
 
-    wifi_ap_record_t ap_info;
-    ret = esp_wifi_sta_get_ap_info(&ap_info);
-    if (ret == ESP_ERR_WIFI_CONN) {
-        ESP_LOGE(TAG, "Wi-Fi station interface not initialized");
+    esp_err_t ret = wifi_connect(ssid, password);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to connect to Wi-Fi network %s", ssid);
+        wifi_create_ap(CONFIG_WIFI_AP_SSID, CONFIG_WIFI_AP_PASSWORD);
     }
-    else if (ret == ESP_ERR_WIFI_NOT_CONNECT) {
-        ESP_LOGE(TAG, "Wi-Fi station is not connected");
-    } else {
-        ESP_LOGI(TAG, "--- Access Point Information ---");
-        ESP_LOG_BUFFER_HEX("MAC Address", ap_info.bssid, sizeof(ap_info.bssid));
-        ESP_LOG_BUFFER_CHAR("SSID", ap_info.ssid, sizeof(ap_info.ssid));
-        ESP_LOGI(TAG, "Primary Channel: %d", ap_info.primary);
-        ESP_LOGI(TAG, "RSSI: %d", ap_info.rssi);
-    }
+
+    // wifi_ap_record_t ap_info;
+    // ret = esp_wifi_sta_get_ap_info(&ap_info);
+    // if (ret == ESP_ERR_WIFI_CONN) {
+    //     ESP_LOGE(TAG, "Wi-Fi station interface not initialized");
+    // }
+    // else if (ret == ESP_ERR_WIFI_NOT_CONNECT) {
+    //     ESP_LOGE(TAG, "Wi-Fi station is not connected");
+    // } else {
+    //     ESP_LOGI(TAG, "--- Access Point Information ---");
+    //     ESP_LOG_BUFFER_HEX("MAC Address", ap_info.bssid, sizeof(ap_info.bssid));
+    //     ESP_LOG_BUFFER_CHAR("SSID", ap_info.ssid, sizeof(ap_info.ssid));
+    //     ESP_LOGI(TAG, "Primary Channel: %d", ap_info.primary);
+    //     ESP_LOGI(TAG, "RSSI: %d", ap_info.rssi);
+    // }
 
     telelogs_init();
 
@@ -134,6 +144,9 @@ extern "C" void app_main(void)
     while(1) {
         ws_async_send_robot_pos();
         vTaskDelay(500 / portTICK_PERIOD_MS);
+
+        printf("Free heap size: %" PRIu32 " bytes\n", esp_get_free_heap_size());
+
         
         // val+= 2.3;
         // telelogs_send_float("test", val);

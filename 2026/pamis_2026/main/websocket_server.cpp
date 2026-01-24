@@ -15,7 +15,8 @@
 #include <sys/param.h>
 #include "pins_config.h"
 #include "locomotion.h"
-
+#include "wifi_setup.h"
+#include "websocket_server.h"
 
 extern Locomotion locomotion;
 
@@ -31,9 +32,9 @@ static const char *TAG = "WebSocket Server"; // TAG for debug
 #define LOW_RES_PNG_PATH "/spiffs/low_res.png"
 #define ROBOT_PNG_PATH "/spiffs/robot.png"
 
-char index_html[8192];
+char index_html[12000];
 ssize_t low_res_size;
-char low_res_png[200000];
+char low_res_png[63000];
 ssize_t robot_size;
 char robot_png[8192];
 
@@ -152,6 +153,45 @@ static void ws_async_send_led_state(void *arg)
 }
 
 
+static void ws_async_send_wifi_ssid(void *arg)
+{
+    httpd_ws_frame_t ws_pkt = {0};
+
+    int led_state = gpio_get_level(LED2);
+    gpio_set_level(LED2, !led_state);
+    
+    char* ssid = read_string_from_nvs("sta_ssid");
+    char* password = read_string_from_nvs("sta_password");
+    if(ssid == NULL || password == NULL) {
+        return;
+    }
+    char buff[80];
+    snprintf(buff, 80,  "{\"sta_ssid\":\"%s\", \"sta_password\":\"%s\"}", ssid, password);
+    free(ssid);
+    free(password);
+    
+    ws_pkt.payload = (uint8_t *)buff;
+    ws_pkt.len = strlen(buff);
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+    
+    static size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
+    size_t fds = max_clients;
+    int client_fds[max_clients];
+
+    esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
+
+    if (ret != ESP_OK) {
+        return;
+    }
+
+    for (int i = 0; i < fds; i++) {
+        int client_info = httpd_ws_get_fd_info(server, client_fds[i]);
+        if (client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
+            httpd_ws_send_frame_async(server, client_fds[i], &ws_pkt);
+        }
+    }
+}
+
 
 void ws_async_send_robot_pos()
 {
@@ -188,6 +228,7 @@ void ws_async_send_robot_pos()
 
 
 
+static esp_err_t handle_wifi_credentials(httpd_ws_frame_t* ws_pkt);
 
 static esp_err_t handle_ws_req(httpd_req_t *req)
 {
@@ -252,12 +293,51 @@ static esp_err_t handle_ws_req(httpd_req_t *req)
             else if (strncmp((char *)ws_pkt.payload, "en_step", ws_pkt.len) == 0) {
                 locomotion.enableSteppers(true);
             }
+            else if (strncmp((char *)ws_pkt.payload, "wifi?", ws_pkt.len) == 0) {
+                httpd_queue_work(req->handle, ws_async_send_wifi_ssid, NULL);
+            }
+            else if(ws_pkt.payload[0] == 'W') {
+                ret = handle_wifi_credentials(&ws_pkt);
+            }
         }
     }
 
     free(ws_pkt.payload);
+    return ret;
+}
+
+/**
+ * "Wssid|password"
+ */
+static esp_err_t handle_wifi_credentials(httpd_ws_frame_t* ws_pkt)
+{
+    size_t len_ssid = 0;
+    size_t len_pass = 0;
+    
+    char* temp = (char*)malloc(ws_pkt->len);
+    if(temp == NULL) {return ESP_ERR_NO_MEM;}
+
+    for (size_t i = 0; i < ws_pkt->len; i++)
+    {
+        if (ws_pkt->payload[i] == '|')
+        {
+            len_ssid = i - 1;
+            len_pass = ws_pkt->len - i - 1;
+        }
+    }
+
+    if (len_ssid != 0 && len_pass != 0)
+    {
+        memcpy(temp, ws_pkt->payload + 1, len_ssid);
+        temp[len_ssid] = '\0';
+        write_string_to_nvs("sta_ssid", temp);
+        memcpy(temp, ws_pkt->payload + len_ssid + 2, len_pass);
+        temp[len_pass] = '\0';
+        write_string_to_nvs("sta_password", temp);
+    }
     return ESP_OK;
 }
+
 
 httpd_handle_t setup_websocket_server(void)
 {

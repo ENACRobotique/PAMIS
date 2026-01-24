@@ -14,3 +14,9 @@ esp_err_t wifi_connect(const char* wifi_ssid, const char* wifi_password);
 esp_err_t wifi_disconnect(void);
 esp_err_t wifi_dede(void);
 
+esp_err_t wifi_create_ap(const char* ap_ssid, const char* ap_password);
+
+
+char* read_string_from_nvs(const char* key);
+esp_err_t write_string_to_nvs(const char* key, const char* value);
+

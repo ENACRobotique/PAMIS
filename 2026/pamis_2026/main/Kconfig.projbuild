@@ -1,12 +1,22 @@
-menu "Configuration"
-    config WIFI_SSID
-        string "SSID"
+menu "WiFi network credentials"
+    config WIFI_STA_SSID
+        string "WiFi STA SSID"
         default "ssid"
         help
             SSID du wifi auquel se connecter
-    config WIFI_PASSWORD
-        string "Password"
+    config WIFI_STA_PASSWORD
+        string "WiFi STA Password"
         default "P@ssword"
         help
-            Mot de passe du WiFi
+            Mot de passe du WiFi auquel se connecter
+    config WIFI_AP_SSID
+        string "WiFi AP SSID"
+        default "Pami AP"
+        help
+            SSID du wifi AP créé en cas d'échec de la connexion au WiFi STA
+    config WIFI_AP_PASSWORD
+        string "WiFi AP Password"
+        default "papimamie"
+        help
+            Mot de passe du wifi AP créé en cas d'échec de la connexion au WiFi STA
 endmenu
