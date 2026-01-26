@@ -13,7 +13,7 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 #include <sys/param.h>
-#include "pins_config.h"
+#include "config.h"
 #include "locomotion.h"
 #include "wifi_setup.h"
 #include "websocket_server.h"

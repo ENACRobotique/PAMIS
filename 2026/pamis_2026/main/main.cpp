@@ -19,7 +19,7 @@
 #include "telelogs.h"
 #include "locomotion.h"
 #include "websocket_server.h"
-#include "pins_config.h"
+#include "config.h"
 
 
 #define TAG ""

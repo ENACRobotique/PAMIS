@@ -1,5 +1,6 @@
 #include "locomotion.h"
 #include "stepper.h"
+#include "config.h"
 
 // 1.8° per step, wheel 3inch diameter
 constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 76.2);
@@ -32,6 +33,9 @@ void Locomotion::init() {
     step_right.init();
     step_right.setStepsPerMm(STEPS_PER_MM);
     step_right.setSpeedMm(1000, 4000, 1000);
+
+    xTaskCreate(odometry_task, "Blinker", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
+
 }
 
 void Locomotion::stop() {
@@ -69,6 +73,35 @@ bool Locomotion::moving() {
     bool left_moving = step_left.getState() != motor_status::IDLE && step_left.getState() != motor_status::DISABLED;
     bool right_moving = step_right.getState() != motor_status::IDLE && step_right.getState() != motor_status::DISABLED;
     return left_moving || right_moving;
+}
+
+void Locomotion::odometry_task(void* arg)
+{
+    Locomotion* that = static_cast<Locomotion*>(arg);
+    
+    while(true) {
+        float pos_left = that->getPosLeft();
+        float pos_right = that->getPosRight();
+        
+        // TODO: odometrie
+        // calculer les petits déplacement left et right depuis le dernier tour de boucle
+        
+        // ancienne position
+        Position pos = that->getPos();
+
+        // exemple de trucs à faire (faites pas ça bien sûr, c'est complètement con)
+        pos.x += 1;
+        pos.y = 12;
+        pos.theta = 15*M_PI/7;
+
+        // mettre à jour locomotion avec la nouvelle position calculée
+        that->setPos(pos);
+
+        // sleep jusqu'à la prochaine période
+        vTaskDelay(ODOMETRY_PERIOD_MS / portTICK_PERIOD_MS);
+
+    }
+
 }
 
 BaseType_t Locomotion::waitFinishedTimeout(TickType_t xTicksToWait) {

@@ -170,7 +170,7 @@ void Stepper::setStepsPerMm(double steps)
     ctrl.stepsPerMm = steps * (int)conf.miStep;
 }
 
-double Stepper::getStepsPerMm()
+float Stepper::getStepsPerMm()
 {
     return ctrl.stepsPerMm / (int)conf.miStep;
 }
@@ -185,7 +185,7 @@ uint64_t Stepper::getPosition()
     return currentPos;
 }
 
-uint64_t Stepper::getPositionMm()
+float Stepper::getPositionMm()
 {
     return getPosition() / ctrl.stepsPerMm;
 }

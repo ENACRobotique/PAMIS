@@ -20,6 +20,17 @@ public:
     bool moving();
 
     Position getPos() {return pos;}
+    void setPos(Position new_pos) {pos = new_pos;}
+
+    float getPosLeft() {
+        return step_left.getPositionMm();
+    }
+
+    float getPosRight() {
+        return step_right.getPositionMm();
+    }
+
+    static void odometry_task(void* arg);
 
     /**
      * @return pdTRUE if move finished, or pdFALSE on timeout

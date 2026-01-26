@@ -174,7 +174,7 @@ public:
      * @brief get steps per 1mm settings
      *
      */
-    double getStepsPerMm();
+    float getStepsPerMm();
 
     /** @brief set EN pin 1, stops movement
      */
@@ -197,7 +197,7 @@ public:
     /** @brief returns current absolute position
      *  @return current absolute postion in steps
      */
-    uint64_t getPositionMm();
+    float getPositionMm();
 
     /** @brief resets absolute pos to 0
      */
