@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2010-2022 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
 #include <stdio.h>
 #include <inttypes.h>
 #include "sdkconfig.h"
@@ -20,7 +14,7 @@
 #include "locomotion.h"
 #include "websocket_server.h"
 #include "config.h"
-
+#include "imu.h"
 
 #define TAG ""
 
@@ -87,6 +81,7 @@ extern "C" void app_main(void)
     telelogs_init();
 
     locomotion.init();
+    imu_init();
 
 
     printf("Hello world!\n");
@@ -145,7 +140,7 @@ extern "C" void app_main(void)
         ws_async_send_robot_pos();
         vTaskDelay(500 / portTICK_PERIOD_MS);
 
-        printf("Free heap size: %" PRIu32 " bytes\n", esp_get_free_heap_size());
+        //printf("Free heap size: %" PRIu32 " bytes\n", esp_get_free_heap_size());
 
         
         // val+= 2.3;
