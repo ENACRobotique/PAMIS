@@ -5,7 +5,9 @@ struct Position {
     float x;
     float y;
     float theta;
+
 };
+
 
 class Locomotion {
 public:
@@ -42,5 +44,8 @@ private:
     Stepper step_right;
 
     Position pos;
+
+    float oldPosLeft;
+    float oldPosRight;
 
 };

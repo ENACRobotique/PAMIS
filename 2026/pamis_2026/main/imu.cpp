@@ -70,8 +70,3 @@ void imu_init(){
 esp_err_t register_read(uint8_t reg, uint8_t* buff, size_t length){
     return i2c_master_transmit_receive(imu_dev_handle, &reg, 1, buff, length, 100);
 }
-
-
-static bool check_imu() {
-
-}
