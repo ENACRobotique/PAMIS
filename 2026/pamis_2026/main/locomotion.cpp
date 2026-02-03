@@ -53,11 +53,6 @@ void Locomotion::move(float lenght, float angle) {
     float lenght_right = lenght + angle * WHEELBASE / 2.0f;
     step_left.runPosMm(lenght_left);
     step_right.runPosMm(lenght_right);
-
-    // TODO: tout pourri juste pour tester
-    pos.x += lenght * cos(pos.theta);
-    pos.y += lenght * sin(pos.theta);
-    pos.theta += angle;
 }
 
 void Locomotion::moveBlocking(float lenght, float angle) {
