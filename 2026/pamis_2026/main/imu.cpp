@@ -53,7 +53,7 @@ static void read_imu(void* arg) {
         uint8_t who_am_i = 0;
         vTaskDelay(200 / portTICK_PERIOD_MS);
         register_read(LSM6DSL_WHO_AM_I_REG, &who_am_i, 1);
-        ESP_LOGI("IMU", "Who am I ? 0x%x", who_am_i);
+        //ESP_LOGI("IMU", "Who am I ? 0x%x", who_am_i);
     }
 }
 

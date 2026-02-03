@@ -33,14 +33,17 @@ void telelogs_init() {
     setsockopt (sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
 }
 
-void telelogs_send_string(const char* str, size_t len) {
-    int err = sendto(sock, str, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+void telelogs_send_string(const char* name, const char* str) {
+    char data[500];
+    int len = snprintf(data, 500, "%s:%s|t", name, str);
+    int err = sendto(sock, data, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
     if (err < 0) {
         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
         return;
     }
-    ESP_LOGI(TAG, "Message sent");
+    //ESP_LOGI(TAG, "Message sent");
 }
+
 
 void telelogs_send_float(const char* name, float value) {
     char buffer[50];

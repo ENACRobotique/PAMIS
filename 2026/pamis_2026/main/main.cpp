@@ -140,11 +140,19 @@ extern "C" void app_main(void)
         ws_async_send_robot_pos();
         vTaskDelay(500 / portTICK_PERIOD_MS);
 
+
+        Position pos = locomotion.getPos();
+        char pos_str[30];
+        snprintf(pos_str, sizeof(pos_str), "x=%d,y=%d,theta=%.2f",(int)pos.x,(int)pos.y,pos.theta);
+        telelogs_send_string("Odom", pos_str);
+        ESP_LOGI("ODOM", "x=%f,y=%f,theta=%f",pos.x,pos.y,pos.theta);
+
+
         //printf("Free heap size: %" PRIu32 " bytes\n", esp_get_free_heap_size());
 
         
         // val+= 2.3;
-        // telelogs_send_float("test", val);
+        // telelogs_send_float("test", 2.5);
         // vTaskDelay(100 / portTICK_PERIOD_MS);
 
         // if(val > (float)rand()*50.0/RAND_MAX) {

@@ -107,8 +107,10 @@ void Locomotion::odometry_task(void* arg)
         
         float dLeft = pos_left - that->oldPosLeft;
         float dRight = pos_right - that->oldPosRight;
-        float dTheta = (dLeft - dRight)/WHEELBASE/4;
+        float dTheta = (dRight - dLeft)/WHEELBASE;
         float d = (dRight + dLeft)/2;
+        that->oldPosLeft = pos_left;
+        that->oldPosRight = pos_right;
         
         // ancienne position
         Position pos = that->getPos();
