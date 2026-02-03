@@ -34,18 +34,25 @@ public:
 
     static void odometry_task(void* arg);
 
+    static void trajectory_task(void* arg);
     /**
      * @return pdTRUE if move finished, or pdFALSE on timeout
      */
     BaseType_t waitFinishedTimeout(TickType_t xTicksToWait);
 
-private:
+    
+    void trajectory(Position* dest, int nb_pts);
+    
+    private:
     Stepper step_left;
     Stepper step_right;
-
+    
     Position pos;
-
+    
     float oldPosLeft;
     float oldPosRight;
-
+    
+    SemaphoreHandle_t traj_sem;
+    Position *traj_points;
+    int traj_length;
 };
