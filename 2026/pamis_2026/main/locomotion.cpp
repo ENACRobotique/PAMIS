@@ -80,6 +80,7 @@ void Locomotion::trajectory(Position* dest, int nb_pts) {
     // Question: si la traj précédente n'est pas finie, qu'est-ce qu'on fait ?
     // - rien (on continue l'ancienne), et on retourne une erreur ?
     // - on s'arrête, puis on fait la nouvelle trajectoire ?
+    // Comment définir si on a fini ? mettre une valeur particulière pour traj_length ou regarder l'état du déplacement (Idle, turn_final...)?
 
     traj_length = nb_pts;
     // on va éviter de faire des mallocs pour les trucs "critiques" en embarqué.
@@ -87,7 +88,6 @@ void Locomotion::trajectory(Position* dest, int nb_pts) {
     // soit on stocke directement le pointeur qu'on nous donne, mais ça implique qu'il
     // doit rester valable pour toute la durée d'exécution de la boucle.
     // le plus simple c'est davoir un tableau interne assez grand et d'y copier les positions
-    traj_points = (Position*)malloc(nb_pts*sizeof(int));
     for (int i=0; i<nb_pts; i++) {
         traj_points[i] = dest[i];
     }
@@ -127,6 +127,43 @@ void Locomotion::odometry_task(void* arg)
 
 }
 
+int Locomotion::trajectory_movement() {
+    // Vaut-il mieux pas garder cet indice dans Locomotion pour savoir où on en est ?
+    int i=0;
+    while(i<traj_length) {
+        bool is_finished = waitFinishedTimeout(100);
+        switch(mvm_etat) {
+            case IDLE:
+                mvm_etat = TURN;
+                float dx = traj_points[i].x-pos.x;
+                float dy = traj_points[i].y-pos.y;
+                float d_theta = atan2(dy, dx) - pos.theta;
+                move(0, d_theta);
+            case TURN:
+                if (is_finished) {
+                    mvm_etat = CRUISE;
+                    float dx = traj_points[i].x-pos.x;
+                    float dy = traj_points[i].y-pos.y;
+                    float mvm_length = sqrtf(dx*dx+dy*dy);
+                    move(mvm_length, 0);
+                }
+            case CRUISE:
+                if (is_finished) {
+                    if (i==traj_length-1) {
+                        mvm_etat = TURN_FINAL;
+                    } else {
+                        i++;
+                        mvm_etat = IDLE;
+                    }
+                }
+            case TURN_FINAL:
+                if (is_finished) {
+                    return 1;
+                }
+        }
+    }
+}
+
 void Locomotion::trajectory_task(void* arg)
 {
     Locomotion* that = static_cast<Locomotion*>(arg);
@@ -136,31 +173,7 @@ void Locomotion::trajectory_task(void* arg)
 
         // Tache à faire
         // Pour chaque point -> lancer un move, waitFinishedTimeout(n ms) pour tester toute les n ms si le mouvement est fini ou s'il y a un soucis
-        for (int i=0; i<that->traj_length; i++) {
-            Position start_pos = that->pos;
-            Position end_pos = that->traj_points[i];
-            float dx = end_pos.x-start_pos.x;
-            float dy = end_pos.y-start_pos.y;
-            float d_theta = atan2(dy, dx) - start_pos.theta;
-            float mvm_length = sqrtf(dx*dx+dy*dy);
-            that->move(0, d_theta);
-            that->move(mvm_length, 0);
-            bool b;
-            do {
-                // TODO: ajouter la fonction de test d'obstacle (et la gestion d'erreur??)
-                bool obstacle = false;
-                
-                bool is_finished = that->waitFinishedTimeout(100);
-                b = !is_finished && !obstacle;
-            } while(b);
-            // Suivant la sortie -> stop le trajet/faire une pause? Dans les deux cas, il faut se stop
-            // Idée pour pause (potentiellement au milieu entre deux points):
-                // On fait une boucle qui teste au max n fois les capteurs avec un delay
-                    // Si toujours soucis -> on stop le trajet
-                    // Sinon, on repart à i=i-1, l'odometrie reprendra la pos actuelle et le pami continuera la trajectoire
-        }
-        float last_rota = that->traj_points[that->traj_length-1].theta - that->pos.theta;
-        that->move(0, last_rota);
+        that->trajectory_movement();
 
         // sleep jusqu'à la prochaine période
         vTaskDelay(ODOMETRY_PERIOD_MS / portTICK_PERIOD_MS);

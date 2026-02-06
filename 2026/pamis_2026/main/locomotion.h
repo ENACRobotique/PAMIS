@@ -8,6 +8,12 @@ struct Position {
 
 };
 
+enum mvm_status {
+    IDLE,
+    TURN,
+    CRUISE,
+    TURN_FINAL
+};
 
 class Locomotion {
 public:
@@ -43,6 +49,8 @@ public:
     
     void trajectory(Position* dest, int nb_pts);
     
+    int trajectory_movement();
+
     private:
     Stepper step_left;
     Stepper step_right;
@@ -52,7 +60,11 @@ public:
     float oldPosLeft;
     float oldPosRight;
     
+    // mvm_status -> enum ?? -> mvm_status mvm_etat = IDLE
+    // Il faut éviter d'avoir des doublons de IDLE : stepper et locomotion ??
+    mvm_status mvm_etat = IDLE;
+
     SemaphoreHandle_t traj_sem;
-    Position *traj_points;
+    Position traj_points[10];
     int traj_length;
 };
