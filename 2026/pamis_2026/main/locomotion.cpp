@@ -26,6 +26,10 @@ Stepper_config_t step2_cfg = {
 
 
 void Locomotion::init() {
+    pos = {0, 0, 0};
+
+    traj_sem = xSemaphoreCreateBinary();
+
     step_left.config(&step_cfg);
     step_left.init();
     step_left.setStepsPerMm(STEPS_PER_MM);
@@ -38,8 +42,8 @@ void Locomotion::init() {
     oldPosLeft = getPosLeft();
     oldPosRight = getPosRight();
 
-    xTaskCreate(odometry_task, "Blinker", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
-    xTaskCreate(trajectory_task, "Blinker", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
+    xTaskCreate(odometry_task, "Odometry", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
+    xTaskCreate(trajectory_task, "Trajectory", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
 
 }
 
@@ -104,7 +108,7 @@ void Locomotion::odometry_task(void* arg)
     while(true) {
         float pos_left = that->getPosLeft();
         float pos_right = that->getPosRight();
-        
+    
         float dLeft = pos_left - that->oldPosLeft;
         float dRight = pos_right - that->oldPosRight;
         float dTheta = (dRight - dLeft)/WHEELBASE;
@@ -135,35 +139,49 @@ int Locomotion::trajectory_movement() {
     while(i<traj_length) {
         bool is_finished = waitFinishedTimeout(100);
         switch(mvm_etat) {
-            case IDLE:
-                mvm_etat = TURN;
-                float dx = traj_points[i].x-pos.x;
-                float dy = traj_points[i].y-pos.y;
-                float d_theta = atan2(dy, dx) - pos.theta;
-                move(0, d_theta);
-            case TURN:
-                if (is_finished) {
-                    mvm_etat = CRUISE;
+            case IDLE_mvm:
+                {
+                    mvm_etat = TURN_mvm;
                     float dx = traj_points[i].x-pos.x;
                     float dy = traj_points[i].y-pos.y;
-                    float mvm_length = sqrtf(dx*dx+dy*dy);
-                    move(mvm_length, 0);
+                    float d_theta = atan2(dy, dx) - pos.theta;
+                    move(0, d_theta);
+                    break;
                 }
-            case CRUISE:
-                if (is_finished) {
-                    if (i==traj_length-1) {
-                        mvm_etat = TURN_FINAL;
-                    } else {
-                        i++;
-                        mvm_etat = IDLE;
+            case TURN_mvm:
+                {
+                    if (is_finished) {
+                        mvm_etat = CRUISE_mvm;
+                        float dx = traj_points[i].x-pos.x;
+                        float dy = traj_points[i].y-pos.y;
+                        float mvm_length = sqrtf(dx*dx+dy*dy);
+                        move(mvm_length, 0);
                     }
+                    break;
                 }
-            case TURN_FINAL:
-                if (is_finished) {
-                    return 1;
+            case CRUISE_mvm:
+                {
+                    if (is_finished) {
+                        if (i==traj_length-1) {
+                            mvm_etat = TURN_FINAL_mvm;
+                            float d_theta = traj_points[i].theta - pos.theta;
+                            move(0, d_theta);
+                        } else {
+                            i++;
+                            mvm_etat = IDLE_mvm;
+                        }
+                    }
+                    break;
+                }
+            case TURN_FINAL_mvm:
+                {
+                    if (is_finished) {
+                        return 1;
+                    }
                 }
         }
     }
+    return -1;
 }
 
 void Locomotion::trajectory_task(void* arg)
@@ -176,9 +194,6 @@ void Locomotion::trajectory_task(void* arg)
         // Tache à faire
         // Pour chaque point -> lancer un move, waitFinishedTimeout(n ms) pour tester toute les n ms si le mouvement est fini ou s'il y a un soucis
         that->trajectory_movement();
-
-        // sleep jusqu'à la prochaine période
-        vTaskDelay(ODOMETRY_PERIOD_MS / portTICK_PERIOD_MS);
     }
 
 }

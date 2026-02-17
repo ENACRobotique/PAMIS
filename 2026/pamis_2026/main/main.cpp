@@ -95,7 +95,16 @@ extern "C" void app_main(void)
     };
 
     gpio_config(&io_conf);
-
+    
+    gpio_config_t io_conf2 = {
+        .pin_bit_mask = (1 << FDC1) | (1 << FDC2) | (1 << FDC3),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    
+    gpio_config(&io_conf2);
 
     start_web_server();
 
@@ -134,14 +143,30 @@ extern "C" void app_main(void)
 
     xTaskCreate( blinker1, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate( blinker2, "Blinker2", configMINIMAL_STACK_SIZE+2048, NULL, 1, NULL);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+
+    Position test[2] = {
+        {.x=0, .y=500, .theta=0},
+        {.x=500, .y=500, .theta=M_PI},
+    };
+
+    while (!gpio_get_level(FDC1)) {
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+    }
+
+    Position a = locomotion.getPos();
+    printf("%f, %f, %f\n", a.x, a.y, a.theta);
+    locomotion.trajectory(test, 2);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
 
     float val = 0;
     while(1) {
         ws_async_send_robot_pos();
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        auto pos = locomotion.getPos();
+        vTaskDelay(100 / portTICK_PERIOD_MS);
 
 
-        Position pos = locomotion.getPos();
+        // Position pos = locomotion.getPos();
         char pos_str[30];
         snprintf(pos_str, sizeof(pos_str), "x=%d,y=%d,theta=%.2f",(int)pos.x,(int)pos.y,pos.theta);
         telelogs_send_string("Odom", pos_str);

@@ -61,6 +61,7 @@ void Stepper::init(uint8_t stepP, uint8_t dirP, uint8_t enP, microStepping_t mic
 
 void Stepper::init()
 {
+    currentPos = 0;
     bsem = xSemaphoreCreateBinary();
 
     // Set SETP, DIR, and ENABLE pins as OUTPUT.
@@ -180,7 +181,7 @@ uint8_t Stepper::getState()
     return ctrl.status;
 }
 
-uint64_t Stepper::getPosition()
+int64_t Stepper::getPosition()
 {
     return currentPos;
 }

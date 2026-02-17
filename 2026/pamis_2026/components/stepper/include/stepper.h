@@ -81,7 +81,7 @@ private:
     gptimer_alarm_config_t alarm_cfg = {
         .reload_count = 0
     };
-    uint64_t currentPos = 0; // absolute position
+    int64_t currentPos = 0; // absolute position
 
     SemaphoreHandle_t bsem;
 
@@ -192,7 +192,7 @@ public:
     /** @brief returns current absolute position
      *  @return current absolute postion in steps
      */
-    uint64_t getPosition();
+    int64_t getPosition();
 
     /** @brief returns current absolute position
      *  @return current absolute postion in steps
