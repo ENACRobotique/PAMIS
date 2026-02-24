@@ -94,7 +94,7 @@ extern "C" void app_main(void)
     telelogs_init();
 
     locomotion.init();
-    //imu_init(&bus_handle);
+    imu_init(&bus_handle);
 
     radar_vl53_start(&bus_handle);
 
