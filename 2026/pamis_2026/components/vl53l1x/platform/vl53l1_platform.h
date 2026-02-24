@@ -19,6 +19,7 @@
 #define _VL53L1_PLATFORM_H_
 #include "driver/i2c_master.h"
 #include "vl53l1_types.h"
+#include "driver/gpio.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -28,6 +29,9 @@ extern "C"
 typedef struct {
 	i2c_master_dev_handle_t dev_handle;
 	i2c_device_config_t dev_config;
+	gpio_num_t shutdown_gpio;
+	uint8_t addr;
+	bool actif;
 
 } VL53L1_Dev_t;
 
