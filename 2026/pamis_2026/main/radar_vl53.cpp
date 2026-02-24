@@ -7,20 +7,24 @@ extern "C" {
     #include "VL53L1X_api.h"
 }
 #include "endian.h"
+#include "telelogs.h"
+
 #define RADAR_NB 5
-i2c_master_bus_handle_t* vl53_bus_handle;
 
-    gpio_config_t radar_sht_conf = {
-        .pin_bit_mask = (1 << GPIO_NUM_14) | (1 << GPIO_NUM_21) | (1 << GPIO_NUM_11) | (1 << GPIO_NUM_12) | (1 << GPIO_NUM_13),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
-    };
+#define RADAR_NB_RETRY 5
 
-    
 
-VL53L1_Dev_t radars[RADAR_NB] = {
+static i2c_master_bus_handle_t* vl53_bus_handle;
+
+static gpio_config_t radar_sht_conf = {
+    .pin_bit_mask = (1 << GPIO_NUM_14) | (1 << GPIO_NUM_21) | (1 << GPIO_NUM_11) | (1 << GPIO_NUM_12) | (1 << GPIO_NUM_13),
+    .mode = GPIO_MODE_OUTPUT,
+    .pull_up_en = GPIO_PULLUP_DISABLE,
+    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+    .intr_type = GPIO_INTR_DISABLE,
+};
+
+static VL53L1_Dev_t radars[RADAR_NB] = {
     {
         .dev_config = {
             .dev_addr_length = I2C_ADDR_BIT_LEN_7,
@@ -49,7 +53,7 @@ VL53L1_Dev_t radars[RADAR_NB] = {
         },
         .shutdown_gpio = GPIO_NUM_13,
         .addr = 0x32,
-        .actif = false
+        .actif = true
     },
     {
         .dev_config = {
@@ -59,7 +63,7 @@ VL53L1_Dev_t radars[RADAR_NB] = {
         },
         .shutdown_gpio = GPIO_NUM_14,
         .addr = 0x33,
-        .actif = false
+        .actif = true
     },
     {
         .dev_config = {
@@ -69,71 +73,141 @@ VL53L1_Dev_t radars[RADAR_NB] = {
         },
         .shutdown_gpio = GPIO_NUM_21,
         .addr = 0x34,
-        .actif = false
+        .actif = true
     }
 };
 
-
-static void read_radar(void* arg) {
-    gpio_config(&radar_sht_conf);
-
-    for(int i = 0; i<RADAR_NB; i++){
-        gpio_set_level(radars[i].shutdown_gpio,0);
-
-    }
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-    
-    for(int i = 0; i<RADAR_NB; i++){
-
-        if(!radars[i].actif){continue;}
-        ESP_ERROR_CHECK(i2c_master_bus_add_device(*vl53_bus_handle, &radars[i].dev_config, &radars[i].dev_handle));
-        gpio_set_level(radars[i].shutdown_gpio,1);
-        uint8_t booted = 0;
-        /* Wait for device booted */
+static VL53L1X_ERROR init_radar(VL53L1_Dev_t* radar) {
+        ESP_ERROR_CHECK(i2c_master_bus_add_device(*vl53_bus_handle, &radar->dev_config, &radar->dev_handle));
+        // turn sensor ON
+        gpio_set_level(radar->shutdown_gpio,1);
+        
+        // Wait for device booted
+        uint16_t nb_errors = 0;
         while(true){
-            VL53L1X_ERROR status = VL53L1X_BootState(&radars[i],&booted);
-            if(booted){
+            uint8_t booted = 0;
+            VL53L1X_ERROR status = VL53L1X_BootState(radar, (uint8_t*)&booted);
+            if(status == 0 && booted){
                 break;
+            }
+            
+            if(status) {
+                if(nb_errors++ > RADAR_NB_RETRY) {
+                    // too many I2C errors, disable this radar and abort init
+                    // TODO raise an error somewhere ?
+                    radar->actif = false;
+                    return VL53L1X_ERROR_TIMEOUT;
+                }
             }
             vTaskDelay(50 / portTICK_PERIOD_MS);
         }
-        VL53L1X_SensorInit(&radars[i]); //sensor initialization
-        //VL53L1X_SetInterMeasurementPeriod();
 
-        VL53L1X_SetI2CAddress(&radars[i], radars[i].addr*2);
-        radars[i].dev_config.device_address = radars[i].addr;
-        i2c_master_bus_rm_device(radars[i].dev_handle);
-        ESP_ERROR_CHECK(i2c_master_bus_add_device(*vl53_bus_handle, &radars[i].dev_config, &radars[i].dev_handle));
-        VL53L1X_StartRanging(&radars[i]);
+        //sensor initialization
+        VL53L1X_SensorInit(radar);
+
+        // change I2C address
+        VL53L1X_SetI2CAddress(radar, radar->addr*2);
+        radar->dev_config.device_address = radar->addr;
+        i2c_master_bus_rm_device(radar->dev_handle);
+        ESP_ERROR_CHECK(i2c_master_bus_add_device(*vl53_bus_handle, &radar->dev_config, &radar->dev_handle));
+
+        // if needed, for quicker measurements
+        // VL53L1X_SetDistanceMode(radars, 1);
+        // VL53L1X_SetTimingBudgetInMs(radars, 20);
+        // VL53L1X_SetInterMeasurementInMs(radars, 20);
+
+        // start continuous ranging
+        VL53L1X_StartRanging(radar);
+        
+        return VL53L1X_ERROR_NONE;
+}
+
+static VL53L1X_ERROR radar_read(VL53L1_Dev_t* radar,  VL53L1X_Result_t* result)
+{
+    // wait until data ready
+    while (true)
+    {
+        uint8_t isDataReady = 0;
+        VL53L1X_ERROR status = VL53L1X_CheckForDataReady(radar, &isDataReady);
+        if (status == VL53L1X_ERROR_NONE)
+        {
+            if (isDataReady)
+            {
+                break;
+            }
+            vTaskDelay(20 / portTICK_PERIOD_MS);
+        }
+        else
+        {
+            return status;
+        }
     }
 
+    VL53L1X_GetResult(radar, result);
+    VL53L1X_ClearInterrupt(radar);
+
+    return VL53L1X_ERROR_NONE;
+}
+
+static void radarTask(void* arg) {
+    // configure GPIO dor shutdown pins
+    gpio_config(&radar_sht_conf);
+
+    // shutdown all sensors
+    for(int i = 0; i<RADAR_NB; i++){
+        gpio_set_level(radars[i].shutdown_gpio,0);
+    }
     
-    uint8_t isDataReady = 0;
-    uint8_t rangeStatus = 0;
-    uint16_t distance = 0;
-    uint16_t bdistance = 0;
+    vTaskDelay(10 / portTICK_PERIOD_MS);    // be sure that sensor are off
+    
+    // init sensors
+    for(int i = 0; i<RADAR_NB; i++){
+        if(radars[i].actif){
+            init_radar(&radars[i]);
+        }
+    }
+
     while(true) {
         for(int i = 0; i<RADAR_NB; i++){
-            if(!radars[i].actif){continue;}
-            while(!isDataReady){
-                VL53L1X_CheckForDataReady(&radars[i],&isDataReady);
-            }
+            if(radars[i].actif){
+                VL53L1X_Result_t result;
+                VL53L1X_ERROR status = radar_read(&radars[i], &result);
+                // check that read succeded and the measurement is valid
+                if (status == VL53L1X_ERROR_NONE && result.Status == 0)
+                {
+                    char name[50];
+                    snprintf(name, 50, "dist %d", i);
+                    telelogs_send_float(name, result.Distance);
 
-            isDataReady = 0;
-            VL53L1X_GetRangeStatus(&radars[i], &rangeStatus);
-            VL53L1X_GetDistance(&radars[i], &distance);
-            bdistance = __bswap16(distance);
-            VL53L1X_ClearInterrupt(&radars[i]);
-            printf("distance %d : %u\n", i, bdistance);
-            vTaskDelay(100 / portTICK_PERIOD_MS);
+                    // TODO: make this distance accessible
+
+                    // char Ambient[50];
+                    // snprintf(Ambient, 50, "Ambient %d", i);
+                    // telelogs_send_float(Ambient, result.Ambient);
+
+                    // char SigPerSPAD[50];
+                    // snprintf(SigPerSPAD, 50, "SigPerSPAD %d", i);
+                    // telelogs_send_float(SigPerSPAD, result.SigPerSPAD);
+
+                    // char NumSPADs[50];
+                    // snprintf(NumSPADs, 50, "NumSPADs %d", i);
+                    // telelogs_send_float(NumSPADs, result.NumSPADs);
+                }
+                else {
+                    // sensor not responding or bad measurement
+                    // TODO: lets consider there are no obstacles ?
+                }
+
+                vPortYield();
             }
+        }
         
     }
-
 }
+
 
 
 void radar_vl53_start(i2c_master_bus_handle_t* bus_handle){
     vl53_bus_handle = bus_handle;
-    xTaskCreate( read_radar, "Read_radar", configMINIMAL_STACK_SIZE + 1024, NULL, 1, NULL);
+    xTaskCreate( radarTask, "radar", configMINIMAL_STACK_SIZE + 1024, NULL, 1, NULL);
 }
