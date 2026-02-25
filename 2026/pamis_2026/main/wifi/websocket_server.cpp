@@ -105,60 +105,10 @@ esp_err_t get_req_robot_handler(httpd_req_t *req)
     return response;
 }
 
-/**
- * GET on /led
- */
-esp_err_t get_req_led_handler(httpd_req_t *req) {
-    char* data;
-    if(gpio_get_level(LED2)) {
-        data = "ON";
-    } else {
-        data = "OFF";
-    }
-    ESP_LOGI(TAG, "LED request, responding %s", data);
-    int response = httpd_resp_send(req, data, HTTPD_RESP_USE_STRLEN);
-    return response;
-}
-
-
-static void ws_async_send_led_state(void *arg)
-{
-    httpd_ws_frame_t ws_pkt = {0};
-
-    int led_state = gpio_get_level(LED2);
-    
-    char buff[4];
-    sprintf(buff, "%d",led_state);
-    
-    ws_pkt.payload = (uint8_t *)buff;
-    ws_pkt.len = strlen(buff);
-    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-    
-    static size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
-    size_t fds = max_clients;
-    int client_fds[max_clients];
-
-    esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
-
-    if (ret != ESP_OK) {
-        return;
-    }
-
-    for (int i = 0; i < fds; i++) {
-        int client_info = httpd_ws_get_fd_info(server, client_fds[i]);
-        if (client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
-            httpd_ws_send_frame_async(server, client_fds[i], &ws_pkt);
-        }
-    }
-}
-
 
 static void ws_async_send_wifi_ssid(void *arg)
 {
     httpd_ws_frame_t ws_pkt = {0};
-
-    int led_state = gpio_get_level(LED2);
-    gpio_set_level(LED2, !led_state);
     
     char* ssid = read_string_from_nvs("sta_ssid");
     char* password = read_string_from_nvs("sta_password");
@@ -197,12 +147,9 @@ void ws_async_send_robot_pos()
 {
     httpd_ws_frame_t ws_pkt = {0};
 
-    int led_state = gpio_get_level(LED2);
-    gpio_set_level(LED2, !led_state);
-    
     char buff[100];
     Position pos = locomotion.getPos();
-    sprintf(buff, "{\"led\":%d, \"x\":%02f, \"y\":%02f, \"theta\":%02f}",!led_state, pos.x, pos.y, pos.theta);
+    sprintf(buff, "{\"x\":%02f, \"y\":%02f, \"theta\":%02f}", pos.x, pos.y, pos.theta);
     
     ws_pkt.payload = (uint8_t *)buff;
     ws_pkt.len = strlen(buff);
@@ -271,11 +218,7 @@ static esp_err_t handle_ws_req(httpd_req_t *req)
             ws_pkt.payload[ws_pkt.len] = '\0';  // NULL terminate the string
             ESP_LOGI(TAG, "Got packet with message: %s", ws_pkt.payload);
 
-            if(strncmp((char *)ws_pkt.payload, "toggle", ws_pkt.len) == 0) {
-                gpio_set_level(LED2, !gpio_get_level(LED2));
-                httpd_queue_work(req->handle, ws_async_send_led_state, NULL);
-            }
-            else if (strncmp((char *)ws_pkt.payload, "forward", ws_pkt.len) == 0) {
+            if (strncmp((char *)ws_pkt.payload, "forward", ws_pkt.len) == 0) {
                 locomotion.move(300, 0);
             }
             else if (strncmp((char *)ws_pkt.payload, "backward", ws_pkt.len) == 0) {
@@ -286,6 +229,9 @@ static esp_err_t handle_ws_req(httpd_req_t *req)
             }
             else if (strncmp((char *)ws_pkt.payload, "right", ws_pkt.len) == 0) {
                 locomotion.move(0, -M_PI_2);
+            }
+            else if (strncmp((char *)ws_pkt.payload, "rightforward", ws_pkt.len) == 0) {
+                locomotion.move(150, -M_PI_2/2);
             }
             else if (strncmp((char *)ws_pkt.payload, "dis_step", ws_pkt.len) == 0) {
                 locomotion.enableSteppers(false);
@@ -360,12 +306,6 @@ httpd_handle_t setup_websocket_server(void)
         .method = HTTP_GET,
         .handler = get_req_robot_handler,
         .user_ctx = NULL};
-    
-    httpd_uri_t uri_led_get = {
-        .uri = "/led",
-        .method = HTTP_GET,
-        .handler = get_req_led_handler,
-        .user_ctx = NULL};
 
     httpd_uri_t ws = {
         .uri = "/ws",
@@ -381,7 +321,6 @@ httpd_handle_t setup_websocket_server(void)
         httpd_register_uri_handler(server, &uri_get);
         httpd_register_uri_handler(server, &uri_get_low_res);
         httpd_register_uri_handler(server, &uri_get_robot);
-        httpd_register_uri_handler(server, &uri_led_get);
         httpd_register_uri_handler(server, &ws);
     }
 

@@ -185,6 +185,7 @@
         </div>
         <p></p>
         <div>
+            <button id="btn_rf">⬈</button>
             <div class="dpad">
                 <button id="btn_fw" class="btn up">▲</button>
                 <button id="btn_right" class="btn right">▶</button>
@@ -202,7 +203,7 @@
         var gateway = `ws://${window.location.hostname}/ws`;
         var websocket;
         window.addEventListener('load', onLoad);
-        var robot_state = {"led": 0, "x":0, "y":0, "theta":0};
+        var robot_state = {"x":0, "y":0, "theta":0};
 
         const table = new Image();
         const robot = new Image();
@@ -255,6 +256,10 @@
             });
             document.getElementById('btn_right').addEventListener('click', ()=>{
                 websocket.send('right');
+                btn_en.classList.add("active");
+            });
+            document.getElementById('btn_rf').addEventListener('click', ()=>{
+                websocket.send('rightforward');
                 btn_en.classList.add("active");
             });
             document.getElementById('btn_en').addEventListener('click', (e)=>{

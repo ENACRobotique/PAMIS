@@ -13,6 +13,7 @@ int ip_protocol = 0;
 struct timeval timeout;
 int sock = 0;
 
+static bool is_initialized = false;
 
 void telelogs_init() {
     dest_addr.sin_addr.s_addr = inet_addr("192.168.42.201");
@@ -31,9 +32,13 @@ void telelogs_init() {
     timeout.tv_sec = 10;
     timeout.tv_usec = 0;
     setsockopt (sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
+    is_initialized = true;
 }
 
 void telelogs_send_string(const char* name, const char* str) {
+    if(!is_initialized) {
+        return;
+    }
     char data[500];
     int len = snprintf(data, 500, "%s:%s|t", name, str);
     int err = sendto(sock, data, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
@@ -46,6 +51,9 @@ void telelogs_send_string(const char* name, const char* str) {
 
 
 void telelogs_send_float(const char* name, float value) {
+    if(!is_initialized) {
+        return;
+    }
     char buffer[50];
     int len = snprintf(buffer, 50, "%s:%f\n", name, value);
     int err = sendto(sock, buffer, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
