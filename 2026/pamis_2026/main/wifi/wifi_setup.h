@@ -19,4 +19,5 @@ esp_err_t wifi_create_ap(const char* ap_ssid, const char* ap_password);
 
 char* read_string_from_nvs(const char* key);
 esp_err_t write_string_to_nvs(const char* key, const char* value);
-
+esp_err_t read_u16_from_nvs(const char* key, uint16_t* value);
+esp_err_t write_u16_to_nvs(const char* key, uint16_t value);

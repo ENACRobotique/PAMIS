@@ -71,6 +71,14 @@ char* read_string_from_nvs(const char* key) {
     return NULL;
 }
 
+esp_err_t read_u16_from_nvs(const char* key, uint16_t* value) {
+    return nvs_get_u16(nvs_config_handle, key, value);
+}
+
+esp_err_t write_u16_to_nvs(const char* key, uint16_t value) {
+    return nvs_set_u16(nvs_config_handle, key, value);
+}
+
 
 
 static void ip_event_cb(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)

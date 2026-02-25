@@ -129,9 +129,19 @@ extern "C" void app_main(void)
         ESP_LOGE("NVS", "Failed to fetch WiFi credentials, using default credentials");
         ssid = CONFIG_WIFI_STA_SSID;
         password = CONFIG_WIFI_STA_PASSWORD;
+        write_string_to_nvs("sta_ssid", CONFIG_WIFI_STA_SSID);
+        write_string_to_nvs("sta_password", CONFIG_WIFI_STA_PASSWORD);
     }
 
-    esp_err_t ret = wifi_connect(ssid, password);
+    char* teleplot_ip = read_string_from_nvs("teleplot_ip");
+    uint16_t teleplot_port;
+    esp_err_t ret = read_u16_from_nvs("teleplot_port", &teleplot_port);
+    if(teleplot_ip == NULL || ret != ESP_OK) {
+        write_string_to_nvs("teleplot_ip", "192.168.42.201");
+        write_u16_to_nvs("teleplot_port", 47269);
+    }
+
+    ret = wifi_connect(ssid, password);
     if(ret == ESP_OK) {
         // Blink 3 times on WiFi connect
         for(int i=0; i<3; i++) {

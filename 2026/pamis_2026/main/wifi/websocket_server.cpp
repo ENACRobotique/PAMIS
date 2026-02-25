@@ -17,6 +17,7 @@
 #include "locomotion.h"
 #include "wifi_setup.h"
 #include "websocket_server.h"
+#include "telelogs.h"
 
 extern Locomotion locomotion;
 
@@ -32,7 +33,7 @@ static const char *TAG = "WebSocket Server"; // TAG for debug
 #define LOW_RES_PNG_PATH "/spiffs/low_res.png"
 #define ROBOT_PNG_PATH "/spiffs/robot.png"
 
-char index_html[12000];
+char index_html[14000];
 ssize_t low_res_size;
 char low_res_png[63000];
 ssize_t robot_size;
@@ -87,18 +88,15 @@ esp_err_t get_req_handler(httpd_req_t *req)
     return response;
 }
 
-/**
- * GET on /
- */
+// GET on /low_res.png
 esp_err_t get_req_low_res_handler(httpd_req_t *req)
 {
     int response = httpd_resp_send(req, low_res_png, low_res_size);
     return response;
 }
 
-/**
- * GET on /
- */
+
+// GET on /robot.png
 esp_err_t get_req_robot_handler(httpd_req_t *req)
 {
     int response = httpd_resp_send(req, robot_png, robot_size);
@@ -112,13 +110,18 @@ static void ws_async_send_wifi_ssid(void *arg)
     
     char* ssid = read_string_from_nvs("sta_ssid");
     char* password = read_string_from_nvs("sta_password");
-    if(ssid == NULL || password == NULL) {
+    char* teleplot_ip = read_string_from_nvs("teleplot_ip");
+    uint16_t teleplot_port;
+    esp_err_t ret = read_u16_from_nvs("teleplot_port", &teleplot_port);
+    if(ssid == NULL || password == NULL || teleplot_ip == NULL || ret != ESP_OK) {
         return;
     }
-    char buff[80];
-    snprintf(buff, 80,  "{\"sta_ssid\":\"%s\", \"sta_password\":\"%s\"}", ssid, password);
+
+    char buff[160];
+    snprintf(buff, 160,  "{\"sta_ssid\":\"%s\", \"sta_password\":\"%s\", \"teleplot_ip\":\"%s\", \"teleplot_port\":%u}", ssid, password, teleplot_ip, teleplot_port);
     free(ssid);
     free(password);
+    free(teleplot_ip);
     
     ws_pkt.payload = (uint8_t *)buff;
     ws_pkt.len = strlen(buff);
@@ -128,7 +131,7 @@ static void ws_async_send_wifi_ssid(void *arg)
     size_t fds = max_clients;
     int client_fds[max_clients];
 
-    esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
+    ret = httpd_get_client_list(server, &fds, client_fds);
 
     if (ret != ESP_OK) {
         return;
@@ -176,6 +179,7 @@ void ws_async_send_robot_pos()
 
 
 static esp_err_t handle_wifi_credentials(httpd_ws_frame_t* ws_pkt);
+static esp_err_t handle_teleplot_server_info(httpd_ws_frame_t* ws_pkt);
 
 static esp_err_t handle_ws_req(httpd_req_t *req)
 {
@@ -245,6 +249,9 @@ static esp_err_t handle_ws_req(httpd_req_t *req)
             else if(ws_pkt.payload[0] == 'W') {
                 ret = handle_wifi_credentials(&ws_pkt);
             }
+            else if(ws_pkt.payload[0] == 'T') {
+                ret = handle_teleplot_server_info(&ws_pkt);
+            }
         }
     }
 
@@ -280,6 +287,40 @@ static esp_err_t handle_wifi_credentials(httpd_ws_frame_t* ws_pkt)
         memcpy(temp, ws_pkt->payload + len_ssid + 2, len_pass);
         temp[len_pass] = '\0';
         write_string_to_nvs("sta_password", temp);
+    }
+    return ESP_OK;
+}
+
+/**
+ * "Tip|port"
+ */
+static esp_err_t handle_teleplot_server_info(httpd_ws_frame_t* ws_pkt)
+{
+    size_t len_ip = 0;
+    size_t len_port = 0;
+
+    char* temp = (char*)malloc(ws_pkt->len);
+    if(temp == NULL) {return ESP_ERR_NO_MEM;}
+
+    for (size_t i = 0; i < ws_pkt->len; i++)
+    {
+        if (ws_pkt->payload[i] == '|')
+        {
+            len_ip = i - 1;
+            len_port = ws_pkt->len - i - 1;
+        }
+    }
+
+    if (len_ip != 0 && len_port != 0)
+    {
+        memcpy(temp, ws_pkt->payload + 1, len_ip);
+        temp[len_ip] = '\0';
+        write_string_to_nvs("teleplot_ip", temp);
+        memcpy(temp, ws_pkt->payload + len_ip + 2, len_port);
+        temp[len_port] = '\0';
+        uint16_t teleplot_port = atoi(temp);
+        write_u16_to_nvs("teleplot_port", teleplot_port);
+        telelogs_init();
     }
     return ESP_OK;
 }

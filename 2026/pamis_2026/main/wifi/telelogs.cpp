@@ -5,6 +5,7 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 //#include "esp_netif.h"
+#include "wifi_setup.h"
 #define TAG ""
 
 struct sockaddr_in dest_addr;
@@ -16,9 +17,19 @@ int sock = 0;
 static bool is_initialized = false;
 
 void telelogs_init() {
-    dest_addr.sin_addr.s_addr = inet_addr("192.168.42.201");
+    char* teleplot_ip = read_string_from_nvs("teleplot_ip");
+    uint16_t teleplot_port;
+    esp_err_t ret = read_u16_from_nvs("teleplot_port", &teleplot_port);
+    if(teleplot_ip != NULL || ret == ESP_OK) {
+        printf("Reading teleplot ip from NVS: %s:%u\n", teleplot_ip, teleplot_port);
+        dest_addr.sin_addr.s_addr = inet_addr(teleplot_ip);
+        dest_addr.sin_port = htons(teleplot_port);
+    }
+    else {
+        dest_addr.sin_addr.s_addr = inet_addr("192.168.42.201");
+        dest_addr.sin_port = htons(47269);
+    }
     dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(47269);
     addr_family = AF_INET;
     ip_protocol = IPPROTO_IP;
 
