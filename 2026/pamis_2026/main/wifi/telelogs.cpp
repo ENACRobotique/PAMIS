@@ -8,11 +8,11 @@
 #include "wifi_setup.h"
 #define TAG ""
 
-struct sockaddr_in dest_addr;
-int addr_family = 0;
-int ip_protocol = 0;
-struct timeval timeout;
-int sock = 0;
+static struct sockaddr_in dest_addr;
+static int addr_family = 0;
+static int ip_protocol = 0;
+static struct timeval timeout;
+static int sock = 0;
 
 static bool is_initialized = false;
 
