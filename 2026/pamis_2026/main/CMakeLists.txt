@@ -41,6 +41,8 @@ idf_component_register(
         utils.cpp
         imu.cpp
         locomotion.cpp
+        SAP_controller.cpp
+        sts3032.cpp
         main.cpp
         wifi/websocket_server.cpp
         wifi/wifi_setup.cpp
@@ -67,7 +69,11 @@ idf_component_register(
         driver
         stepper
         vl53l1x
-    INCLUDE_DIRS "." "wifi"
+    INCLUDE_DIRS
+        .
+        wifi
+        ${EMBEDDED_PROTO_DIR}/src
+        ${CMAKE_BINARY_DIR}     # for protobuf generated files
 )
 
 spiffs_create_partition_image(storage ../data FLASH_IN_PROJECT)
