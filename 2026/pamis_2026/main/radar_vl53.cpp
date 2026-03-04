@@ -12,7 +12,7 @@ extern "C" {
 #define RADAR_NB 5
 
 #define RADAR_NB_RETRY 5
-
+uint16_t distances_radars[RADAR_NB];
 
 static i2c_master_bus_handle_t* vl53_bus_handle;
 
@@ -149,6 +149,15 @@ static VL53L1X_ERROR radar_read(VL53L1_Dev_t* radar,  VL53L1X_Result_t* result)
     return VL53L1X_ERROR_NONE;
 }
 
+uint16_t get_distance(uint16_t radar_nb){
+    if(radar_nb<RADAR_NB && radars[radar_nb].actif){
+        return(distances_radars[radar_nb]);
+    }
+    else{
+        return(1000000);
+    }
+}
+
 static void radarTask(void* arg) {
     // configure GPIO dor shutdown pins
     gpio_config(&radar_sht_conf);
@@ -173,8 +182,12 @@ static void radarTask(void* arg) {
                 VL53L1X_Result_t result;
                 VL53L1X_ERROR status = radar_read(&radars[i], &result);
                 // check that read succeded and the measurement is valid
-                if (status == VL53L1X_ERROR_NONE && result.Status == 0)
-                {
+                if (status == VL53L1X_ERROR_NONE){
+                    if(result.Status == 0){
+                        distances_radars[i] = result.Distance;
+                    }
+                    else{distances_radars[i]=10000;}
+
                     char name[50];
                     snprintf(name, 50, "dist %d", i);
                     telelogs_send_float(name, result.Distance);
