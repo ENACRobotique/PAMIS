@@ -161,4 +161,25 @@ namespace sts3032{
         
         sap_send_pkt(&pkt);
     }
+
+    int16_t readPos(uint8_t id){
+        sap_pkt_t pkt = {
+            .id = id,
+            .len = 4,
+            .instruction = SAP_READ
+        };
+        pkt.params[0] = R_CurrentPosition;
+        pkt.params[1] = 2;
+        sap_pkt_t rcv_pkt;
+        readPacket(&rcv_pkt, 0);
+        sap_send_pkt(&pkt);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+        //readPacket(&rcv_pkt, 1 / portTICK_PERIOD_MS);
+        if(readPacket(&rcv_pkt, 20 / portTICK_PERIOD_MS) == pdTRUE){
+            //if(rcv_pkt.instruction!=0){return 10000;}
+            int16_t pos = *((int16_t*) rcv_pkt.params);
+            return pos;
+        }
+        return 10000;
+    }
 }

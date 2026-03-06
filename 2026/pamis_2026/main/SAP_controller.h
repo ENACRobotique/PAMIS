@@ -2,6 +2,7 @@
 #include "inttypes.h"
 #include "stddef.h"
 #include "esp_err.h"
+#include "freertos/FreeRTOS.h"
 
 constexpr size_t SAP_MAX_DATA_LEN = 10;
 constexpr uint8_t SAP_BROADCAST_ID = 254;
@@ -32,3 +33,5 @@ typedef struct __attribute__((packed)) {
 esp_err_t sap_init(int baudrate);
 
 esp_err_t sap_send_pkt(sap_pkt_t* pkt);
+
+int readPacket(sap_pkt_t* pkt, TickType_t timeout);
