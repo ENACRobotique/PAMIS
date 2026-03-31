@@ -6,7 +6,13 @@
 // 1.8° per step, wheel 3inch diameter
 constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 76.2);
 
-constexpr float WHEELBASE = 132.55; // mm
+constexpr float WHEELBASE = 100; // mm
+
+float longueur_caisse = 150; //mm
+
+float vitesse_pami=3000;
+
+float acceleration_pami=1000;
 
 Stepper_config_t step_cfg = {
     .stepPin = 39,
@@ -53,11 +59,31 @@ void Locomotion::stop() {
     waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
 }
 
-void Locomotion::move(float lenght, float angle) {
-    float lenght_left = lenght - angle * WHEELBASE / 2.0f;
-    float lenght_right = lenght + angle * WHEELBASE / 2.0f;
-    step_left.runPosMm(lenght_left);
-    step_right.runPosMm(lenght_right);
+void Locomotion::move(float d, float alpha) {
+
+    float a1=0;
+    float a2=0;
+    float v1=0;
+    float v2=0;
+    float d1=d-(WHEELBASE/2)*alpha;
+    float d2=d+(WHEELBASE/2)*alpha;
+
+    if (d==0){
+        v1=vitesse_pami;
+        v2=vitesse_pami;
+        a1=acceleration_pami;
+        a2=acceleration_pami;}
+    else{
+    v1=abs(d1/d)*vitesse_pami;
+    v2=abs(d2/d)*vitesse_pami;
+    a1=abs(d1/d)*acceleration_pami;
+    a2=abs(d2/d)*acceleration_pami;}
+
+
+    step_left.setSpeedMm(a1, v1, a1);
+    step_right.setSpeedMm(a2, v2, a2);
+    step_left.runPosMm(d1);
+    step_right.runPosMm(d2);
 }
 
 void Locomotion::moveBlocking(float lenght, float angle) {
