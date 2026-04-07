@@ -21,6 +21,7 @@ public:
 
     void move(float lenght, float angle);
     void moveBlocking(float lenght, float angle);
+    void sortir_caisse();
     void stop();
 
     void enableSteppers(bool enable);

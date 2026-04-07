@@ -16,6 +16,10 @@
 #include "config.h"
 #include "imu.h"
 #include "radar_vl53.h"
+#include "sts3032.h"
+#include "SAP_controller.h"
+#include "math.h"
+
 
 
 Locomotion locomotion;
@@ -46,6 +50,23 @@ static void pami_strat(void* arg) {
         {.x=0, .y=500, .theta=0},
         {.x=500, .y=500, .theta=M_PI},
     };
+
+    while(!sap_ping(1)) {
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+    }
+
+    sts3032::move(7,3050);
+    sts3032::move(1,1100);
+    locomotion.moveBlocking(250,0);
+    locomotion.moveBlocking(0,M_PI/2);
+    locomotion.moveBlocking(-270,0);
+    locomotion.sortir_caisse();
+
+
+
+    
+
+
 
     
     // wait to plug tirette
@@ -104,6 +125,9 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &bus_handle));
     imu_init(&bus_handle);
     radar_vl53_start(&bus_handle);
+
+    sap_init(500000);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
 
     // setup locomotion
     locomotion.init();
@@ -174,6 +198,8 @@ extern "C" void app_main(void)
     start_web_server();
 
 
+
+    
     while(1) {
         ws_async_send_robot_pos();
         vTaskDelay(100 / portTICK_PERIOD_MS);

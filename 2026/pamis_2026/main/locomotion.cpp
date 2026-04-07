@@ -2,9 +2,10 @@
 #include "stepper.h"
 #include "config.h"
 #include "utils.h"
+#include "sts3032.h"
 
 // 1.8° per step, wheel 3inch diameter
-constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 76.2);
+constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 80);
 
 constexpr float WHEELBASE = 100; // mm
 
@@ -12,7 +13,7 @@ float longueur_caisse = 150; //mm
 
 float vitesse_pami=3000;
 
-float acceleration_pami=1000;
+float acceleration_pami=500;
 
 Stepper_config_t step_cfg = {
     .stepPin = 39,
@@ -90,6 +91,20 @@ void Locomotion::moveBlocking(float lenght, float angle) {
     move(lenght, angle);
     waitFinishedTimeout(portMAX_DELAY);
 }
+
+
+void Locomotion::sortir_caisse(){
+    sts3032::move(1,510);
+    vTaskDelay(100);
+    moveBlocking(180,-0.12);
+    sts3032::move(1,1100);
+    moveBlocking(0,M_PI/2);
+    moveBlocking(50,0);
+    sts3032::move(7,2034);
+    vTaskDelay(100);
+    moveBlocking(0,-M_PI);
+}
+
 
 void Locomotion::enableSteppers(bool enable) {
     if(enable) {
