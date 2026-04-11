@@ -22,6 +22,9 @@ public:
     void move(float lenght, float angle);
     void moveBlocking(float lenght, float angle);
     void sortir_caisse();
+    void placer_frigo_1();
+    void placer_frigo_2();
+    void pousser_caisse();
     void stop();
 
     void enableSteppers(bool enable);

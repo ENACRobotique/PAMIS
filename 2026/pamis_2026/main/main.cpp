@@ -59,8 +59,20 @@ static void pami_strat(void* arg) {
     sts3032::move(1,1100);
     locomotion.moveBlocking(250,0);
     locomotion.moveBlocking(0,M_PI/2);
-    locomotion.moveBlocking(-270,0);
+    locomotion.moveBlocking(-310,0);
     locomotion.sortir_caisse();
+    locomotion.placer_frigo_1();
+    vTaskDelay(50);
+    locomotion.moveBlocking(250,0);
+    locomotion.pousser_caisse();
+    locomotion.sortir_caisse();
+    locomotion.placer_frigo_2();
+    locomotion.moveBlocking(115,0);
+    locomotion.pousser_caisse();
+    locomotion.sortir_caisse();
+    locomotion.moveBlocking(50,0);
+    locomotion.moveBlocking(0,M_PI/2);
+    locomotion.moveBlocking(235,0);
 
 
 
