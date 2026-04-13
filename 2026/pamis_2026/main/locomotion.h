@@ -25,6 +25,9 @@ public:
     void placer_frigo_1();
     void placer_frigo_2();
     void pousser_caisse();
+    void vider_frigos();
+    void vider_frigo1();
+    void vider_frigo2();
     void stop();
 
     void enableSteppers(bool enable);

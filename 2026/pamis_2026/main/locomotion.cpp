@@ -110,7 +110,7 @@ void Locomotion::sortir_caisse(){
 }
 
 void Locomotion::placer_frigo_1(){
-    sts3032::move(7,2034);
+    sts3032::move(7,2020);
     vTaskDelay(50);
     moveBlocking(-150,0);
     moveBlocking(0,M_PI);
@@ -126,7 +126,7 @@ void Locomotion::placer_frigo_1(){
 }
 
 void Locomotion::placer_frigo_2(){
-    sts3032::move(7,2034);
+    sts3032::move(7,2020);
     vTaskDelay(50);
     moveBlocking(-150,0);
     moveBlocking(0,M_PI*3/4);
@@ -149,6 +149,46 @@ void Locomotion::pousser_caisse(){
     step_left.runPosMm(-350);
     step_right.runPosMm(-350);
     waitFinishedTimeout(portMAX_DELAY);
+}
+
+void Locomotion::vider_frigos(){
+    moveBlocking(420,0);
+    moveBlocking(0,-M_PI/2);
+    vider_frigo1();
+    moveBlocking(-25,0);
+    moveBlocking(0,-M_PI/2);
+    moveBlocking(90,0);
+    moveBlocking(0,M_PI/2);
+    moveBlocking(25,0);
+    moveBlocking(-5,0);
+    vider_frigo2();
+    moveBlocking(400,0);
+    moveBlocking(-45,0);
+    moveBlocking(0,M_PI/2);
+
+}
+
+void Locomotion::vider_frigo2(){
+    sts3032::move(1,1800);
+    vTaskDelay(50);
+    moveBlocking(-280,-0.6);
+    sts3032::move(1,1100);
+    vTaskDelay(50);
+    moveBlocking(300,0);
+    moveBlocking(-25,0);
+    moveBlocking(0,-M_PI);
+    moveBlocking(45,0);
+    sts3032::move(1,350);
+    vTaskDelay(50);
+    moveBlocking(250,-0.3);
+    moveBlocking(0,M_PI);
+    sts3032::move(1,1100);
+}
+
+void Locomotion::vider_frigo1(){
+    moveBlocking(270,0);
+    moveBlocking(0,M_PI);
+    moveBlocking(300,0);
 }
 
 
