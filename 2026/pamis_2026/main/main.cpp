@@ -62,7 +62,7 @@ static void pami_strat(void* arg) {
     locomotion.moveBlocking(-290,0);
     locomotion.moveBlocking(0,-M_PI/2);
     locomotion.moveBlocking(25,0);
-    locomotion.moveBlocking(-325,0);
+    locomotion.moveBlocking(-345,0);
     locomotion.sortir_caisse();
     locomotion.placer_frigo_1();
     vTaskDelay(50);
@@ -70,7 +70,7 @@ static void pami_strat(void* arg) {
     locomotion.pousser_caisse();
     locomotion.sortir_caisse();
     locomotion.placer_frigo_2();
-    locomotion.moveBlocking(130,0);
+    locomotion.moveBlocking(120,0);
     locomotion.pousser_caisse();
     locomotion.sortir_caisse();
     locomotion.moveBlocking(50,0);
