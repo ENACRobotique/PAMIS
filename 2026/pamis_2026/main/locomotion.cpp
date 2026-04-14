@@ -5,9 +5,9 @@
 #include "sts3032.h"
 
 // 1.8° per step, wheel 3inch diameter
-constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 80);
+constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 71);
 
-constexpr float WHEELBASE = 100; // mm
+constexpr float WHEELBASE = 97.8; // mm
 
 float longueur_caisse = 150; //mm
 
@@ -119,7 +119,7 @@ void Locomotion::placer_frigo_1(){
     vTaskDelay(50);
     moveBlocking(-50,0);
     moveBlocking(0,M_PI*5/8);
-    moveBlocking(200,0);
+    moveBlocking(130,0);
     moveBlocking(-45,0);
     moveBlocking(0,M_PI/2);
 
@@ -130,9 +130,10 @@ void Locomotion::placer_frigo_2(){
     vTaskDelay(50);
     moveBlocking(-150,0);
     moveBlocking(0,M_PI*3/4);
+    moveBlocking(50,0);
     sts3032::move(7,3050);
     vTaskDelay(50);
-    moveBlocking(-50,0);
+    moveBlocking(-75,0);
     moveBlocking(0,M_PI*1.6/2);
     moveBlocking(200,0);
     moveBlocking(-25,0);
@@ -143,7 +144,7 @@ void Locomotion::placer_frigo_2(){
 void Locomotion::pousser_caisse(){
     moveBlocking(0,-M_PI/2);
     vTaskDelay(50);
-    moveBlocking(35,0);
+    moveBlocking(40,0);
     step_left.setSpeedMm(100, 500, 100);
     step_right.setSpeedMm(100, 500, 100);
     step_left.runPosMm(-350);
@@ -155,40 +156,37 @@ void Locomotion::vider_frigos(){
     moveBlocking(420,0);
     moveBlocking(0,-M_PI/2);
     vider_frigo1();
-    moveBlocking(-25,0);
-    moveBlocking(0,-M_PI/2);
-    moveBlocking(90,0);
     moveBlocking(0,M_PI/2);
-    moveBlocking(25,0);
-    moveBlocking(-5,0);
+    moveBlocking(110,0);
+    moveBlocking(0,-M_PI/2);
     vider_frigo2();
-    moveBlocking(400,0);
+    moveBlocking(380,0);
     moveBlocking(-45,0);
     moveBlocking(0,M_PI/2);
 
 }
 
 void Locomotion::vider_frigo2(){
-    sts3032::move(1,1800);
-    vTaskDelay(50);
-    moveBlocking(-280,-0.6);
-    sts3032::move(1,1100);
-    vTaskDelay(50);
-    moveBlocking(300,0);
-    moveBlocking(-25,0);
-    moveBlocking(0,-M_PI);
-    moveBlocking(45,0);
+    moveBlocking(100,0);
     sts3032::move(1,350);
     vTaskDelay(50);
-    moveBlocking(250,-0.3);
+    moveBlocking(180,-0.2);
+    sts3032::move(1,1100);
+    vTaskDelay(50);
+    moveBlocking(-190,0);
+    moveBlocking(0,M_PI/2);
+    moveBlocking(45,0);
+    moveBlocking(0,-M_PI/2);
+    sts3032::move(1,350);
+    vTaskDelay(50);
+    moveBlocking(190,-0.2);
     moveBlocking(0,M_PI);
     sts3032::move(1,1100);
 }
 
 void Locomotion::vider_frigo1(){
     moveBlocking(270,0);
-    moveBlocking(0,M_PI);
-    moveBlocking(300,0);
+    moveBlocking(-270,0);
 }
 
 
