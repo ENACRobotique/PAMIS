@@ -75,3 +75,7 @@ public:
     Position traj_points[10];
     int traj_length;
 };
+
+
+extern Locomotion locomotion;
+

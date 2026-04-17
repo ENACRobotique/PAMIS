@@ -44,6 +44,7 @@ idf_component_register(
         SAP_controller.cpp
         sts3032.cpp
         main.cpp
+        strat.cpp
         wifi/websocket_server.cpp
         wifi/wifi_setup.cpp
         wifi/telelogs.cpp
