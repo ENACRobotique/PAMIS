@@ -15,6 +15,9 @@ float vitesse_pami=3000;
 
 float acceleration_pami=500;
 
+
+Locomotion locomotion;
+
 Stepper_config_t step_cfg = {
     .stepPin = 39,
     .dirPin = 38,
