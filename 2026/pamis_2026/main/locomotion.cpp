@@ -7,7 +7,7 @@
 // 1.8° per step, wheel 3inch diameter
 constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 71);
 
-constexpr float WHEELBASE = 97.8; // mm
+constexpr float WHEELBASE = 123.2; // mm
 
 float longueur_caisse = 150; //mm
 

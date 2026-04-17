@@ -88,7 +88,7 @@ extern "C" void app_main(void)
     xTaskCreate( blinker, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     // create strat task
-    xTaskCreate( strat_ninja, "pami strat", configMINIMAL_STACK_SIZE+4096, NULL, 1, NULL);
+    xTaskCreate( strat_fondation, "pami strat", configMINIMAL_STACK_SIZE+4096, NULL, 1, NULL);
 
 
 

@@ -116,7 +116,13 @@ void strat_fondation(void* arg) {
 
     
     locomotion.moveBlocking(100, 0);
-
+    locomotion.moveBlocking(0, M_PI/2);
+    locomotion.moveBlocking(100, 0);
+    locomotion.moveBlocking(0, M_PI/2);
+    locomotion.moveBlocking(100, 0);
+    locomotion.moveBlocking(0, M_PI/2);
+    locomotion.moveBlocking(100, 0);
+    locomotion.moveBlocking(0, M_PI/2);
 
 
     while(true) {
