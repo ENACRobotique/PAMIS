@@ -2,6 +2,8 @@
 #include "driver/uart.h"
 #include "config.h"
 #include "string.h"
+#include "esp_log.h"
+
 const int uart_buffer_size = (1024 * 2);
 QueueHandle_t uart_queue;
 sap_pkt_t rcv_pkt;
@@ -85,6 +87,29 @@ int readPacket(sap_pkt_t* pkt, TickType_t timeout){
         return pdTRUE;
     };
     return pdFALSE;
+}
+
+int sap_ping(uint8_t id) {
+
+    sap_pkt_t ping_pkt = {
+        .id = id,
+        .len = 2,
+        .instruction = SAP_PING,
+    };
+
+    sap_pkt_t rcv_pkt;
+    readPacket(&rcv_pkt, 0);
+    
+    if(sap_send_pkt(&ping_pkt) != ESP_OK) {
+        ESP_LOGE("SAP", "Send packet error!");
+    } else {
+        ESP_LOGI("SAP", "send packet ok");
+    }
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    if(readPacket(&rcv_pkt, 20 / portTICK_PERIOD_MS) == pdTRUE){
+        return 1;
+    }
+    return 0;
 }
 
 esp_err_t sap_send_pkt(sap_pkt_t *pkt)

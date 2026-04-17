@@ -31,6 +31,7 @@ typedef struct __attribute__((packed)) {
 
 
 esp_err_t sap_init(int baudrate);
+int sap_ping(uint8_t id);
 
 esp_err_t sap_send_pkt(sap_pkt_t* pkt);
 
