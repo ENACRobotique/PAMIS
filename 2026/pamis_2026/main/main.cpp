@@ -140,7 +140,11 @@ extern "C" void app_main(void)
     imu_init(&bus_handle);
     radar_vl53_start(&bus_handle);
 
-    sap_init(500000);
+    if(sap_init(500000) != ESP_OK) {
+        ESP_LOGE("SAP", "Failed to init SAP");
+    } else {
+        ESP_LOGI("SAP", "SAP initialized !");
+    }
     vTaskDelay(200 / portTICK_PERIOD_MS);
 
     // setup locomotion
