@@ -230,7 +230,7 @@ public:
      */
     void stop();
 
-    void stopSlow();
+    uint32_t stopSlow();
 
     /**
      * @return pdTRUE if move finished, or pdFALSE on timeout

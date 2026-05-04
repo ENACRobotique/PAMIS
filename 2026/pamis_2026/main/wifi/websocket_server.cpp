@@ -223,10 +223,10 @@ static esp_err_t handle_ws_req(httpd_req_t *req)
             ESP_LOGI(TAG, "Got packet with message: %s", ws_pkt.payload);
 
             if (strncmp((char *)ws_pkt.payload, "forward", ws_pkt.len) == 0) {
-                locomotion.move(300, 0);
+                locomotion.move(25, 0);
             }
             else if (strncmp((char *)ws_pkt.payload, "backward", ws_pkt.len) == 0) {
-                locomotion.move(-300, 0);
+                locomotion.move(-275, 0);
             }
             else if (strncmp((char *)ws_pkt.payload, "left", ws_pkt.len) == 0) {
                 locomotion.move(0, M_PI_2);

@@ -325,7 +325,7 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
     return 1;
 }
 
-void Stepper::stopSlow() {
+uint32_t Stepper::stopSlow() {
     //smallest n corresponding to the top speed until now.
     uint32_t n;
     
@@ -337,17 +337,26 @@ void Stepper::stopSlow() {
         n = ctrl.n_acc;
     } else {
         // not in ACC nor in COAST, nothing to do to stop.
-        return;
+        return uint32_t(0);
     }
 
     // top speed
     uint32_t v = sqrt(2 * ctrl.acc * n);
     // in how many steps can we stop ?
     uint32_t n_dec = (uint32_t)((v*v) / (2.0f * ctrl.acc));
+    // Number of step to do at the beginning
+    uint32_t old_step_total  = ctrl.steps_total;
     // then there is this many steps to do, no more.
     ctrl.steps_total = ctrl.steps_done + n_dec;
     // let's brake !
     ctrl.status = DEC;
+    // Step to do :
+    int step_to_do = old_step_total - ctrl.steps_done;
+    if (step_to_do > 0 ){
+        return old_step_total - ctrl.steps_total;
+    } else {
+        return uint32_t(0);
+    }
 }
 
 BaseType_t Stepper::waitFinishedTimeout(TickType_t xTicksToWait) {
