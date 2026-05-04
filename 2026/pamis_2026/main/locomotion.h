@@ -63,6 +63,9 @@ public:
     Stepper step_right;
     
     Position pos;
+
+    uint32_t step_to_do_left;
+    uint32_t step_to_do_right;
     
     float oldPosLeft;
     float oldPosRight;

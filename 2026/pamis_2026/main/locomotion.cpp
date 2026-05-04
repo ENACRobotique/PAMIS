@@ -58,8 +58,8 @@ void Locomotion::init() {
 }
 
 void Locomotion::stop() {
-    step_left.stopSlow();
-    step_right.stopSlow();
+    step_to_do_left = step_left.stopSlow();
+    step_to_do_right = step_right.stopSlow();
     waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
 }
 
