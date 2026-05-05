@@ -33,24 +33,29 @@ void strat_ninja(void* arg) {
 
     sts3032::move(7,3050);
     sts3032::move(1,1100);
+    locomotion.set_seuils(0,200,0,0,0);
+
+    //locomotion.moveEvitement(1000, 0);
+
     locomotion.vider_frigos();
-    locomotion.moveBlocking(650,0);
-    locomotion.moveBlocking(-290,0);
-    locomotion.moveBlocking(0,-M_PI/2);
-    locomotion.moveBlocking(25,0);
-    locomotion.moveBlocking(-345,0);
+    locomotion.moveEvitement(570,0);
+    locomotion.taper_mur();
+    locomotion.moveEvitement(-290,0);
+    locomotion.moveEvitement(0,-M_PI/2);
+    locomotion.taper_mur();
+    locomotion.moveEvitement(-345,0);
     locomotion.sortir_caisse();
     locomotion.placer_frigo_1();
-    locomotion.moveBlocking(240,0);
+    locomotion.moveEvitement(230,0);
     locomotion.pousser_caisse();
     locomotion.sortir_caisse();
     locomotion.placer_frigo_2();
-    locomotion.moveBlocking(135,0);
+    locomotion.moveEvitement(110,0);
     locomotion.pousser_caisse();
     locomotion.sortir_caisse();
-    locomotion.moveBlocking(50,0);
-    locomotion.moveBlocking(0,M_PI/2);
-    locomotion.moveBlocking(245,0);
+    locomotion.moveEvitement(50,0);
+    locomotion.moveEvitement(0,M_PI/2);
+    locomotion.moveEvitement(245,0);
 
 
 

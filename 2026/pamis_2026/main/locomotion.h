@@ -1,11 +1,17 @@
 #pragma once
 #include "stepper.h"
+#include "radar_vl53.h"
 
 struct Position {
     float x;
     float y;
     float theta;
 
+};
+
+struct DistancesRoues {
+    float d1;
+    float d2;
 };
 
 enum mvm_status {
@@ -20,6 +26,7 @@ public:
     void init();
 
     void move(float lenght, float angle);
+
     void moveBlocking(float lenght, float angle);
     void sortir_caisse();
     void placer_frigo_1();
@@ -28,7 +35,12 @@ public:
     void vider_frigos();
     void vider_frigo1();
     void vider_frigo2();
-    void stop();
+    void taper_mur();
+    DistancesRoues stop();
+    void set_seuils(float a,float b,float c,float d, float e);
+    bool danger();
+    DistancesRoues leg(DistancesRoues d);
+    void moveEvitement(float d,float alpha);
 
     void enableSteppers(bool enable);
 
@@ -59,13 +71,13 @@ public:
     int trajectory_movement();
 
     private:
+    void _move(float d1, float d2);
     Stepper step_left;
     Stepper step_right;
     
-    Position pos;
+    float seuils[RADAR_NB];
 
-    uint32_t step_to_do_left;
-    uint32_t step_to_do_right;
+    Position pos;
     
     float oldPosLeft;
     float oldPosRight;

@@ -147,7 +147,7 @@ extern "C" void app_main(void)
     start_web_server();
 
 
-
+    strat_ninja((void*) NULL);
     
     while(1) {
         ws_async_send_robot_pos();

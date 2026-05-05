@@ -9,7 +9,7 @@ extern "C" {
 #include "endian.h"
 #include "telelogs.h"
 
-#define RADAR_NB 5
+
 
 #define RADAR_NB_RETRY 5
 uint16_t distances_radars[RADAR_NB];

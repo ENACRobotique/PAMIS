@@ -3,11 +3,17 @@
 #include "config.h"
 #include "utils.h"
 #include "sts3032.h"
+#include "radar_vl53.h"
+#include "esp_log.h"
+
+
+int s=1;
 
 // 1.8° per step, wheel 3inch diameter
 constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 71);
 
-constexpr float WHEELBASE = 123.2; // mm
+// constexpr float WHEELBASE = 123.2; // mm pour les fondations
+constexpr float WHEELBASE = 97.8; //mm pour wallid
 
 float longueur_caisse = 150; //mm
 
@@ -48,6 +54,7 @@ void Locomotion::init() {
     step_right.init();
     step_right.setStepsPerMm(STEPS_PER_MM);
     step_right.setSpeedMm(1000, 4000, 1000);
+    set_seuils(0,0,0,0,0);
 
     oldPosLeft = getPosLeft();
     oldPosRight = getPosRight();
@@ -57,21 +64,37 @@ void Locomotion::init() {
 
 }
 
-void Locomotion::stop() {
-    step_to_do_left = step_left.stopSlow();
-    step_to_do_right = step_right.stopSlow();
+DistancesRoues Locomotion::stop() {
+    float step_to_do_left = step_left.stopSlow();
+    float step_to_do_right = step_right.stopSlow();
+
     waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
+    DistancesRoues d={
+        .d1=step_to_do_left,
+        .d2=step_to_do_right
+    };
+    return d;
 }
+
 
 void Locomotion::move(float d, float alpha) {
 
+    alpha=s*alpha;
+    float d1=d-(WHEELBASE/2)*alpha;
+    float d2=d+(WHEELBASE/2)*alpha;
+
+
+    _move(d1, d2);
+
+
+}
+
+void Locomotion::_move(float d1, float d2) {
     float a1=0;
     float a2=0;
     float v1=0;
     float v2=0;
-    float d1=d-(WHEELBASE/2)*alpha;
-    float d2=d+(WHEELBASE/2)*alpha;
-
+    float d=(d1+d2)/2;
     if (d==0){
         v1=vitesse_pami;
         v2=vitesse_pami;
@@ -92,17 +115,17 @@ void Locomotion::move(float d, float alpha) {
 
 void Locomotion::moveBlocking(float lenght, float angle) {
     move(lenght, angle);
-    waitFinishedTimeout(portMAX_DELAY);
+   waitFinishedTimeout(portMAX_DELAY);
 }
 
 
 void Locomotion::sortir_caisse(){
-    moveBlocking(60,0);
+    moveEvitement(60,0);
     sts3032::move(1,510);
-    vTaskDelay(100);
-    moveBlocking(225,-0.12);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    moveEvitement(225,-0.12);
     sts3032::move(1,1100);
-    moveBlocking(0,M_PI/2);
+    moveEvitement(0,M_PI/2);
     step_left.setSpeedMm(100, 500, 100);
     step_right.setSpeedMm(100, 500, 100);
     step_left.runPosMm(60);
@@ -115,39 +138,42 @@ void Locomotion::sortir_caisse(){
 void Locomotion::placer_frigo_1(){
     sts3032::move(7,2020);
     vTaskDelay(50);
-    moveBlocking(-150,0);
-    moveBlocking(0,M_PI);
-    moveBlocking(180,0);
+    moveEvitement(-150,0);
+    moveEvitement(0,M_PI);
+    moveEvitement(180,0);
     sts3032::move(7,3050);
     vTaskDelay(50);
-    moveBlocking(-50,0);
-    moveBlocking(0,M_PI*5/8);
-    moveBlocking(130,0);
-    moveBlocking(-45,0);
-    moveBlocking(0,M_PI/2);
+    moveEvitement(-50,0);
+    moveEvitement(0,M_PI/2+0.4);
+    moveEvitement(110,0);
+    taper_mur();
+    moveEvitement(-45,0);
+    moveEvitement(0,M_PI/2);
 
 }
 
 void Locomotion::placer_frigo_2(){
     sts3032::move(7,2020);
     vTaskDelay(50);
-    moveBlocking(-150,0);
-    moveBlocking(0,M_PI*3/4);
-    moveBlocking(50,0);
+    moveEvitement(-150,0);
+    moveEvitement(0,M_PI*3/4);
+    moveEvitement(50,0);
     sts3032::move(7,3050);
     vTaskDelay(50);
-    moveBlocking(-75,0);
-    moveBlocking(0,M_PI*1.6/2);
-    moveBlocking(200,0);
-    moveBlocking(-25,0);
-    moveBlocking(0,M_PI/2);
+    moveEvitement(-75,0);
+    moveEvitement(0,M_PI*1.8/2);
+    moveEvitement(40,0);
+    taper_mur();
+    moveEvitement(-25,0);
+    moveEvitement(0,M_PI/2);
 
 }
 
 void Locomotion::pousser_caisse(){
-    moveBlocking(0,-M_PI/2);
+    moveEvitement(0,-M_PI/2);
     vTaskDelay(50);
-    moveBlocking(40,0);
+    moveEvitement(15,0);
+    taper_mur();
     step_left.setSpeedMm(100, 500, 100);
     step_right.setSpeedMm(100, 500, 100);
     step_left.runPosMm(-350);
@@ -156,42 +182,51 @@ void Locomotion::pousser_caisse(){
 }
 
 void Locomotion::vider_frigos(){
-    moveBlocking(420,0);
-    moveBlocking(0,-M_PI/2);
+    moveEvitement(420,0);
+    moveEvitement(0,-M_PI/2);
     vider_frigo1();
-    moveBlocking(0,M_PI/2);
-    moveBlocking(110,0);
-    moveBlocking(0,-M_PI/2);
+    moveEvitement(0,M_PI/2);
+    moveEvitement(110,0);
+    moveEvitement(0,-M_PI/2);
+    waitFinishedTimeout(portMAX_DELAY);
     vider_frigo2();
-    moveBlocking(380,0);
-    moveBlocking(-45,0);
-    moveBlocking(0,M_PI/2);
+    moveEvitement(290,0);
+    taper_mur();
+    moveEvitement(-45,0);
+    moveEvitement(0,M_PI/2);
 
 }
 
 void Locomotion::vider_frigo2(){
-    moveBlocking(100,0);
+    moveEvitement(100,0);
     sts3032::move(1,350);
     vTaskDelay(50);
-    moveBlocking(180,-0.2);
+    moveEvitement(180,-0.2);
     sts3032::move(1,1100);
     vTaskDelay(50);
-    moveBlocking(-190,0);
-    moveBlocking(0,M_PI/2);
-    moveBlocking(45,0);
-    moveBlocking(0,-M_PI/2);
+    moveEvitement(-190,0);
+    moveEvitement(0,M_PI/2);
+    moveEvitement(45,0);
+    moveEvitement(0,-M_PI/2);
     sts3032::move(1,350);
     vTaskDelay(50);
-    moveBlocking(190,-0.2);
-    moveBlocking(0,M_PI);
+    moveEvitement(210,-0.2);
+    moveEvitement(0,M_PI);
     sts3032::move(1,1100);
 }
 
 void Locomotion::vider_frigo1(){
-    moveBlocking(270,0);
-    moveBlocking(-270,0);
+    moveEvitement(270,0);
+    moveEvitement(-270,0);
 }
 
+void Locomotion::taper_mur(){
+    step_left.setSpeedMm(100, 500, 100);
+    step_right.setSpeedMm(100, 500, 100);
+    step_left.runPosMm(25);
+    step_right.runPosMm(25);
+    waitFinishedTimeout(portMAX_DELAY);
+}
 
 void Locomotion::enableSteppers(bool enable) {
     if(enable) {
@@ -328,6 +363,51 @@ void Locomotion::trajectory_task(void* arg)
 
 BaseType_t Locomotion::waitFinishedTimeout(TickType_t xTicksToWait) {
     return step_left.waitFinishedTimeout(xTicksToWait) && step_right.waitFinishedTimeout(xTicksToWait);
+
 }
 
 
+void Locomotion::set_seuils(float a,float b,float c,float d,float e){
+    seuils[0]=a;
+    seuils[1]=b;
+    seuils[2]=c;
+    seuils[3]=d;
+    seuils[4]=e;
+}
+
+bool Locomotion::danger(){
+    float d0=get_distance(0);
+    float d1=get_distance(1);
+    float d2=get_distance(2);
+    float d3=get_distance(3);
+    float d4=get_distance(4);
+
+    return (d0<= seuils[0] || d1<= seuils[1]  || d2<= seuils[2]  || d3 <= seuils[3] || d4 <= seuils[4]);
+}
+
+DistancesRoues Locomotion::leg(DistancesRoues d)
+{
+    _move(d.d1,d.d2);
+    while(waitFinishedTimeout(100/portTICK_PERIOD_MS)!=pdTRUE){
+        if (danger()){
+            DistancesRoues d = stop();
+            waitFinishedTimeout(portMAX_DELAY);
+            return d;
+        }
+    }
+    return {0,0};
+}
+
+void Locomotion::moveEvitement(float d,float alpha){
+    float d1=d-(WHEELBASE/2)*alpha;
+    float d2=d+(WHEELBASE/2)*alpha;
+    DistancesRoues r={d1,d2};
+    ESP_LOGI("MOVE_E", "%f  %f", d1, d2);
+    while(r.d1 != 0 || r.d2 != 0){
+        ESP_LOGI("MOVE_E", "d1:%f   d2:%f", r.d1, r.d2);
+        r = leg(r);
+        while (danger()){
+            vTaskDelay(500/portTICK_PERIOD_MS);
+        }
+    }
+}

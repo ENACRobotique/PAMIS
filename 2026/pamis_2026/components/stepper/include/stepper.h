@@ -75,7 +75,7 @@ class Stepper
 {
 private:
     Stepper_config_t conf;
-    ctrl_var_t ctrl;
+    volatile ctrl_var_t ctrl;
     TaskHandle_t enTask;
     gptimer_handle_t timer_handle;  /** timer handle */
     gptimer_alarm_config_t alarm_cfg = {
@@ -230,7 +230,7 @@ public:
      */
     void stop();
 
-    uint32_t stopSlow();
+    float stopSlow();
 
     /**
      * @return pdTRUE if move finished, or pdFALSE on timeout
