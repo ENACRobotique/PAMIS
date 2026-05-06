@@ -5,6 +5,7 @@
 #include "sts3032.h"
 #include "radar_vl53.h"
 #include "esp_log.h"
+#include "strat.h"
 
 
 int s=1;
@@ -17,9 +18,7 @@ constexpr float WHEELBASE = 97.8; //mm pour wallid
 
 float longueur_caisse = 150; //mm
 
-float vitesse_pami=3000;
 
-float acceleration_pami=500;
 
 
 Locomotion locomotion;
@@ -106,7 +105,6 @@ void Locomotion::_move(float d1, float d2) {
     a1=abs(d1/d)*acceleration_pami;
     a2=abs(d2/d)*acceleration_pami;}
 
-
     step_left.setSpeedMm(a1, v1, a1);
     step_right.setSpeedMm(a2, v2, a2);
     step_left.runPosMm(d1);
@@ -118,114 +116,128 @@ void Locomotion::moveBlocking(float lenght, float angle) {
    waitFinishedTimeout(portMAX_DELAY);
 }
 
+void Locomotion::moveWallid(float d,float alpha, int cote){
+    moveEvitement(d, cote*alpha);
+}
 
-void Locomotion::sortir_caisse(){
-    moveEvitement(60,0);
+void Locomotion::sortir_caisse(int cote){
+    moveWallid(60,0,cote);
     sts3032::move(1,510);
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    moveEvitement(225,-0.12);
+    moveWallid(225,-0.12,cote);
     sts3032::move(1,1100);
-    moveEvitement(0,M_PI/2);
-    step_left.setSpeedMm(100, 500, 100);
-    step_right.setSpeedMm(100, 500, 100);
-    step_left.runPosMm(60);
-    step_right.runPosMm(60);
-    waitFinishedTimeout(portMAX_DELAY);
-    
-
+    moveWallid(0,M_PI/2,cote);
+    set_speed(500,100);
+    moveWallid(60,0,cote);
+    set_speed(3000,500);
 }
 
-void Locomotion::placer_frigo_1(){
+void Locomotion::placer_frigo_1(int cote){
     sts3032::move(7,2020);
     vTaskDelay(50);
-    moveEvitement(-150,0);
-    moveEvitement(0,M_PI);
-    moveEvitement(180,0);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-150,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI*0.9,cote);
+    moveWallid(180,0,cote);
     sts3032::move(7,3050);
     vTaskDelay(50);
-    moveEvitement(-50,0);
-    moveEvitement(0,M_PI/2+0.4);
-    moveEvitement(110,0);
-    taper_mur();
-    moveEvitement(-45,0);
-    moveEvitement(0,M_PI/2);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-50,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI/2+0.4,cote);
+    moveWallid(110,0,cote);
+    taper_mur(cote);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-45,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI/2,cote);
 
 }
 
-void Locomotion::placer_frigo_2(){
+void Locomotion::placer_frigo_2(int cote){
     sts3032::move(7,2020);
     vTaskDelay(50);
-    moveEvitement(-150,0);
-    moveEvitement(0,M_PI*3/4);
-    moveEvitement(50,0);
+    set_seuils(0,200,100,100,0);
+    moveWallid(-150,0,cote);
+    set_seuils(200,0,0,0,0);
+    moveWallid(0,M_PI*3/4,cote);
+    moveWallid(50,0,cote);
     sts3032::move(7,3050);
     vTaskDelay(50);
-    moveEvitement(-75,0);
-    moveEvitement(0,M_PI*1.8/2);
-    moveEvitement(40,0);
-    taper_mur();
-    moveEvitement(-25,0);
-    moveEvitement(0,M_PI/2);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-75,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI*1.8/2,cote);
+    moveWallid(40,0,cote);
+    taper_mur(cote);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-25,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI/2,cote);
 
 }
 
-void Locomotion::pousser_caisse(){
-    moveEvitement(0,-M_PI/2);
+void Locomotion::pousser_caisse(int cote){
+    moveWallid(0,-M_PI/2,cote);
     vTaskDelay(50);
-    moveEvitement(15,0);
-    taper_mur();
-    step_left.setSpeedMm(100, 500, 100);
-    step_right.setSpeedMm(100, 500, 100);
-    step_left.runPosMm(-350);
-    step_right.runPosMm(-350);
-    waitFinishedTimeout(portMAX_DELAY);
+    moveWallid(15,0,cote);
+    taper_mur(cote);
+    set_speed(500,100);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-350,0,cote);
+    set_seuils(0,200,100,100,0);
+    set_speed(3000,500);
 }
 
-void Locomotion::vider_frigos(){
-    moveEvitement(420,0);
-    moveEvitement(0,-M_PI/2);
-    vider_frigo1();
-    moveEvitement(0,M_PI/2);
-    moveEvitement(110,0);
-    moveEvitement(0,-M_PI/2);
-    waitFinishedTimeout(portMAX_DELAY);
-    vider_frigo2();
-    moveEvitement(290,0);
-    taper_mur();
-    moveEvitement(-45,0);
-    moveEvitement(0,M_PI/2);
+void Locomotion::vider_frigos(int cote){
+    moveWallid(420,0,cote);
+    moveWallid(0,-M_PI/2,cote);
+    vider_frigo1(cote);
+    moveWallid(0,M_PI/2,cote);
+    moveWallid(110,0,cote);
+    moveWallid(0,-M_PI/2,cote);
+    vider_frigo2(cote);
+    moveWallid(290,0,cote);
+    taper_mur(cote);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-45,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI/2,cote);
 
 }
 
-void Locomotion::vider_frigo2(){
-    moveEvitement(100,0);
+void Locomotion::vider_frigo2(int cote){
+    moveWallid(100,0,cote);
     sts3032::move(1,350);
     vTaskDelay(50);
-    moveEvitement(180,-0.2);
+    moveWallid(180,-0.2,cote);
     sts3032::move(1,1100);
     vTaskDelay(50);
-    moveEvitement(-190,0);
-    moveEvitement(0,M_PI/2);
-    moveEvitement(45,0);
-    moveEvitement(0,-M_PI/2);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-190,0,cote);
+    set_seuils(0,200,100,100,0);
+    moveWallid(0,M_PI/2,cote);
+    moveWallid(45,0,cote);
+    moveWallid(0,-M_PI/2,cote);
     sts3032::move(1,350);
     vTaskDelay(50);
-    moveEvitement(210,-0.2);
-    moveEvitement(0,M_PI);
+    moveWallid(210,-0.2,cote);
+    moveWallid(0,M_PI,cote);
     sts3032::move(1,1100);
 }
 
-void Locomotion::vider_frigo1(){
-    moveEvitement(270,0);
-    moveEvitement(-270,0);
+void Locomotion::vider_frigo1(int cote){
+    moveWallid(270,0,cote);
+    set_seuils(200,0,0,0,0);
+    moveWallid(-270,0,cote);
+    set_seuils(0,200,100,100,0);
 }
 
-void Locomotion::taper_mur(){
-    step_left.setSpeedMm(100, 500, 100);
-    step_right.setSpeedMm(100, 500, 100);
-    step_left.runPosMm(25);
-    step_right.runPosMm(25);
-    waitFinishedTimeout(portMAX_DELAY);
+void Locomotion::taper_mur(int cote){
+    set_speed(500,100);
+    moveWallid(50,0,cote);
+    set_speed(3000,500);
 }
 
 void Locomotion::enableSteppers(bool enable) {
@@ -410,4 +422,10 @@ void Locomotion::moveEvitement(float d,float alpha){
             vTaskDelay(500/portTICK_PERIOD_MS);
         }
     }
+}
+
+void Locomotion::set_speed(float v, float a)
+{
+    vitesse_pami=v;
+    acceleration_pami=a;
 }

@@ -21,7 +21,13 @@
 
 
 void strat_ninja(void* arg) {
-        
+    int cote;
+    if (gpio_get_level(FDC3)){
+        cote=1;
+    }
+    else{
+        cote=-1;
+    }
     Position test[2] = {
         {.x=0, .y=500, .theta=0},
         {.x=500, .y=500, .theta=M_PI},
@@ -30,32 +36,33 @@ void strat_ninja(void* arg) {
     while(!sap_ping(1)) {
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
-
     sts3032::move(7,3050);
     sts3032::move(1,1100);
     locomotion.set_seuils(0,200,0,0,0);
-
-    //locomotion.moveEvitement(1000, 0);
-
-    locomotion.vider_frigos();
-    locomotion.moveEvitement(570,0);
-    locomotion.taper_mur();
-    locomotion.moveEvitement(-290,0);
-    locomotion.moveEvitement(0,-M_PI/2);
-    locomotion.taper_mur();
-    locomotion.moveEvitement(-345,0);
-    locomotion.sortir_caisse();
-    locomotion.placer_frigo_1();
-    locomotion.moveEvitement(230,0);
-    locomotion.pousser_caisse();
-    locomotion.sortir_caisse();
-    locomotion.placer_frigo_2();
-    locomotion.moveEvitement(110,0);
-    locomotion.pousser_caisse();
-    locomotion.sortir_caisse();
-    locomotion.moveEvitement(50,0);
-    locomotion.moveEvitement(0,M_PI/2);
-    locomotion.moveEvitement(245,0);
+    locomotion.set_speed(3000,500);
+    locomotion.vider_frigos(cote);
+    locomotion.moveWallid(570,0,cote);
+    locomotion.taper_mur(cote);
+    locomotion.set_seuils(200,0,0,0,0);
+    locomotion.moveWallid(-290,0,cote);
+    locomotion.set_seuils(0,200,100,100,0);
+    locomotion.moveWallid(0,-M_PI/2,cote);
+    locomotion.taper_mur(cote);
+    locomotion.set_seuils(200,0,0,0,0);
+    locomotion.moveWallid(-345,0,cote);
+    locomotion.set_seuils(0,200,100,100,0);
+    locomotion.sortir_caisse(cote);
+    locomotion.placer_frigo_1(cote);
+    locomotion.moveWallid(230,0,cote);
+    locomotion.pousser_caisse(cote);
+    locomotion.sortir_caisse(cote);
+    locomotion.placer_frigo_2(cote);
+    locomotion.moveWallid(110,0,cote);
+    locomotion.pousser_caisse(cote);
+    locomotion.sortir_caisse(cote);
+    locomotion.moveWallid(50,0,cote);
+    locomotion.moveWallid(0,M_PI/2,cote);
+    locomotion.moveWallid(245,0,cote);
 
 
 

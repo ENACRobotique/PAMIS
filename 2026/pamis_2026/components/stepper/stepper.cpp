@@ -352,6 +352,9 @@ float Stepper::stopSlow() {
     ctrl.status = DEC;
     // Step to do :
     float mm_to_do = step_to_do / ctrl.stepsPerMm;
+    if (ctrl.dir){
+        mm_to_do *= -1;
+    }
     return mm_to_do;
 }
 
