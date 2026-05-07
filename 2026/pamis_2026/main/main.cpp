@@ -20,6 +20,7 @@
 #include "SAP_controller.h"
 #include "math.h"
 #include "strat.h"
+#include "stratWallid.h"
 
 
 
@@ -147,7 +148,7 @@ extern "C" void app_main(void)
     start_web_server();
 
 
-    strat_ninja((void*) NULL);
+    strat_grenier((void*) NULL);
     
     while(1) {
         ws_async_send_robot_pos();
