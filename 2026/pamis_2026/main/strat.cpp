@@ -63,6 +63,8 @@ void strat_pami2026(void* ID)
     Position pos_arrive;
     uint32_t PAMI_ID = (uint32_t) ID;
 
+    locomotion.set_speed(1000, 4000);
+
 
     if (YELLOW)
     {
@@ -180,7 +182,7 @@ void strat_pami2026(void* ID)
 
 void strat_marchepas(void *arg){
     while (true){
-
+        locomotion.set_speed(500, 400);
         locomotion.moveBlocking(0, -5 * 2 * M_PI);
        vTaskDelay(pdMS_TO_TICKS(1000)); 
     }
