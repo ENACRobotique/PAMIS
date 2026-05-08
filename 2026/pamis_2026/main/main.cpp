@@ -22,6 +22,7 @@
 #include "strat.h"
 #include "evitement.h"
 #include "Astar.h"
+#include "stratWallid.h"
 
 
 #define NINJA_ID 9
@@ -177,7 +178,7 @@ extern "C" void app_main(void)
     start_web_server();
 
 
-    strat_ninja((void*) NULL);
+    strat_grenier((void*) NULL);
     
     while(1) {
         ws_async_send_robot_pos();

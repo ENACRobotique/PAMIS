@@ -28,20 +28,11 @@ public:
     void move(float lenght, float angle);
 
     void moveBlocking(float lenght, float angle);
-    void sortir_caisse(int cote);
-    void placer_frigo_1(int cote);
-    void placer_frigo_2(int cote);
-    void pousser_caisse(int cote);
-    void vider_frigos(int cote);
-    void vider_frigo1(int cote);
-    void vider_frigo2(int cote);
-    void taper_mur(int cote);
     DistancesRoues stop();
     void set_seuils(float a,float b,float c,float d, float e);
     bool danger();
     DistancesRoues leg(DistancesRoues d);
     void moveEvitement(float d,float alpha);
-    void moveWallid(float d,float alpha,int cote);
     void set_speed(float v, float a);
 
     void enableSteppers(bool enable);

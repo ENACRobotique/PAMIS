@@ -8,6 +8,7 @@
 #include "strat.h"
 
 
+
 int s=1;
 
 // 1.8° per step, wheel 3inch diameter
@@ -116,129 +117,7 @@ void Locomotion::moveBlocking(float lenght, float angle) {
    waitFinishedTimeout(portMAX_DELAY);
 }
 
-void Locomotion::moveWallid(float d,float alpha, int cote){
-    moveEvitement(d, cote*alpha);
-}
 
-void Locomotion::sortir_caisse(int cote){
-    moveWallid(60,0,cote);
-    sts3032::move(1,510);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    moveWallid(225,-0.12,cote);
-    sts3032::move(1,1100);
-    moveWallid(0,M_PI/2,cote);
-    set_speed(500,100);
-    moveWallid(60,0,cote);
-    set_speed(3000,500);
-}
-
-void Locomotion::placer_frigo_1(int cote){
-    sts3032::move(7,2020);
-    vTaskDelay(50);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-150,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI*0.9,cote);
-    moveWallid(180,0,cote);
-    sts3032::move(7,3050);
-    vTaskDelay(50);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-50,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI/2+0.4,cote);
-    moveWallid(110,0,cote);
-    taper_mur(cote);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-45,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI/2,cote);
-
-}
-
-void Locomotion::placer_frigo_2(int cote){
-    sts3032::move(7,2020);
-    vTaskDelay(50);
-    set_seuils(0,200,100,100,0);
-    moveWallid(-150,0,cote);
-    set_seuils(200,0,0,0,0);
-    moveWallid(0,M_PI*3/4,cote);
-    moveWallid(50,0,cote);
-    sts3032::move(7,3050);
-    vTaskDelay(50);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-75,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI*1.8/2,cote);
-    moveWallid(40,0,cote);
-    taper_mur(cote);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-25,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI/2,cote);
-
-}
-
-void Locomotion::pousser_caisse(int cote){
-    moveWallid(0,-M_PI/2,cote);
-    vTaskDelay(50);
-    moveWallid(15,0,cote);
-    taper_mur(cote);
-    set_speed(500,100);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-350,0,cote);
-    set_seuils(0,200,100,100,0);
-    set_speed(3000,500);
-}
-
-void Locomotion::vider_frigos(int cote){
-    moveWallid(420,0,cote);
-    moveWallid(0,-M_PI/2,cote);
-    vider_frigo1(cote);
-    moveWallid(0,M_PI/2,cote);
-    moveWallid(110,0,cote);
-    moveWallid(0,-M_PI/2,cote);
-    vider_frigo2(cote);
-    moveWallid(290,0,cote);
-    taper_mur(cote);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-45,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI/2,cote);
-
-}
-
-void Locomotion::vider_frigo2(int cote){
-    moveWallid(100,0,cote);
-    sts3032::move(1,350);
-    vTaskDelay(50);
-    moveWallid(180,-0.2,cote);
-    sts3032::move(1,1100);
-    vTaskDelay(50);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-190,0,cote);
-    set_seuils(0,200,100,100,0);
-    moveWallid(0,M_PI/2,cote);
-    moveWallid(45,0,cote);
-    moveWallid(0,-M_PI/2,cote);
-    sts3032::move(1,350);
-    vTaskDelay(50);
-    moveWallid(210,-0.2,cote);
-    moveWallid(0,M_PI,cote);
-    sts3032::move(1,1100);
-}
-
-void Locomotion::vider_frigo1(int cote){
-    moveWallid(270,0,cote);
-    set_seuils(200,0,0,0,0);
-    moveWallid(-270,0,cote);
-    set_seuils(0,200,100,100,0);
-}
-
-void Locomotion::taper_mur(int cote){
-    set_speed(500,100);
-    moveWallid(50,0,cote);
-    set_speed(3000,500);
-}
 
 void Locomotion::enableSteppers(bool enable) {
     if(enable) {
