@@ -20,8 +20,11 @@
 #include "SAP_controller.h"
 #include "math.h"
 #include "strat.h"
+#include "evitement.h"
+#include "Astar.h"
 
 
+#define NINJA_ID 9
 
 i2c_master_bus_handle_t bus_handle;
 i2c_master_bus_config_t bus_config = {
@@ -30,7 +33,7 @@ i2c_master_bus_config_t bus_config = {
     .scl_io_num = SCL,
     .clk_source = I2C_CLK_SRC_DEFAULT,
     .glitch_ignore_cnt = 7,
-    .flags={.enable_internal_pullup = false},
+    .flags = {.enable_internal_pullup = false},
 };
 
 
@@ -65,18 +68,22 @@ extern "C" void app_main(void)
     };
     gpio_config(&fdc_config);
 
+    esp_err_t nvs_err = nvs_init();
+    if(nvs_err != ESP_OK) {
+        ESP_LOGE("NVS", "Failed to init NVS!");
+    }
 
     // setup sensors
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &bus_handle));
     imu_init(&bus_handle);
     radar_vl53_start(&bus_handle);
 
-    if(sap_init(500000) != ESP_OK) {
-        ESP_LOGE("SAP", "Failed to init SAP");
-    } else {
-        ESP_LOGI("SAP", "SAP initialized !");
-    }
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    // if(sap_init(500000) != ESP_OK) {
+    //     ESP_LOGE("SAP", "Failed to init SAP");
+    // } else {
+    //     ESP_LOGI("SAP", "SAP initialized !");
+    // }
+    // vTaskDelay(200 / portTICK_PERIOD_MS);
 
     // setup locomotion
     locomotion.init();
@@ -85,12 +92,34 @@ extern "C" void app_main(void)
 
 
     // create blinker task
-    xTaskCreate( blinker, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(blinker, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-    // create strat task
-    xTaskCreate( strat_fondation, "pami strat", configMINIMAL_STACK_SIZE+4096, NULL, 1, NULL);
+    //on lit notre nom
+    uint16_t pami_id; 
+    esp_err_t ret = read_u16_from_nvs("pami_id_u16", &pami_id);
+    if (ret != ESP_OK)
+    {
+      pami_id = 100;
+      printf("Failed to read pami id from NVS: %d\n", ret);
+    }
 
+    printf("Je suis le n° %d \n", pami_id); 
 
+    if (pami_id == NINJA_ID) 
+    {
+        xTaskCreate(strat_ninja, "pami strat", 8192, NULL, 1, NULL);
+    }
+    else if (pami_id == 100)
+    {
+        xTaskCreate(strat_marchepas, "pami strat", 4096, NULL, 1, NULL);
+    }
+    else
+    {
+        pami_id = 2;
+        init_evitement();
+        init_map();
+        xTaskCreate(strat_pami2026, "pami strat", 20000, (void *)pami_id, 1, NULL);
+    }
 
     ESP_LOGI("Wifi", "Starting WiFi...");
     ESP_ERROR_CHECK(wifi_init());
@@ -108,8 +137,9 @@ extern "C" void app_main(void)
 
     char* teleplot_ip = read_string_from_nvs("teleplot_ip");
     uint16_t teleplot_port;
-    esp_err_t ret = read_u16_from_nvs("teleplot_port", &teleplot_port);
-    if(teleplot_ip == NULL || ret != ESP_OK) {
+    ret = read_u16_from_nvs("teleplot_port", &teleplot_port);
+    if (teleplot_ip == NULL || ret != ESP_OK)
+    {
         write_string_to_nvs("teleplot_ip", "192.168.42.201");
         write_u16_to_nvs("teleplot_port", 47269);
     }

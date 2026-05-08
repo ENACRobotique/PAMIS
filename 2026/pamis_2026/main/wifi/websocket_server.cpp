@@ -33,7 +33,7 @@ static const char *TAG = "WebSocket Server"; // TAG for debug
 #define LOW_RES_PNG_PATH "/spiffs/low_res.png"
 #define ROBOT_PNG_PATH "/spiffs/robot.png"
 
-char index_html[14000];
+char index_html[20000];
 ssize_t low_res_size;
 char low_res_png[63000];
 ssize_t robot_size;
@@ -111,14 +111,17 @@ static void ws_async_send_wifi_ssid(void *arg)
     char* ssid = read_string_from_nvs("sta_ssid");
     char* password = read_string_from_nvs("sta_password");
     char* teleplot_ip = read_string_from_nvs("teleplot_ip");
+    uint16_t pami_actuel; 
+    read_u16_from_nvs("pami_id_u16", &pami_actuel);
+
     uint16_t teleplot_port;
     esp_err_t ret = read_u16_from_nvs("teleplot_port", &teleplot_port);
     if(ssid == NULL || password == NULL || teleplot_ip == NULL || ret != ESP_OK) {
         return;
     }
 
-    char buff[160];
-    snprintf(buff, 160,  "{\"sta_ssid\":\"%s\", \"sta_password\":\"%s\", \"teleplot_ip\":\"%s\", \"teleplot_port\":%u}", ssid, password, teleplot_ip, teleplot_port);
+    char buff[256];
+    snprintf(buff, 256,  "{\"sta_ssid\":\"%s\", \"sta_password\":\"%s\", \"teleplot_ip\":\"%s\", \"teleplot_port\":%u,\"pami_id\":\"%u\" }", ssid, password, teleplot_ip, teleplot_port, pami_actuel);
     free(ssid);
     free(password);
     free(teleplot_ip);
@@ -180,6 +183,7 @@ void ws_async_send_robot_pos()
 
 static esp_err_t handle_wifi_credentials(httpd_ws_frame_t* ws_pkt);
 static esp_err_t handle_teleplot_server_info(httpd_ws_frame_t* ws_pkt);
+static esp_err_t handle_pami_config(httpd_ws_frame_t* ws_pkt); 
 
 static esp_err_t handle_ws_req(httpd_req_t *req)
 {
@@ -252,6 +256,11 @@ static esp_err_t handle_ws_req(httpd_req_t *req)
             else if(ws_pkt.payload[0] == 'T') {
                 ret = handle_teleplot_server_info(&ws_pkt);
             }
+            else if(ws_pkt.payload[0]=='P'){
+                ret = handle_pami_config(&ws_pkt); 
+            } else {
+                printf("Hunhandled Wesocket message !!! Stars with %c\n", ws_pkt.payload[0]);
+            }
         }
     }
 
@@ -323,6 +332,22 @@ static esp_err_t handle_teleplot_server_info(httpd_ws_frame_t* ws_pkt)
         telelogs_init();
     }
     return ESP_OK;
+}
+
+// Nom des PAMIS depuis page web vers memoire
+static esp_err_t handle_pami_config(httpd_ws_frame_t* ws_pkt) {
+    if (ws_pkt->len <= 1) return ESP_FAIL; 
+
+    uint16_t pami_idu16 = ws_pkt->payload[1] - '0';
+    esp_err_t err = write_u16_to_nvs("pami_id_u16", pami_idu16);
+    if(err != ESP_OK) {
+        printf("Error writing PAMI_ID to NVS: %d\n", err);
+    } else {
+        printf("Mon nouveau numéro %d \n", pami_idu16); 
+    }
+    
+
+    return ESP_OK; 
 }
 
 
