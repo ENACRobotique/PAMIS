@@ -37,7 +37,7 @@ void strat_grenier(void* arg) {
     locomotion.set_seuils(0,200,0,0,0);
     locomotion.set_speed(3000,500);
     stratWallid.vider_frigos();
-    stratWallid.moveWallid(570,0);
+    stratWallid.moveWallid(550,0);
     stratWallid.taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     stratWallid.moveWallid(-290,0);
@@ -49,7 +49,9 @@ void strat_grenier(void* arg) {
     locomotion.set_seuils(0,200,0,0,0);
     stratWallid.sortir_caisse();
     stratWallid.placer_frigo_1();
-    stratWallid.moveWallid(230,0);
+    stratWallid.moveWallid(480,0);
+    stratWallid.taper_mur();
+    stratWallid.moveWallid(-240,0);
     stratWallid.pousser_caisse();
     stratWallid.sortir_caisse();
     stratWallid.placer_frigo_2();
@@ -80,6 +82,11 @@ void StratWallid::sortir_caisse(){
     vTaskDelay(100 / portTICK_PERIOD_MS);
     moveWallid(225,-0.12);
     sts3032::move(1,1100);
+    moveWallid(30,0);
+    taper_mur();
+    locomotion.set_seuils(50,0,0,0,0);
+    moveWallid(-45,0);
+    locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
     locomotion.set_speed(500,100);
     moveWallid(60,0);
@@ -89,11 +96,13 @@ void StratWallid::sortir_caisse(){
 void StratWallid::placer_frigo_1(){
     sts3032::move(7,2020);
     vTaskDelay(50);
+    locomotion.set_speed(500,100);
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-150,0);
     locomotion.set_seuils(0,200,0,0,0);
-    moveWallid(0,M_PI*0.9);
-    moveWallid(180,0);
+    moveWallid(0,M_PI*5/6);
+    locomotion.set_speed(3000,500);
+    moveWallid(220,0);
     sts3032::move(7,3050);
     vTaskDelay(50);
     locomotion.set_seuils(200,0,0,0,0);
@@ -152,7 +161,7 @@ void StratWallid::vider_frigos(){
     moveWallid(110,0);
     moveWallid(0,-M_PI/2);
     vider_frigo2();
-    moveWallid(290,0);
+    moveWallid(310,0);
     taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-45,0);
@@ -176,7 +185,7 @@ void StratWallid::vider_frigo2(){
     moveWallid(0,-M_PI/2);
     sts3032::move(1,bras_bas);
     vTaskDelay(50);
-    moveWallid(210,-0.2);
+    moveWallid(220,-0.2);
     moveWallid(0,M_PI);
     sts3032::move(1,1100);
 }
