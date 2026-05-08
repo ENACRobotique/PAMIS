@@ -5,7 +5,7 @@
 #include "config.h"
 
 
-StratWallid stradWallid;
+StratWallid stratWallid;
 
 void strat_grenier(void* arg) {
 

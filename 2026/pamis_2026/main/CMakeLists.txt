@@ -45,6 +45,7 @@ idf_component_register(
         sts3032.cpp
         main.cpp
         strat.cpp
+        stratWallid.cpp
         wifi/websocket_server.cpp
         wifi/wifi_setup.cpp
         wifi/telelogs.cpp
