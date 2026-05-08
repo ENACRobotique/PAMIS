@@ -30,7 +30,7 @@ static EventGroupHandle_t s_wifi_event_group = NULL;
 nvs_handle_t nvs_config_handle = NULL;
 
 
-static esp_err_t nvs_init() {
+esp_err_t nvs_init() {
     // Initialize Non-Volatile Storage (NVS)
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -57,7 +57,7 @@ esp_err_t write_string_to_nvs(const char* key, const char* value) {
  */
 char* read_string_from_nvs(const char* key) {
     size_t required_size = 0;
-    ESP_LOGI(TAG, "\nReading string from NVS...");
+    ESP_LOGI(TAG, "Reading string from NVS...");
     esp_err_t ret = nvs_get_str(nvs_config_handle, key, NULL, &required_size);
     if (ret == ESP_OK) {
         char* str_buf = (char*)malloc(required_size);
@@ -170,9 +170,6 @@ static void wifi_event_cb(void *arg, esp_event_base_t event_base, int32_t event_
 
 esp_err_t wifi_init(void)
 {
-    esp_err_t ret = nvs_init();
-    
-
     s_wifi_event_group = xEventGroupCreate();
 
     // Initialize the network interface
@@ -200,7 +197,7 @@ esp_err_t wifi_init(void)
                                                         &ip_event_cb,
                                                         NULL,
                                                         &ip_event_handler));
-    return ret;
+    return ESP_OK;
 }
 
 esp_err_t wifi_connect(const char* wifi_ssid, const char* wifi_password)

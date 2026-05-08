@@ -29,6 +29,10 @@ public:
     void vider_frigo1();
     void vider_frigo2();
     void stop();
+    void stop_urgence();
+    void pauseTrajectory();
+    void resumeTrajectory();
+    void abortTrajectory();
 
     void enableSteppers(bool enable);
 
@@ -72,8 +76,10 @@ public:
     mvm_status mvm_etat = IDLE_mvm;
 
     SemaphoreHandle_t traj_sem;
-    Position traj_points[10];
+    Position traj_points[200];
     int traj_length;
+    TaskHandle_t traj_TaskHandle = NULL;
+    bool is_aborted = true;
 };
 
 
