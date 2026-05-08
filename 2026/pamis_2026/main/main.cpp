@@ -108,7 +108,7 @@ extern "C" void app_main(void)
 
     if (pami_id == NINJA_ID) 
     {
-        xTaskCreate(strat_ninja, "pami strat", 8192, NULL, 1, NULL);
+        xTaskCreate(strat_grenier, "pami strat", 8192, NULL, 1, NULL);
     }
     else if (pami_id == 100)
     {
@@ -178,7 +178,7 @@ extern "C" void app_main(void)
     start_web_server();
 
 
-    strat_grenier((void*) NULL);
+    //strat_grenier((void*) NULL);
     
     while(1) {
         ws_async_send_robot_pos();

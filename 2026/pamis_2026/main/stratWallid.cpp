@@ -59,16 +59,7 @@ void strat_grenier(void* arg) {
     stratWallid.moveWallid(50,0);
     stratWallid.moveWallid(0,M_PI/2);
     stratWallid.moveWallid(245,0);
-
-
-
 }
-
-
-
-
-
-
 
 int cote;
 int bras_mid;

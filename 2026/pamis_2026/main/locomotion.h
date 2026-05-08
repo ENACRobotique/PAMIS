@@ -34,6 +34,10 @@ public:
     DistancesRoues leg(DistancesRoues d);
     void moveEvitement(float d,float alpha);
     void set_speed(float v, float a);
+    void resumeTrajectory(); 
+    void abortTrajectory(); 
+    void pauseTrajectory();  
+    
 
     void enableSteppers(bool enable);
 

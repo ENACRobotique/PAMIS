@@ -27,7 +27,7 @@ void task_evitement(void *arg)
         // Lecture des radars
         for (uint16_t i = 0; i < RADAR_NB; i++)
         {
-            int dist = vl53_get_distance(i);
+            int dist = get_distance(i);
 
             if (dist < SEUIL_STOP)
             {
@@ -44,8 +44,8 @@ void task_evitement(void *arg)
             {
                 printf("pause traj obstacle\n");
 
-                locomotion.pauseTrajectory();
-                locomotion.stop_urgence();
+                //locomotion.pauseTrajectory();
+                locomotion.stop();
 
                 en_arret_urgence = true;
             }
@@ -59,7 +59,7 @@ void task_evitement(void *arg)
                 if (temps_sans_obstacle > 500)
                 {
                     en_arret_urgence = false;
-                    locomotion.resumeTrajectory();
+                   // locomotion.resumeTrajectory();
                 }
             }
         }

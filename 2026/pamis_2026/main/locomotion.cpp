@@ -59,15 +59,38 @@ void Locomotion::init() {
     oldPosLeft = getPosLeft();
     oldPosRight = getPosRight();
 
-    xTaskCreate(odometry_task, "Odometry", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
-    xTaskCreate(trajectory_task, "Trajectory", configMINIMAL_STACK_SIZE+1024, this, 2, NULL);
-
+    xTaskCreate(odometry_task, "Odometry", configMINIMAL_STACK_SIZE + 1024, this, 2, NULL);
+    xTaskCreate(trajectory_task, "Trajectory", configMINIMAL_STACK_SIZE + 1024, this, 2, &traj_TaskHandle);
 }
 
-DistancesRoues Locomotion::stop() {
+void Locomotion::resumeTrajectory()
+{
+    enableSteppers(true);
+    if (traj_TaskHandle != NULL)
+    {
+        vTaskResume(traj_TaskHandle);
+    }
+}
+
+void Locomotion::abortTrajectory()
+{
+    is_aborted = true;
+    mvm_etat = IDLE_mvm;
+}
+
+void Locomotion::pauseTrajectory()
+{
+    if (traj_TaskHandle != NULL)
+    {
+        vTaskSuspend(traj_TaskHandle);
+    }
+}
+
+DistancesRoues Locomotion::stop()
+{
+    // arret lent
     float step_to_do_left = step_left.stopSlow();
     float step_to_do_right = step_right.stopSlow();
-
     waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
     DistancesRoues d={
         .d1=step_to_do_left,
