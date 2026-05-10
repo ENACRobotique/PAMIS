@@ -3,17 +3,19 @@
 
 <head>
     <title>ESP32 Web Server</title>
-    <meta charset="UTF-8"  name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <style>
         html {
             font-family: New Times Roman;
             text-align: center;
         }
+
         h1 {
             font-size: 1.8rem;
             color: white;
         }
+
         h2 {
             font-size: 1.5rem;
             font-weight: bold;
@@ -22,7 +24,7 @@
 
         .card {
             background-color: #F8F7F9;
-            box-shadow: 0 0 10px rgba(0,0,0,0.7);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
             padding-top: 10px;
             padding-bottom: 20px;
             margin: 30px auto;
@@ -30,20 +32,23 @@
             padding: 10px;
             width: 300px;
         }
+
         .state {
             font-size: 1.5rem;
             color: #120707;
             font-weight: bold;
-             display: flex;
+            display: flex;
             flex-direction: column;
             margin: 8px;
         }
+
         .state input {
             margin-top: 4px;
             padding: 6px 8px;
             border-radius: 5px;
             font-size: 14px;
         }
+
         .state input:focus {
             outline: 2px solid #00c853;
         }
@@ -58,13 +63,15 @@
             color: #fff;
             font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             transition: transform 0.1s, filter 0.1s;
         }
+
         .btn-refresh:active {
             transform: scale(0.95);
             filter: brightness(0.9);
         }
+
         .btn-send {
             width: 100px;
             height: 40px;
@@ -74,9 +81,10 @@
             color: #fff;
             font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             transition: transform 0.1s, filter 0.1s;
         }
+
         .btn-send:active {
             transform: scale(0.95);
             filter: brightness(0.9);
@@ -86,15 +94,18 @@
             overflow: hidden;
             background-color: #04296d;
         }
+
         body {
             margin: 0;
             background-color: #343434;
         }
+
         .content {
             padding: 30px;
             max-width: 600px;
             margin: 0 auto;
         }
+
         .button {
             padding: 15px 50px;
             font-size: 24px;
@@ -105,6 +116,7 @@
             border: #0ffa6d;
             border-radius: 5px;
         }
+
         .button:active {
             background-color: #fa0f0f;
             transform: translateY(2px);
@@ -118,13 +130,14 @@
             margin: 20px auto;
             background: radial-gradient(circle, #2a2a2a, #111);
 
-              /* liseré */
+            /* liseré */
             box-shadow:
-                0 0 0 2px rgba(255,255,255,0.15),
-                0 0 20px rgba(255,255,255,0.08),
-                inset 0 0 20px rgba(0,0,0,0.8);
+                0 0 0 2px rgba(255, 255, 255, 0.15),
+                0 0 20px rgba(255, 255, 255, 0.08),
+                inset 0 0 20px rgba(0, 0, 0, 0.8);
 
         }
+
         .dpad .btn {
             position: absolute;
             width: 60px;
@@ -137,15 +150,43 @@
             cursor: pointer;
             transition: transform 0.1s, background 0.1s;
         }
-        .dpad .btn:not(.center):hover {background: #666;}
+
+        .dpad .btn:not(.center):hover {
+            background: #666;
+        }
+
         .dpad .center:hover {
             filter: brightness(1.1);
         }
-        .dpad .btn:active {filter: brightness(1.2);}
-        .dpad .up    { top: 10px;  left: 50%; transform: translateX(-50%); }
-        .dpad .down  { bottom: 10px; left: 50%; transform: translateX(-50%); }
-        .dpad .left  { left: 10px; top: 50%; transform: translateY(-50%); }
-        .dpad .right { right: 10px; top: 50%; transform: translateY(-50%); }
+
+        .dpad .btn:active {
+            filter: brightness(1.2);
+        }
+
+        .dpad .up {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .dpad .down {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .dpad .left {
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .dpad .right {
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
         .dpad .center {
             top: 50%;
             left: 50%;
@@ -155,7 +196,10 @@
             background: #148a45;
             font-size: 26px;
         }
-        .dpad .center.active {background: #b00020;}
+
+        .dpad .center.active {
+            background: #b00020;
+        }
     </style>
     <title>ESP32 Web Server</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -171,9 +215,9 @@
             <h2>WiFi settings</h2>
             <div class="form-container">
                 <button id="req_wifi" class="btn-refresh">⟳</button>
-            <label class="state">SSID:<input id="sta_ssid"></label>
-            <label class="state">Password:<input id="sta_password"></label>
-            <button id="set_wifi_button" class="btn-send">Apply</button>
+                <label class="state">SSID:<input id="sta_ssid"></label>
+                <label class="state">Password:<input id="sta_password"></label>
+                <button id="set_wifi_button" class="btn-send">Apply</button>
             </div>
             <p></p>
         </div>
@@ -185,28 +229,28 @@
         </div>
         <p></p>
         <div>
-<div class="card">
-    <h2>Mon Nom</h2>
-    <label class="state">Mon nom actuel: <input id="pami_id" readonly></label>
-    <label class="state">Choisir un nouveau nom:
-        <select id="select_pami">
-            <option value="9">Ninja</option>
-            <option value="1">Ecureuil 1</option>
-            <option value="2">Ecureuil 2</option>
-            <option value="3">Ecureuil 3</option>
-            <option value="4">Ecureuil 4</option>
-            <option value="5">Ecureuil 5</option>
-        </select>
-    </label> 
-    <button id="set_pami_button" class="btn-send">Apply</button>
-</div>
+            <div class="card">
+                <h2>Mon Nom</h2>
+                <label class="state">Mon nom actuel: <input id="pami_id" readonly></label>
+                <label class="state">Choisir un nouveau nom:
+                    <select id="select_pami">
+                        <option value="9">Ninja</option>
+                        <option value="1">Ecureuil 1</option>
+                        <option value="2">Ecureuil 2</option>
+                        <option value="3">Ecureuil 3</option>
+                        <option value="4">Ecureuil 4</option>
+                        <option value="5">Ecureuil 5</option>
+                    </select>
+                </label>
+                <button id="set_pami_button" class="btn-send">Apply</button>
+            </div>
             <button id="btn_rf">⬈</button>
             <div class="dpad">
                 <button id="btn_fw" class="btn up">▲</button>
                 <button id="btn_right" class="btn right">▶</button>
                 <button id="btn_bw" class="btn down">▼</button>
                 <button id="btn_left" class="btn left">◀</button>
-                <button id="btn_en"class="btn center active" id="btn_en"></button>
+                <button id="btn_en" class="btn center active" id="btn_en"></button>
             </div>
         </div>
 
@@ -218,7 +262,7 @@
         var gateway = `ws://${window.location.hostname}/ws`;
         var websocket;
         window.addEventListener('load', onLoad);
-        var robot_state = {"x":0, "y":0, "theta":0};
+        var robot_state = { "x": 0, "y": 0, "theta": 0 };
 
         const table = new Image();
         const robot = new Image();
@@ -243,82 +287,90 @@
         function onMessage(event) {
             obj = JSON.parse(event.data);
 
-            for(k in obj) {
+            for (k in obj) {
                 robot_state[k] = obj[k];
-            } 
+            }
 
-            if("sta_ssid" in obj) {
+            if ("sta_ssid" in obj) {
                 document.getElementById('sta_ssid').value = obj["sta_ssid"];
             }
-            if("sta_password" in obj) {
+            if ("sta_password" in obj) {
                 document.getElementById('sta_password').value = obj["sta_password"];
             }
-            if("pami_id" in obj){
-                document.getElementById('pami_id').value = obj["pami_id"]; 
+            if ("pami_id" in obj) {
+                document.getElementById('pami_id').value = obj["pami_id"];
             }
         }
         function onLoad(event) {
             initWebSocket();
             const btn_en = document.getElementById('btn_en');
-            document.getElementById('btn_fw').addEventListener('click', ()=>{
+            document.getElementById('btn_fw').addEventListener('click', () => {
                 websocket.send('forward');
                 btn_en.classList.add("active");
             });
-            document.getElementById('btn_bw').addEventListener('click', ()=>{
+            document.getElementById('btn_bw').addEventListener('click', () => {
                 websocket.send('backward');
                 btn_en.classList.add("active");
             });
-            document.getElementById('btn_left').addEventListener('click', ()=>{
+            document.getElementById('btn_left').addEventListener('click', () => {
                 websocket.send('left');
                 btn_en.classList.add("active");
             });
-            document.getElementById('btn_right').addEventListener('click', ()=>{
+            document.getElementById('btn_right').addEventListener('click', () => {
                 websocket.send('right');
                 btn_en.classList.add("active");
             });
-            document.getElementById('btn_rf').addEventListener('click', ()=>{
+            document.getElementById('btn_rf').addEventListener('click', () => {
                 websocket.send('rightforward');
                 btn_en.classList.add("active");
             });
-            document.getElementById('btn_en').addEventListener('click', (e)=>{
+            document.getElementById('btn_en').addEventListener('click', (e) => {
                 const btn = e.currentTarget;
                 btn.classList.toggle("active");
                 const isOn = btn.classList.contains("active");
-                if(isOn) {
+                if (isOn) {
                     websocket.send('en_step');
                 } else {
                     websocket.send('dis_step');
                 }
             });
-            document.getElementById('req_wifi').addEventListener('click', ()=>{
+            document.getElementById('req_wifi').addEventListener('click', () => {
                 websocket.send('wifi?');
             });
-            document.getElementById('set_wifi_button').addEventListener('click', ()=>{
+            document.getElementById('set_wifi_button').addEventListener('click', () => {
                 sta_ssid = document.getElementById('sta_ssid').value;
                 sta_password = document.getElementById('sta_password').value;
-                if(sta_ssid != "" && sta_password != "") {
+                if (sta_ssid != "" && sta_password != "") {
                     console.log("Change Wifi credentials to " + sta_ssid + ": " + sta_password);
-                    websocket.send('W'+sta_ssid+'|'+sta_password);
+                    websocket.send('W' + sta_ssid + '|' + sta_password);
                 }
             });
-            document.getElementById('set_pami_button').addEventListener('click', ()=>{
+            document.getElementById('set_teleplot').addEventListener('click', () => {
+                teleplot_ip = document.getElementById('teleplot_ip').value;
+                teleplot_port = document.getElementById('teleplot_port').value;
+                if (teleplot_ip != "" && teleplot_port != "") {
+                    console.log("Change Wifi credentials to " + teleplot_ip + ": " + teleplot_port);
+                    websocket.send('T' + teleplot_ip + '|' + teleplot_port);
+                }
+            });
+            document.getElementById('set_pami_button').addEventListener('click', () => {
                 pamiValue = document.getElementById('select_pami').value;
-                msg = 'P'+pamiValue
+                msg = 'P' + pamiValue
                 console.log(msg);
-                websocket.send(msg); 
-            }); 
+                websocket.send(msg);
+            });
 
             const canvas = document.getElementById("canvas");
-            canvas.addEventListener('click', (e)=>{
+            canvas.addEventListener('click', (e) => {
                 const rect = canvas.getBoundingClientRect(); // position du canvas dans la page
-                const x = Math.round(5*(e.clientX - rect.left));
-                const y = 2000-Math.round(5*(e.clientY - rect.top));
+                const x = Math.round(5 * (e.clientX - rect.left));
+                const y = 2000 - Math.round(5 * (e.clientY - rect.top));
                 // TODO envoyer consigne position
                 console.log("Clic sur le canvas:", x, y);
             });
 
 
-            
+
             const ctx = canvas.getContext("2d");
             console.log(ctx);
 
@@ -330,13 +382,13 @@
 
             function draw_map() {
                 ctx.clearRect(0, 0, 600, 400); // clear canvas
-                
+
                 ctx.drawImage(table, 0, 0);
 
                 ctx.save();
 
-                ctx.translate(robot_state["x"]/5, (2000-robot_state["y"])/5);
-                ctx.rotate(-robot_state["theta"] + Math.PI/2);
+                ctx.translate(robot_state["x"] / 5, (2000 - robot_state["y"]) / 5);
+                ctx.rotate(-robot_state["theta"] + Math.PI / 2);
                 ctx.drawImage(robot, -25, -25);
                 ctx.restore();
                 window.requestAnimationFrame(draw_map);
@@ -367,9 +419,10 @@
                 MrSquare.draw();
                 bounceOffWalls(MrSquare);
                 requestAnimationFrame(animate);
-                };
-}
+            };
+        }
 
     </script>
 </body>
+
 </html>

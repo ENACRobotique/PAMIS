@@ -117,6 +117,35 @@ void ajouter_obstacle_temporaire(Position pos_robot, float distance_mm)
     }
 }
 
+bool ligne_de_vue(int x0, int y0, int x1, int y1)
+{
+    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy, e2;
+
+    while (true)
+    {
+        
+        if (map[x0][y0] == 255)
+            return false;
+
+        if (x0 == x1 && y0 == y1)
+            break;
+        e2 = 2 * err;
+        if (e2 >= dy)
+        {
+            err += dy;
+            x0 += sx;
+        }
+        if (e2 <= dx)
+        {
+            err += dx;
+            y0 += sy;
+        }
+    }
+    return true;
+}
+
 int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
 {
     int depart_x = x_vers_grille(depart.x);
@@ -124,6 +153,7 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
     int arrive_x = x_vers_grille(arrive.x);
     int arrive_y = y_vers_grille(arrive.y);
 
+    // Débouchage
     for (int dx = -1; dx <= 1; dx++)
     {
         for (int dy = -1; dy <= 1; dy++)
@@ -135,7 +165,6 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
         }
     }
 
-    // on intialise le tableau de noeuds
     for (int x = 0; x < GRILLE_LARGEUR; x++)
     {
         for (int y = 0; y < GRILLE_LONGEUR; y++)
@@ -153,11 +182,9 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
     noeuds[depart_x][depart_y].ouvert = true;
 
     bool path_found = false;
-
     while (true)
     {
-        int x_actuel = -1;
-        int y_actuel = -1;
+        int x_actuel = -1, y_actuel = -1;
         float f_plusbas = 1000000;
 
         for (int x = 0; x < GRILLE_LARGEUR; x++)
@@ -174,16 +201,13 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
         }
 
         if (x_actuel == -1)
-            break; // on a exploré tout ce qui était possible
-
-        // on a trouvé notre chemin
+            break;
         if (x_actuel == arrive_x && y_actuel == arrive_y)
         {
             path_found = true;
             break;
         }
 
-        // on considère cette case comme visitee
         noeuds[x_actuel][y_actuel].ouvert = false;
         noeuds[x_actuel][y_actuel].fermer = true;
 
@@ -202,10 +226,9 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
 
                 if (dx != 0 && dy != 0)
                 {
-                    // ... on vérifie que les murs ne nous bloquent pas sur les côtés !
                     if (map[x_actuel + dx][y_actuel] == 255 || map[x_actuel][y_actuel + dy] == 255)
                     {
-                        continue; // Mouvement interdit, on zappe cette diagonale
+                        continue; // ça veut dire qu y'a un mur dans la diagonale
                     }
                 }
 
@@ -264,26 +287,72 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
     }
 
     int idx = 0;
-    chemin_suivi[idx++] = temp_path[path_length - 1];
+    int current_idx = path_length - 1; 
 
-    for (int i = path_length - 2; i > 0; i--)
+    //ajout du point de départ au chemon
+    chemin_suivi[idx++] = temp_path[current_idx];
+
+    while (current_idx > 0)
     {
-        int dx1 = temp_path[i].x - temp_path[i + 1].x;
-        int dy1 = temp_path[i].y - temp_path[i + 1].y;
-        int dx2 = temp_path[i - 1].x - temp_path[i].x;
-        int dy2 = temp_path[i - 1].y - temp_path[i].y;
+        int furthest_visible = current_idx - 1; 
 
-        // on regarde si la direction change
-        if (dx1 * dy2 != dx2 * dy1)
+        // on cherhce le plus loin vers l'arrivé
+        for (int i = current_idx - 1; i >= 0; i--)
         {
-            chemin_suivi[idx++] = temp_path[i];
-        }
-    }
+            int x0 = x_vers_grille(temp_path[current_idx].x);
+            int y0 = y_vers_grille(temp_path[current_idx].y);
+            int x1 = x_vers_grille(temp_path[i].x);
+            int y1 = y_vers_grille(temp_path[i].y);
 
-    chemin_suivi[idx++] = temp_path[0];
+            // on prend les points et on regarde si on peut faire un tt droit
+            if (ligne_de_vue(x0, y0, x1, y1))
+            {
+                furthest_visible = i; // met a jour du poitn visible
+            }
+            else
+            {
+                break; 
+            }
+        }
+        chemin_suivi[idx++] = temp_path[furthest_visible];
+
+        current_idx = furthest_visible;
+    }
 
     chemin_suivi[idx - 1].theta = arrive.theta;
 
     return idx;
-    return path_length;
+}
+int gestion_point_intermediaire(Position depart, Position arrive, Position waypoints[], int nb_waypoints, Position *chemin_final)
+{
+    Position chemin_temp[200];
+    int index_final = 0;
+    Position point_actuel = depart;
+
+    // On boucle sur tous les waypoints (s'il y en a)
+    for (int i = 0; i < nb_waypoints; i++)
+    {
+        int pts_segment = calcul_chemin(point_actuel, waypoints[i], chemin_temp);
+
+        if (pts_segment == 0)
+            return 0; // On a pas trouvé la traj (Mur)
+
+        for (int j = (index_final == 0 ? 0 : 1); j < pts_segment; j++)
+        {
+            chemin_final[index_final++] = chemin_temp[j];
+        }
+        point_actuel = waypoints[i]; 
+    }
+
+    int pts_dernier = calcul_chemin(point_actuel, arrive, chemin_temp);
+
+    if (pts_dernier == 0)
+        return 0;
+
+    for (int j = (index_final == 0 ? 0 : 1); j < pts_dernier; j++)
+    {
+        chemin_final[index_final++] = chemin_temp[j];
+    }
+
+    return index_final;
 }
