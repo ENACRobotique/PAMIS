@@ -19,6 +19,9 @@
 #include "Astar.h"
 #include "evitement.h"
 #include "math.h"
+#include "scs009.h"
+
+extern uint8_t id_servo_queue;
 
 void strat_fondation(void *arg)
 {
@@ -122,25 +125,28 @@ void strat_pami2026(void *ID)
         case 1:
         {
             pos_depart = {2900, 1600, -M_PI};
-            pos_arrive = {2850, 950, -M_PI / 2.0};
-            // mes_waypoints[0];
-            // nb_points_inter = 0;
+            pos_arrive = {2300, 200, -M_PI / 2.0};
+            mes_waypoints[0] = {2600, 1500, -M_PI / 2.0};
+            mes_waypoints[1] = {2050, 1000, -M_PI / 2.0};
+            mes_waypoints[2] = {2050, 500, -M_PI / 2.0};
+            nb_points_inter = 3;
             break;
         }
         case 2:
         {
             pos_depart = {2900, 1700, -M_PI};
-            pos_arrive = {2300, 250, -M_PI / 2.0};
-            // mes_waypoints[0];
-            // nb_points_inter = 0;
+            pos_arrive = {1500, 900, -M_PI / 2.0};
+            mes_waypoints[0] = {2700, 1700, -M_PI / 2.0};
+            mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
+            nb_points_inter = 2;
             break;
         }
         case 3:
         {
             pos_depart = {2900, 1800, -M_PI};
             pos_arrive = {2200, 900, -M_PI / 2.0};
-            mes_waypoints[0] = {2600, 1800, -M_PI / 2.0};
-            mes_waypoints[1] = {2600, 1500, -M_PI / 2.0};
+            mes_waypoints[0] = {2700, 1800, -M_PI / 2.0};
+            mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
 
             break;
@@ -185,6 +191,10 @@ void strat_pami2026(void *ID)
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 
+    // wait 85 secondes (pour etre sur de pas partir avant)
+    // vTaskDelay(pdMS_TO_TICKS(85000));
+    // }
+
     if (nb_points > 0)
     {
         locomotion.trajectory(chemin_complet, nb_points);
@@ -192,14 +202,23 @@ void strat_pami2026(void *ID)
 
     locomotion.setPos(pos_depart);
 
-    // wait 85 secondes (pour etre sur de pas partir avant)
-    // vTaskDelay(pdMS_TO_TICKS(85000));
-    // }
+    bool a_gauche = true;
+    const uint16_t POS_GAUCHE = 400; // Centre (512) - 112
+    const uint16_t POS_DROITE = 624; // Centre (512) + 112
 
     while (true)
     {
-        // faire tourner l'acctionneur en boucle
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        if (a_gauche)
+        {
+            scs009::move_scs(id_servo_queue, POS_GAUCHE);
+        }
+        else
+        {
+            scs009::move_scs(id_servo_queue, POS_DROITE);
+        }
+        a_gauche = !a_gauche;
+
+        vTaskDelay(pdMS_TO_TICKS(400));
     }
 }
 

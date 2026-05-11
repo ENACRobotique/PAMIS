@@ -48,6 +48,7 @@ idf_component_register(
         evitement.cpp
         Astar.cpp
         stratWallid.cpp
+        scs009.cpp
         wifi/websocket_server.cpp
         wifi/wifi_setup.cpp
         wifi/telelogs.cpp

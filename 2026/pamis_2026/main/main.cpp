@@ -23,16 +23,19 @@
 #include "evitement.h"
 #include "Astar.h"
 #include "stratWallid.h"
+#include "scs009.h"
 
 #define NINJA_ID 9
 
 const LocomParam PARAM_NINJA = {97.8, (360.0 / 1.8) / (M_PI * 71.0)};
-const LocomParam PARAM_ECUREUIL_1 = {91.0, (360.0 / 1.8) / (M_PI * 76.2)};
-const LocomParam PARAM_ECUREUIL_2 = {91.0, (360.0 / 1.8) / (M_PI * 76.2)};
+const LocomParam PARAM_ECUREUIL_1 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
+const LocomParam PARAM_ECUREUIL_2 = {88, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_3 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
-const LocomParam PARAM_ECUREUIL_4 = {91.0, (360.0 / 1.8) / (M_PI * 76.2)};
-const LocomParam PARAM_ECUREUIL_5 = {91.0, (360.0 / 1.8) / (M_PI * 76.2)};
-const LocomParam PARAM_DEFAUT = {91.0, (360.0 / 1.8) / (M_PI * 76.2)};
+const LocomParam PARAM_ECUREUIL_4 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
+const LocomParam PARAM_ECUREUIL_5 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
+const LocomParam PARAM_DEFAUT = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
+
+uint8_t id_servo_queue;
 
 i2c_master_bus_handle_t bus_handle;
 i2c_master_bus_config_t bus_config = {
@@ -108,8 +111,8 @@ extern "C" void app_main(void)
         printf("Failed to read pami id from NVS: %d\n", ret);
     }
     printf("Je suis le n° %d \n", pami_id);
-    
-    uint16_t strat_id; 
+
+    uint16_t strat_id;
     ret = read_u16_from_nvs("strat_id", &strat_id);
     if (ret != ESP_OK)
     {
@@ -127,15 +130,19 @@ extern "C" void app_main(void)
         break;
     case 1:
         mes_parametres = PARAM_ECUREUIL_1;
+        id_servo_queue = 32;
         break;
     case 2:
         mes_parametres = PARAM_ECUREUIL_2;
+        id_servo_queue = 31;
         break;
     case 3:
         mes_parametres = PARAM_ECUREUIL_3;
+        id_servo_queue = 33;
         break;
     case 4:
         mes_parametres = PARAM_ECUREUIL_4;
+        id_servo_queue = 30;
         break;
     case 5:
         mes_parametres = PARAM_ECUREUIL_5;
