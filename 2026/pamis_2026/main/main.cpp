@@ -107,8 +107,16 @@ extern "C" void app_main(void)
         pami_id = 100;
         printf("Failed to read pami id from NVS: %d\n", ret);
     }
-
     printf("Je suis le n° %d \n", pami_id);
+    
+    uint16_t strat_id; 
+    ret = read_u16_from_nvs("strat_id", &strat_id);
+    if (ret != ESP_OK)
+    {
+        strat_id = 100;
+        printf("Failed to read strat id from NVS: %d\n", ret);
+    }
+    printf("J'ai la strat %d \n", strat_id);
 
     LocomParam mes_parametres;
 
@@ -141,11 +149,11 @@ extern "C" void app_main(void)
     locomotion.init(mes_parametres);
     locomotion.enableSteppers(false);
 
-    if (pami_id == NINJA_ID)
+    if (strat_id == NINJA_ID)
     {
         xTaskCreate(strat_grenier, "pami strat", 8192, NULL, 1, NULL);
     }
-    else if (pami_id == 100)
+    else if (strat_id == 100)
     {
         xTaskCreate(strat_marchepas, "pami strat", 4096, NULL, 1, NULL);
     }
@@ -153,7 +161,7 @@ extern "C" void app_main(void)
     {
         init_evitement();
         init_map();
-        xTaskCreate(strat_pami2026, "pami strat", 20000, (void *)pami_id, 1, NULL);
+        xTaskCreate(strat_pami2026, "pami strat", 20000, (void *)strat_id, 1, NULL);
     }
 
     ESP_LOGI("Wifi", "Starting WiFi...");

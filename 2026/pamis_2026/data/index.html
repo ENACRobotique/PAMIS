@@ -230,9 +230,9 @@
         <p></p>
         <div>
             <div class="card">
-                <h2>Mon Nom</h2>
-                <label class="state">Mon nom actuel: <input id="pami_id" readonly></label>
-                <label class="state">Choisir un nouveau nom:
+                <h2>Mon Identité</h2>
+                <label class="state">Mon nom actuel et ma strat: <input id="pami_id" + id="strat_id" readonly></label>
+                <label class="state">Choisir mon nom:
                     <select id="select_pami">
                         <option value="9">Ninja</option>
                         <option value="1">Ecureuil 1</option>
@@ -242,7 +242,18 @@
                         <option value="5">Ecureuil 5</option>
                     </select>
                 </label>
-                <button id="set_pami_button" class="btn-send">Apply</button>
+                <button id="set_pami_button" class="btn-send">Nouveau Nom</button>
+                    <label class="state">Choisir ma strat:
+                        <select id="select_strat">
+                            <option value="9">Ninja</option>
+                            <option value="1">Strat 1</option>
+                            <option value="2">Strat 2</option>
+                            <option value="3">Strat 3</option>
+                            <option value="4">Strat 4</option>
+                            <option value="5">Strat 5</option>
+                    </select>
+                </label>
+                <button id="set_strat_button" class="btn-send">Nouvelle Strat</button>
             </div>
             <button id="btn_rf">⬈</button>
             <div class="dpad">
@@ -300,6 +311,9 @@
             if ("pami_id" in obj) {
                 document.getElementById('pami_id').value = obj["pami_id"];
             }
+            if ("strat_id" in obj) {
+                document.getElementById('strat_id').value = obj["strat_id"];
+            }
         }
         function onLoad(event) {
             initWebSocket();
@@ -356,6 +370,12 @@
             document.getElementById('set_pami_button').addEventListener('click', () => {
                 pamiValue = document.getElementById('select_pami').value;
                 msg = 'P' + pamiValue
+                console.log(msg);
+                websocket.send(msg);
+            });
+            document.getElementById('set_strat_button').addEventListener('click', () => {
+                stratValue = document.getElementById('select_strat').value;
+                msg = 'S' + stratValue
                 console.log(msg);
                 websocket.send(msg);
             });
