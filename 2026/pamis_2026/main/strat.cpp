@@ -63,7 +63,7 @@ void strat_pami2026(void *ID)
     Position mes_waypoints[10];
 
     printf("niveau FCD2 %d \n", gpio_get_level(FDC2));
-    locomotion.set_speed(1000, 4000);
+    locomotion.set_speed(100, 4000);
 
     if (gpio_get_level(FDC2) == 1)
     {
@@ -138,9 +138,9 @@ void strat_pami2026(void *ID)
         case 3:
         {
             pos_depart = {2900, 1800, -M_PI};
-            pos_arrive = {2200, 950, -M_PI / 2.0};
-            mes_waypoints[0] = {2600,1800, -M_PI / 2.0};
-            mes_waypoints[1] = {2600,1500, -M_PI / 2.0};
+            pos_arrive = {2200, 900, -M_PI / 2.0};
+            mes_waypoints[0] = {2600, 1800, -M_PI / 2.0};
+            mes_waypoints[1] = {2600, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
 
             break;
@@ -148,8 +148,8 @@ void strat_pami2026(void *ID)
         case 4:
         {
             pos_depart = {2900, 1900, -M_PI};
-            pos_arrive = {1800, 1400, -M_PI};
-            mes_waypoints[0] = {2500, 1400, -M_PI};
+            pos_arrive = {1800, 1475, -M_PI};
+            mes_waypoints[0] = {2500, 1475, -M_PI};
             nb_points_inter = 1;
             break;
         }

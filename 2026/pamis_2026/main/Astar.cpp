@@ -329,16 +329,15 @@ int gestion_point_intermediaire(Position depart, Position arrive, Position waypo
     int index_final = 0;
     Position point_actuel = depart;
 
-    // On boucle sur tous les waypoints (s'il y en a)
     for (int i = 0; i < nb_waypoints; i++)
     {
         int pts_segment = calcul_chemin(point_actuel, waypoints[i], chemin_temp);
 
-        if (pts_segment == 0)
-            return 0; // On a pas trouvé la traj (Mur)
+        if (pts_segment == 0) return 0;
 
-        for (int j = (index_final == 0 ? 0 : 1); j < pts_segment; j++)
+        for (int j = 1; j < pts_segment; j++)
         {
+            chemin_temp[j].theta = 0; 
             chemin_final[index_final++] = chemin_temp[j];
         }
         point_actuel = waypoints[i]; 
@@ -346,11 +345,17 @@ int gestion_point_intermediaire(Position depart, Position arrive, Position waypo
 
     int pts_dernier = calcul_chemin(point_actuel, arrive, chemin_temp);
 
-    if (pts_dernier == 0)
-        return 0;
+    if (pts_dernier == 0) return 0; 
 
-    for (int j = (index_final == 0 ? 0 : 1); j < pts_dernier; j++)
+    for (int j = 1; j < pts_dernier; j++)
     {
+        if (j == pts_dernier - 1) {
+
+            chemin_temp[j].theta = arrive.theta;
+        } else {
+            chemin_temp[j].theta = 0;
+        }
+        
         chemin_final[index_final++] = chemin_temp[j];
     }
 

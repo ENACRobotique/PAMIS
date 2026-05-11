@@ -8,6 +8,7 @@
 #include "strat.h"
 
 int s = 1;
+bool arret_urgence = false;
 
 Locomotion locomotion;
 
@@ -54,6 +55,7 @@ void Locomotion::init(LocomParam parametre)
 
 void Locomotion::resumeTrajectory()
 {
+    arret_urgence = false;
     enableSteppers(true);
     if (traj_TaskHandle != NULL)
     {
@@ -69,6 +71,9 @@ void Locomotion::abortTrajectory()
 
 void Locomotion::pauseTrajectory()
 {
+    arret_urgence = true;
+    step_left.stop();
+    step_right.stop();
     if (traj_TaskHandle != NULL)
     {
         vTaskSuspend(traj_TaskHandle);
@@ -119,8 +124,8 @@ void Locomotion::_move(float d1, float d2)
         a2 = abs(d2 / d) * acceleration_pami;
     }
 
-    step_left.setSpeedMm(a1, v1, a1);
-    step_right.setSpeedMm(a2, v2, a2);
+    step_left.setSpeedMm(v1, a1, a2);
+    step_right.setSpeedMm(v2, a1, a2);
     step_left.runPosMm(d1);
     step_right.runPosMm(d2);
 }
@@ -204,13 +209,28 @@ void Locomotion::odometry_task(void *arg)
     }
 }
 
+float normaliser_angle(float a)
+{
+    while (a > M_PI)
+        a -= 2.0 * M_PI;
+    while (a <= -M_PI)
+        a += 2.0 * M_PI;
+    return a;
+}
+
 int Locomotion::trajectory_movement()
 {
-    // Vaut-il mieux pas garder cet indice dans Locomotion pour savoir où on en est ?
     int i = 0;
     while (i < traj_length)
     {
+        if (arret_urgence)
+        {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            mvm_etat = IDLE_mvm;
+            continue;
+        }
         bool is_finished = waitFinishedTimeout(100);
+
         switch (mvm_etat)
         {
         case IDLE_mvm:
@@ -218,7 +238,7 @@ int Locomotion::trajectory_movement()
             mvm_etat = TURN_mvm;
             float dx = traj_points[i].x - pos.x;
             float dy = traj_points[i].y - pos.y;
-            float d_theta = atan2(dy, dx) - pos.theta;
+            float d_theta = normaliser_angle(atan2(dy, dx) - pos.theta);
             move(0, d_theta);
             break;
         }
@@ -226,11 +246,20 @@ int Locomotion::trajectory_movement()
         {
             if (is_finished)
             {
-                mvm_etat = CRUISE_mvm;
                 float dx = traj_points[i].x - pos.x;
                 float dy = traj_points[i].y - pos.y;
-                float mvm_length = sqrtf(dx * dx + dy * dy);
-                move(mvm_length, 0);
+                float erreur_angle = normaliser_angle(atan2(dy, dx) - pos.theta);
+
+                if (abs(erreur_angle) > 0.08f)
+                {
+                    mvm_etat = IDLE_mvm;
+                }
+                else
+                {
+                    mvm_etat = CRUISE_mvm;
+                    float mvm_length = sqrtf(dx * dx + dy * dy);
+                    move(mvm_length, 0);
+                }
             }
             break;
         }
@@ -238,16 +267,27 @@ int Locomotion::trajectory_movement()
         {
             if (is_finished)
             {
-                if (i == traj_length - 1)
+                float dx = traj_points[i].x - pos.x;
+                float dy = traj_points[i].y - pos.y;
+                float dist_restante = sqrtf(dx * dx + dy * dy);
+
+                if (dist_restante > 25.0f)
                 {
-                    mvm_etat = TURN_FINAL_mvm;
-                    float d_theta = traj_points[i].theta - pos.theta;
-                    move(0, d_theta);
+                    mvm_etat = IDLE_mvm;
                 }
                 else
                 {
-                    i++;
-                    mvm_etat = IDLE_mvm;
+                    if (i == traj_length - 1)
+                    {
+                        mvm_etat = TURN_FINAL_mvm;
+                        float d_theta = normaliser_angle(traj_points[i].theta - pos.theta);
+                        move(0, d_theta);
+                    }
+                    else
+                    {
+                        i++;
+                        mvm_etat = IDLE_mvm;
+                    }
                 }
             }
             break;
@@ -258,6 +298,7 @@ int Locomotion::trajectory_movement()
             {
                 return 1;
             }
+            break;
         }
         }
     }
