@@ -2,6 +2,8 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 
+constexpr uint32_t MATCH_TIME = 100;
+
 constexpr gpio_num_t LED1 = GPIO_NUM_5;
 constexpr gpio_num_t LED2 = GPIO_NUM_6;
 

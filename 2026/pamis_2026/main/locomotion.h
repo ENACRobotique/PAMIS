@@ -34,6 +34,8 @@ public:
     DistancesRoues leg(DistancesRoues d);
     void moveEvitement(float d,float alpha);
     void set_speed(float v, float a);
+    int setTime();
+    bool peutBouger();
     void resumeTrajectory(); 
     void abortTrajectory(); 
     void pauseTrajectory();  
@@ -67,6 +69,8 @@ public:
     
     int trajectory_movement();
 
+    void setMatchStart();
+
     private:
     void _move(float d1, float d2);
     Stepper step_left;
@@ -93,6 +97,8 @@ public:
     int traj_length;
     TaskHandle_t traj_TaskHandle = NULL;
     bool is_aborted = true;
+
+    TickType_t match_start_time;
 };
 
 

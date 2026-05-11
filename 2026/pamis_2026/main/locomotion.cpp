@@ -9,6 +9,14 @@
 
 
 
+bool Locomotion::peutBouger(){
+    int tps = xTaskGetTickCount();
+    if (match_start_time == 0 || (tps-match_start_time)/portTICK_PERIOD_MS < (MATCH_TIME * 1000)){
+        return true;
+    }
+    return false;
+}
+
 int s=1;
 
 // 1.8° per step, wheel 3inch diameter
@@ -43,6 +51,7 @@ Stepper_config_t step2_cfg = {
 
 void Locomotion::init() {
     pos = {0, 0, 0};
+    match_start_time = 0;
 
     traj_sem = xSemaphoreCreateBinary();
 
@@ -113,6 +122,10 @@ void Locomotion::move(float d, float alpha) {
 }
 
 void Locomotion::_move(float d1, float d2) {
+    if (!peutBouger()){
+        return;
+    }
+    
     float a1=0;
     float a2=0;
     float v1=0;
@@ -259,6 +272,11 @@ int Locomotion::trajectory_movement() {
         }
     }
     return -1;
+}
+
+void Locomotion::setMatchStart()
+{
+    match_start_time = xTaskGetTickCount();
 }
 
 void Locomotion::trajectory_task(void* arg)

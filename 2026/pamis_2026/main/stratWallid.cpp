@@ -4,14 +4,51 @@
 #include "sts3032.h"
 #include "config.h"
 
-
+TaskHandle_t ninja_handle = NULL;
+TaskHandle_t manger_handle = NULL;
 StratWallid stratWallid;
 
+
+void manger(void* arg) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    printf("MAAAAANNNGER !!!!!!!!!!!");
+    
+    while(true) {
+        // remuer la queue
+        stratWallid.danser();
+    }
+}
+
+void match_end_cb( TimerHandle_t xTimer ) {
+    printf("FIN DU MATCH  !!!!!!!!!!!");
+    if(ninja_handle != NULL) {
+        printf("stoping strat...");
+        vTaskDelete(ninja_handle);
+        //vTaskSuspend(ninja_handle);
+    }
+
+    if(manger_handle != NULL) {
+        printf("notify manger...");
+        xTaskNotifyGive(manger_handle);
+    }
+}
+
 void strat_grenier(void* arg) {
+
+    ninja_handle = xTaskGetCurrentTaskHandle();
+
+    xTaskCreate(manger, "manger", 4096, NULL, 1, &manger_handle);
 
     while (gpio_get_level(FDC1) == 0) {
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
+
+
+
+
+     auto timer = xTimerCreate("MatchEndTimer", pdMS_TO_TICKS(MATCH_TIME*1000), pdFALSE, (void *) 0, match_end_cb);
+    xTimerStart(timer, portMAX_DELAY);
+
     int cote;
     int bras_mid;
     int bras_bas;
@@ -60,7 +97,9 @@ void strat_grenier(void* arg) {
     stratWallid.sortir_caisse();
     stratWallid.moveWallid(50,0);
     stratWallid.moveWallid(0,M_PI/2);
-    stratWallid.moveWallid(245,0);
+    stratWallid.moveWallid(260,0);
+    stratWallid.manger();
+    stratWallid.danser();
 }
 
 int cote;
@@ -108,13 +147,15 @@ void StratWallid::placer_frigo_1(){
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-50,0);
     locomotion.set_seuils(0,200,0,0,0);
-    moveWallid(0,M_PI/2+0.4);
-    moveWallid(110,0);
+    moveWallid(0,M_PI/2+0.5);
+    locomotion.set_seuils(0,50,0,0,0);
+    moveWallid(120,0);
+    locomotion.set_seuils(0,0,0,0,0);
     taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-45,0);
-    locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
+    locomotion.set_seuils(0,200,0,0,0);
 
 }
 
@@ -136,9 +177,8 @@ void StratWallid::placer_frigo_2(){
     taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-25,0);
-    locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
-
+    locomotion.set_seuils(0,200,0,0,0);
 }
 
 void StratWallid::pousser_caisse(){
@@ -161,12 +201,15 @@ void StratWallid::vider_frigos(){
     moveWallid(110,0);
     moveWallid(0,-M_PI/2);
     vider_frigo2();
+    locomotion.set_seuils(0,40,0,0,0);
     moveWallid(310,0);
+    locomotion.set_seuils(0,0,0,0,0);
     taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-45,0);
-    locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
+    vTaskDelay(50/portTICK_PERIOD_MS);
+    locomotion.set_seuils(0,200,0,0,0);
 
 }
 
@@ -177,7 +220,7 @@ void StratWallid::vider_frigo2(){
     moveWallid(180,-0.2);
     sts3032::move(1,1100);
     vTaskDelay(50);
-    locomotion.set_seuils(200,0,0,0,0);
+    locomotion.set_seuils(50,0,0,0,0);
     moveWallid(-190,0);
     locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
@@ -186,13 +229,13 @@ void StratWallid::vider_frigo2(){
     sts3032::move(1,bras_bas);
     vTaskDelay(50);
     moveWallid(220,-0.2);
-    moveWallid(0,M_PI);
     sts3032::move(1,1100);
+    moveWallid(0,M_PI);
 }
 
 void StratWallid::vider_frigo1(){
     moveWallid(270,0);
-    locomotion.set_seuils(200,0,0,0,0);
+    locomotion.set_seuils(50,0,0,0,0);
     moveWallid(-270,0);
     locomotion.set_seuils(0,200,0,0,0);
 }
@@ -201,6 +244,29 @@ void StratWallid::taper_mur(){
     locomotion.set_speed(500,100);
     moveWallid(50,0);
     locomotion.set_speed(3000,500);
+}
+
+void StratWallid::danser(){
+    while(true){
+        sts3032::move(1,1690);
+        vTaskDelay(500/portTICK_PERIOD_MS);
+        sts3032::move(1,510);
+        vTaskDelay(500/portTICK_PERIOD_MS);
+    }
+    
+
+}
+
+void StratWallid::manger(){
+    locomotion.set_seuils(0,0,0,0,0);
+    moveWallid(-15,0);
+    moveWallid(0,-M_PI/2);
+    taper_mur();
+    moveWallid(-45,0);
+    moveWallid(0,M_PI);
+    moveWallid(870,0);
+    moveWallid(0,-M_PI/4);
+    sts3032::move(7,2020);
 }
 
     // // wait to plug tirette

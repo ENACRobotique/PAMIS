@@ -15,6 +15,8 @@ public:
     void vider_frigo1();
     void vider_frigo2();
     void taper_mur();
+    void manger();
+    void danser();
 };
 
 extern StratWallid stratWallid;
