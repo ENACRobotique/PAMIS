@@ -44,7 +44,8 @@ void task_evitement(void *arg)
             {
                 printf("pause traj obstacle\n");
 
-                //locomotion.pauseTrajectory();
+                locomotion.pauseTrajectory();
+
                 locomotion.stop();
 
                 en_arret_urgence = true;
@@ -59,7 +60,7 @@ void task_evitement(void *arg)
                 if (temps_sans_obstacle > 500)
                 {
                     en_arret_urgence = false;
-                   // locomotion.resumeTrajectory();
+                    locomotion.resumeTrajectory();
                 }
             }
         }

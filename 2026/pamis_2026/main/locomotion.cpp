@@ -9,13 +9,7 @@
 
 
 
-bool Locomotion::peutBouger(){
-    int tps = xTaskGetTickCount();
-    if (match_start_time == 0 || (tps-match_start_time)/portTICK_PERIOD_MS < (MATCH_TIME * 1000)){
-        return true;
-    }
-    return false;
-}
+
 
 int s=1;
 
@@ -29,6 +23,8 @@ float longueur_caisse = 150; //mm
 
 
 
+int s = 1;
+bool arret_urgence = false;
 
 Locomotion locomotion;
 
@@ -37,33 +33,35 @@ Stepper_config_t step_cfg = {
     .dirPin = 38,
     .enPin = 40,
     .miStep = MICROSTEP_8,
-    .stepAngle = 1.8
-};
+    .stepAngle = 1.8};
 
 Stepper_config_t step2_cfg = {
     .stepPin = 36,
     .dirPin = 35,
     .enPin = 40,
     .miStep = MICROSTEP_8,
-    .stepAngle = 1.8
-};
+    .stepAngle = 1.8};
 
+void Locomotion::init(LocomParam parametre)
+{
 
-void Locomotion::init() {
     pos = {0, 0, 0};
     match_start_time = 0;
 
     traj_sem = xSemaphoreCreateBinary();
 
+    current_wheelbase = parametre.wheelbase;
+    current_steps_per_mm = parametre.steps_per_mm;
+
     step_left.config(&step_cfg);
     step_left.init();
-    step_left.setStepsPerMm(STEPS_PER_MM);
+    step_left.setStepsPerMm(current_steps_per_mm);
     step_left.setSpeedMm(1000, 4000, 1000);
     step_right.config(&step2_cfg);
     step_right.init();
-    step_right.setStepsPerMm(STEPS_PER_MM);
+    step_right.setStepsPerMm(current_steps_per_mm);
     step_right.setSpeedMm(1000, 4000, 1000);
-    set_seuils(0,0,0,0,0);
+    set_seuils(0, 0, 0, 0, 0);
 
     oldPosLeft = getPosLeft();
     oldPosRight = getPosRight();
@@ -74,6 +72,7 @@ void Locomotion::init() {
 
 void Locomotion::resumeTrajectory()
 {
+    arret_urgence = false;
     enableSteppers(true);
     if (traj_TaskHandle != NULL)
     {
@@ -89,6 +88,9 @@ void Locomotion::abortTrajectory()
 
 void Locomotion::pauseTrajectory()
 {
+    arret_urgence = true;
+    step_left.stop();
+    step_right.stop();
     if (traj_TaskHandle != NULL)
     {
         vTaskSuspend(traj_TaskHandle);
@@ -101,31 +103,24 @@ DistancesRoues Locomotion::stop()
     float step_to_do_left = step_left.stopSlow();
     float step_to_do_right = step_right.stopSlow();
     waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
-    DistancesRoues d={
-        .d1=step_to_do_left,
-        .d2=step_to_do_right
-    };
+    DistancesRoues d = {
+        .d1 = step_to_do_left,
+        .d2 = step_to_do_right};
     return d;
 }
 
+void Locomotion::move(float d, float alpha)
+{
 
-void Locomotion::move(float d, float alpha) {
-
-    alpha=s*alpha;
-    float d1=d-(WHEELBASE/2)*alpha;
-    float d2=d+(WHEELBASE/2)*alpha;
-
+    alpha = s * alpha;
+    float d1 = d - (current_wheelbase / 2) * alpha;
+    float d2 = d + (current_wheelbase / 2) * alpha;
 
     _move(d1, d2);
-
-
 }
 
 void Locomotion::_move(float d1, float d2) {
-    if (!peutBouger()){
-        return;
-    }
-    
+
     float a1=0;
     float a2=0;
     float v1=0;
@@ -142,34 +137,39 @@ void Locomotion::_move(float d1, float d2) {
     a1=abs(d1/d)*acceleration_pami;
     a2=abs(d2/d)*acceleration_pami;}
 
-    step_left.setSpeedMm(a1, v1, a1);
-    step_right.setSpeedMm(a2, v2, a2);
+    step_left.setSpeedMm(v1, a1, a2);
+    step_right.setSpeedMm(v2, a1, a2);
     step_left.runPosMm(d1);
     step_right.runPosMm(d2);
 }
 
-void Locomotion::moveBlocking(float lenght, float angle) {
+void Locomotion::moveBlocking(float lenght, float angle)
+{
     move(lenght, angle);
-   waitFinishedTimeout(portMAX_DELAY);
+    waitFinishedTimeout(portMAX_DELAY);
 }
 
-
-
-void Locomotion::enableSteppers(bool enable) {
-    if(enable) {
+void Locomotion::enableSteppers(bool enable)
+{
+    if (enable)
+    {
         step_left.enableMotor();
-    } else {  
+    }
+    else
+    {
         step_left.disableMotor();
     }
 }
 
-bool Locomotion::moving() {
+bool Locomotion::moving()
+{
     bool left_moving = step_left.getState() != motor_status::IDLE && step_left.getState() != motor_status::DISABLED;
     bool right_moving = step_right.getState() != motor_status::IDLE && step_right.getState() != motor_status::DISABLED;
     return left_moving || right_moving;
 }
 
-void Locomotion::trajectory(Position* dest, int nb_pts) {
+void Locomotion::trajectory(Position *dest, int nb_pts)
+{
 
     // Question: si la traj précédente n'est pas finie, qu'est-ce qu'on fait ?
     // - rien (on continue l'ancienne), et on retourne une erreur ?
@@ -182,35 +182,36 @@ void Locomotion::trajectory(Position* dest, int nb_pts) {
     // soit on stocke directement le pointeur qu'on nous donne, mais ça implique qu'il
     // doit rester valable pour toute la durée d'exécution de la boucle.
     // le plus simple c'est davoir un tableau interne assez grand et d'y copier les positions
-    for (int i=0; i<nb_pts; i++) {
+    for (int i = 0; i < nb_pts; i++)
+    {
         traj_points[i] = dest[i];
     }
-    
+
     // On "demande" à faire une action
     xSemaphoreGive(traj_sem);
-
 }
 
-void Locomotion::odometry_task(void* arg)
+void Locomotion::odometry_task(void *arg)
 {
-    Locomotion* that = static_cast<Locomotion*>(arg);
-    
-    while(true) {
+    Locomotion *that = static_cast<Locomotion *>(arg);
+
+    while (true)
+    {
         float pos_left = that->getPosLeft();
         float pos_right = that->getPosRight();
-    
+
         float dLeft = pos_left - that->oldPosLeft;
         float dRight = pos_right - that->oldPosRight;
-        float dTheta = (dRight - dLeft)/WHEELBASE;
-        float d = (dRight + dLeft)/2;
+        float dTheta = (dRight - dLeft) / that->current_wheelbase;
+        float d = (dRight + dLeft) / 2;
         that->oldPosLeft = pos_left;
         that->oldPosRight = pos_right;
-        
+
         // ancienne position
         Position pos = that->getPos();
 
-        pos.x += d * cos(pos.theta+dTheta/2);
-        pos.y += d * sin(pos.theta+dTheta/2);
+        pos.x += d * cos(pos.theta + dTheta / 2);
+        pos.y += d * sin(pos.theta + dTheta / 2);
         pos.theta += dTheta;
         pos.theta = normalise(pos.theta);
 
@@ -218,57 +219,100 @@ void Locomotion::odometry_task(void* arg)
 
         // sleep jusqu'à la prochaine période
         vTaskDelay(ODOMETRY_PERIOD_MS / portTICK_PERIOD_MS);
-
     }
-
 }
 
-int Locomotion::trajectory_movement() {
-    // Vaut-il mieux pas garder cet indice dans Locomotion pour savoir où on en est ?
-    int i=0;
-    while(i<traj_length) {
+float normaliser_angle(float a)
+{
+    while (a > M_PI)
+        a -= 2.0 * M_PI;
+    while (a <= -M_PI)
+        a += 2.0 * M_PI;
+    return a;
+}
+
+int Locomotion::trajectory_movement()
+{
+    int i = 0;
+    while (i < traj_length)
+    {
+        if (arret_urgence)
+        {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            mvm_etat = IDLE_mvm;
+            continue;
+        }
         bool is_finished = waitFinishedTimeout(100);
-        switch(mvm_etat) {
-            case IDLE_mvm:
+
+        switch (mvm_etat)
+        {
+        case IDLE_mvm:
+        {
+            mvm_etat = TURN_mvm;
+            float dx = traj_points[i].x - pos.x;
+            float dy = traj_points[i].y - pos.y;
+            float d_theta = normaliser_angle(atan2(dy, dx) - pos.theta);
+            move(0, d_theta);
+            break;
+        }
+        case TURN_mvm:
+        {
+            if (is_finished)
+            {
+                float dx = traj_points[i].x - pos.x;
+                float dy = traj_points[i].y - pos.y;
+                float erreur_angle = normaliser_angle(atan2(dy, dx) - pos.theta);
+
+                if (abs(erreur_angle) > 0.08f)
                 {
-                    mvm_etat = TURN_mvm;
-                    float dx = traj_points[i].x-pos.x;
-                    float dy = traj_points[i].y-pos.y;
-                    float d_theta = atan2(dy, dx) - pos.theta;
-                    move(0, d_theta);
-                    break;
+                    mvm_etat = IDLE_mvm;
                 }
-            case TURN_mvm:
+                else
                 {
-                    if (is_finished) {
-                        mvm_etat = CRUISE_mvm;
-                        float dx = traj_points[i].x-pos.x;
-                        float dy = traj_points[i].y-pos.y;
-                        float mvm_length = sqrtf(dx*dx+dy*dy);
-                        move(mvm_length, 0);
+                    mvm_etat = CRUISE_mvm;
+                    float mvm_length = sqrtf(dx * dx + dy * dy);
+                    move(mvm_length, 0);
+                }
+            }
+            break;
+        }
+        case CRUISE_mvm:
+        {
+            if (is_finished)
+            {
+                float dx = traj_points[i].x - pos.x;
+                float dy = traj_points[i].y - pos.y;
+                float dist_restante = sqrtf(dx * dx + dy * dy);
+
+                if (dist_restante > 25.0f)
+                {
+                    mvm_etat = IDLE_mvm;
+                }
+                else
+                {
+                    if (i == traj_length - 1)
+                    {
+                        mvm_etat = TURN_FINAL_mvm;
+                        float d_theta = normaliser_angle(traj_points[i].theta - pos.theta);
+                        move(0, d_theta);
                     }
-                    break;
-                }
-            case CRUISE_mvm:
-                {
-                    if (is_finished) {
-                        if (i==traj_length-1) {
-                            mvm_etat = TURN_FINAL_mvm;
-                            float d_theta = traj_points[i].theta - pos.theta;
-                            move(0, d_theta);
-                        } else {
-                            i++;
-                            mvm_etat = IDLE_mvm;
-                        }
-                    }
-                    break;
-                }
-            case TURN_FINAL_mvm:
-                {
-                    if (is_finished) {
-                        return 1;
+                    else
+                    {
+                        i++;
+                        mvm_etat = IDLE_mvm;
                     }
                 }
+            }
+            break;
+        }
+        case TURN_FINAL_mvm:
+        {
+            if (is_finished)
+            {
+                return 1;
+            }
+            break;
+        }
         }
     }
     return -1;
@@ -281,71 +325,77 @@ void Locomotion::setMatchStart()
 
 void Locomotion::trajectory_task(void* arg)
 {
-    Locomotion* that = static_cast<Locomotion*>(arg);
+    Locomotion *that = static_cast<Locomotion *>(arg);
 
-    while(true) {
+    while (true)
+    {
         xSemaphoreTake(that->traj_sem, portMAX_DELAY);
 
         // Tache à faire
         // Pour chaque point -> lancer un move, waitFinishedTimeout(n ms) pour tester toute les n ms si le mouvement est fini ou s'il y a un soucis
         that->trajectory_movement();
     }
-
 }
 
-BaseType_t Locomotion::waitFinishedTimeout(TickType_t xTicksToWait) {
+BaseType_t Locomotion::waitFinishedTimeout(TickType_t xTicksToWait)
+{
     return step_left.waitFinishedTimeout(xTicksToWait) && step_right.waitFinishedTimeout(xTicksToWait);
-
 }
 
-
-void Locomotion::set_seuils(float a,float b,float c,float d,float e){
-    seuils[0]=a;
-    seuils[1]=b;
-    seuils[2]=c;
-    seuils[3]=d;
-    seuils[4]=e;
+void Locomotion::set_seuils(float a, float b, float c, float d, float e)
+{
+    seuils[0] = a;
+    seuils[1] = b;
+    seuils[2] = c;
+    seuils[3] = d;
+    seuils[4] = e;
 }
 
-bool Locomotion::danger(){
-    float d0=get_distance(0);
-    float d1=get_distance(1);
-    float d2=get_distance(2);
-    float d3=get_distance(3);
-    float d4=get_distance(4);
+bool Locomotion::danger()
+{
+    float d0 = get_distance(0);
+    float d1 = get_distance(1);
+    float d2 = get_distance(2);
+    float d3 = get_distance(3);
+    float d4 = get_distance(4);
 
-    return (d0<= seuils[0] || d1<= seuils[1]  || d2<= seuils[2]  || d3 <= seuils[3] || d4 <= seuils[4]);
+    return (d0 <= seuils[0] || d1 <= seuils[1] || d2 <= seuils[2] || d3 <= seuils[3] || d4 <= seuils[4]);
 }
 
 DistancesRoues Locomotion::leg(DistancesRoues d)
 {
-    _move(d.d1,d.d2);
-    while(waitFinishedTimeout(100/portTICK_PERIOD_MS)!=pdTRUE){
-        if (danger()){
+    _move(d.d1, d.d2);
+    while (waitFinishedTimeout(100 / portTICK_PERIOD_MS) != pdTRUE)
+    {
+        if (danger())
+        {
             DistancesRoues d = stop();
             waitFinishedTimeout(portMAX_DELAY);
             return d;
         }
     }
-    return {0,0};
+    return {0, 0};
 }
 
-void Locomotion::moveEvitement(float d,float alpha){
-    float d1=d-(WHEELBASE/2)*alpha;
-    float d2=d+(WHEELBASE/2)*alpha;
-    DistancesRoues r={d1,d2};
+void Locomotion::moveEvitement(float d, float alpha)
+{
+    float d1 = d - (current_wheelbase / 2) * alpha;
+    float d2 = d + (current_wheelbase / 2) * alpha;
+    DistancesRoues r = {d1, d2};
     ESP_LOGI("MOVE_E", "%f  %f", d1, d2);
-    while(r.d1 != 0 || r.d2 != 0){
+    while (r.d1 != 0 || r.d2 != 0)
+    {
         ESP_LOGI("MOVE_E", "d1:%f   d2:%f", r.d1, r.d2);
         r = leg(r);
-        while (danger()){
-            vTaskDelay(500/portTICK_PERIOD_MS);
+        while (danger())
+        {
+            vTaskDelay(500 / portTICK_PERIOD_MS);
         }
     }
 }
 
 void Locomotion::set_speed(float v, float a)
 {
-    vitesse_pami=v;
-    acceleration_pami=a;
+    vitesse_pami = v;
+    acceleration_pami = a;
 }

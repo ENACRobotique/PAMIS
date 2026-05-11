@@ -2,71 +2,78 @@
 #include "stepper.h"
 #include "radar_vl53.h"
 
-struct Position {
+struct Position
+{
     float x;
     float y;
     float theta;
-
 };
 
-struct DistancesRoues {
+struct DistancesRoues
+{
     float d1;
     float d2;
 };
 
-enum mvm_status {
+enum mvm_status
+{
     IDLE_mvm,
     TURN_mvm,
     CRUISE_mvm,
     TURN_FINAL_mvm,
 };
 
-class Locomotion {
+struct LocomParam
+{
+    float wheelbase;
+    float steps_per_mm;
+};
+
+class Locomotion
+{
 public:
-    void init();
+    void init(LocomParam mes_parametres);
 
     void move(float lenght, float angle);
+    void set_wheelbase(int pami_id);
 
     void moveBlocking(float lenght, float angle);
     DistancesRoues stop();
-    void set_seuils(float a,float b,float c,float d, float e);
+    void set_seuils(float a, float b, float c, float d, float e);
     bool danger();
     DistancesRoues leg(DistancesRoues d);
-    void moveEvitement(float d,float alpha);
+    void moveEvitement(float d, float alpha);
     void set_speed(float v, float a);
-    int setTime();
-    bool peutBouger();
-    void resumeTrajectory(); 
-    void abortTrajectory(); 
-    void pauseTrajectory();  
-    
-
+    void resumeTrajectory();
+    void abortTrajectory();
+    void pauseTrajectory();
     void enableSteppers(bool enable);
 
     bool moving();
 
-    Position getPos() {return pos;}
-    void setPos(Position new_pos) {pos = new_pos;}
+    Position getPos() { return pos; }
+    void setPos(Position new_pos) { pos = new_pos; }
 
-    float getPosLeft() {
+    float getPosLeft()
+    {
         return step_left.getPositionMm();
     }
 
-    float getPosRight() {
+    float getPosRight()
+    {
         return step_right.getPositionMm();
     }
 
-    static void odometry_task(void* arg);
+    static void odometry_task(void *arg);
 
-    static void trajectory_task(void* arg);
+    static void trajectory_task(void *arg);
     /**
      * @return pdTRUE if move finished, or pdFALSE on timeout
      */
     BaseType_t waitFinishedTimeout(TickType_t xTicksToWait);
 
-    
-    void trajectory(Position* dest, int nb_pts);
-    
+    void trajectory(Position *dest, int nb_pts);
+
     int trajectory_movement();
 
     void setMatchStart();
@@ -75,19 +82,19 @@ public:
     void _move(float d1, float d2);
     Stepper step_left;
     Stepper step_right;
-    
+
     float seuils[RADAR_NB];
 
     float vitesse_pami;
     float acceleration_pami;
+    float current_wheelbase;
+    float current_steps_per_mm;
 
     Position pos;
 
-    
-    
     float oldPosLeft;
     float oldPosRight;
-    
+
     // mvm_status -> enum ?? -> mvm_status mvm_etat = IDLE
     // Il faut éviter d'avoir des doublons de IDLE : stepper et locomotion ??
     mvm_status mvm_etat = IDLE_mvm;
@@ -101,6 +108,4 @@ public:
     TickType_t match_start_time;
 };
 
-
 extern Locomotion locomotion;
-

@@ -10,5 +10,5 @@
 #define GRILLE_LONGEUR (LONGEUR_MAP / TAILLE_GRILLE)
 
 void init_map();
-int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi);
+int gestion_point_intermediaire(Position depart, Position arrive, Position waypoints[], int nb_waypoints, Position *chemin_final); 
 void ajouter_obstacle_temporaire(Position pos_robot, float distance_mm);
