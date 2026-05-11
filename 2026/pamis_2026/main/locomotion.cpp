@@ -89,8 +89,8 @@ void Locomotion::abortTrajectory()
 void Locomotion::pauseTrajectory()
 {
     arret_urgence = true;
-    step_left.stop();
-    step_right.stop();
+    float step_to_do_left = step_left.stopSlow();
+    float step_to_do_right = step_right.stopSlow();
     if (traj_TaskHandle != NULL)
     {
         vTaskSuspend(traj_TaskHandle);

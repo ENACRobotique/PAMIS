@@ -63,7 +63,7 @@ void strat_pami2026(void *ID)
     Position mes_waypoints[10];
 
     printf("niveau FCD2 %d \n", gpio_get_level(FDC2));
-    locomotion.set_speed(100, 4000);
+    locomotion.set_speed(500, 4000);
 
     if (gpio_get_level(FDC2) == 1)
     {
