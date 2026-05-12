@@ -11,14 +11,13 @@
 
 
 
-
 // 1.8° per step, wheel 3inch diameter
-constexpr double STEPS_PER_MM = (360.0/1.8) / (M_PI * 71);
+constexpr double STEPS_PER_MM = (360.0 / 1.8) / (M_PI * 71);
 
 // constexpr float WHEELBASE = 123.2; // mm pour les fondations
-constexpr float WHEELBASE = 97.8; //mm pour wallid
+constexpr float WHEELBASE = 97.8; // mm pour wallid
 
-float longueur_caisse = 150; //mm
+float longueur_caisse = 150; // mm
 
 
 
@@ -116,23 +115,28 @@ void Locomotion::move(float d, float alpha)
     _move(d1, d2);
 }
 
-void Locomotion::_move(float d1, float d2) {
+void Locomotion::_move(float d1, float d2)
+{
 
-    float a1=0;
-    float a2=0;
-    float v1=0;
-    float v2=0;
-    float d=(d1+d2)/2;
-    if (d==0){
-        v1=vitesse_pami;
-        v2=vitesse_pami;
-        a1=acceleration_pami;
-        a2=acceleration_pami;}
-    else{
-    v1=abs(d1/d)*vitesse_pami;
-    v2=abs(d2/d)*vitesse_pami;
-    a1=abs(d1/d)*acceleration_pami;
-    a2=abs(d2/d)*acceleration_pami;}
+    float a1 = 0;
+    float a2 = 0;
+    float v1 = 0;
+    float v2 = 0;
+    float d = (d1 + d2) / 2;
+    if (d == 0)
+    {
+        v1 = vitesse_pami;
+        v2 = vitesse_pami;
+        a1 = acceleration_pami;
+        a2 = acceleration_pami;
+    }
+    else
+    {
+        v1 = abs(d1 / d) * vitesse_pami;
+        v2 = abs(d2 / d) * vitesse_pami;
+        a1 = abs(d1 / d) * acceleration_pami;
+        a2 = abs(d2 / d) * acceleration_pami;
+    }
 
     step_left.setSpeedMm(v1, a1, a2);
     step_right.setSpeedMm(v2, a1, a2);
@@ -320,7 +324,7 @@ void Locomotion::setMatchStart()
     match_start_time = xTaskGetTickCount();
 }
 
-void Locomotion::trajectory_task(void* arg)
+void Locomotion::trajectory_task(void *arg)
 {
     Locomotion *that = static_cast<Locomotion *>(arg);
 
