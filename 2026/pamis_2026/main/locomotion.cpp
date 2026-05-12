@@ -7,7 +7,9 @@
 #include "esp_log.h"
 #include "strat.h"
 
-int s = 1;
+
+
+
 
 // 1.8° per step, wheel 3inch diameter
 constexpr double STEPS_PER_MM = (360.0 / 1.8) / (M_PI * 71);
@@ -16,6 +18,8 @@ constexpr double STEPS_PER_MM = (360.0 / 1.8) / (M_PI * 71);
 constexpr float WHEELBASE = 97.8; // mm pour wallid
 
 float longueur_caisse = 150; // mm
+
+
 
 bool arret_urgence = false;
 
@@ -105,7 +109,6 @@ DistancesRoues Locomotion::stop()
 void Locomotion::move(float d, float alpha)
 {
 
-    alpha = s * alpha;
     float d1 = d - (current_wheelbase / 2) * alpha;
     float d2 = d + (current_wheelbase / 2) * alpha;
 
