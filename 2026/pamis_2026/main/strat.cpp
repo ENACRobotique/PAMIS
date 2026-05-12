@@ -57,52 +57,61 @@ void strat_fondation(void *arg)
 
 void strat_pami2026(void *ID)
 {
-
     Position pos_depart;
     Position pos_arrive;
-    uint32_t PAMI_ID = (uint32_t)ID;
+    uint32_t strat_id = (uint32_t)ID;
     Position chemin_complet[200];
     int nb_points_inter = 0;
     Position mes_waypoints[10];
+    int attente_longue = 85000;
 
     printf("niveau FCD2 %d \n", gpio_get_level(FDC2));
     locomotion.set_speed(500, 4000);
 
-    if (gpio_get_level(FDC2) == 1)
+    if (gpio_get_level(FDC2) == 0)
     {
         printf("Je suis jaune \n");
-        switch (PAMI_ID)
+        switch (strat_id)
         {
         case 1:
         {
             pos_depart = {100, 1600, M_PI};
-            pos_arrive = {100, 950, -M_PI / 2.0};
-            // mes_waypoints[0];
-            // nb_points_inter = 0;
+            pos_arrive = {700, 200, -M_PI / 2.0};
+            mes_waypoints[0] = {400, 1500, -M_PI / 2.0};
+            mes_waypoints[1] = {950, 1000, -M_PI / 2.0};
+            mes_waypoints[2] = {950, 500, -M_PI / 2.0};
+            nb_points_inter = 0;
             break;
         }
         case 2:
         {
             pos_depart = {100, 1700, M_PI};
             pos_arrive = {700, 250, -M_PI / 2.0};
-            // mes_waypoints[0];
-            // nb_points_inter = 0;
+            mes_waypoints[0] = {300, 1700, -M_PI / 2.0};
+            mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
+            nb_points_inter = 2;
+            attente_longue = 85500;
             break;
         }
         case 3:
         {
             pos_depart = {100, 1800, M_PI};
             pos_arrive = {800, 950, -M_PI / 2.0};
-            mes_waypoints[0] = {800, 1100, -M_PI / 2.0};
-            nb_points_inter = 1;
+            mes_waypoints[0] = {300, 1800, -M_PI / 2.0};
+            mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
+            nb_points_inter = 2;
+            nb_points_inter = 2;
+            attente_longue = 86000;
             break;
         }
         case 4:
         {
             pos_depart = {100, 1900, M_PI};
             pos_arrive = {1150, 1400, M_PI};
-            mes_waypoints[0] = {500, 1400, M_PI};
-            nb_points_inter = 1;
+            mes_waypoints[0] = {300, 1900, -M_PI};
+            mes_waypoints[1] = {400, 1475, -M_PI};
+            nb_points_inter = 2;
+            attente_longue = 86500;
             break;
         }
         case 5:
@@ -120,7 +129,7 @@ void strat_pami2026(void *ID)
     else
     {
         printf("Je suis bleu\n");
-        switch (PAMI_ID)
+        switch (strat_id)
         {
         case 1:
         {
@@ -139,6 +148,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1700, -M_PI / 2.0};
             mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
+            attente_longue = 85500;
             break;
         }
         case 3:
@@ -148,15 +158,17 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1800, -M_PI / 2.0};
             mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-
+            attente_longue = 86000;
             break;
         }
         case 4:
         {
             pos_depart = {2900, 1900, -M_PI};
             pos_arrive = {1800, 1475, -M_PI};
-            mes_waypoints[0] = {2500, 1475, -M_PI};
-            nb_points_inter = 1;
+            mes_waypoints[0] = {2700, 1900, -M_PI};
+            mes_waypoints[1] = {2600, 1475, -M_PI};
+            nb_points_inter = 2;
+            attente_longue = 86500;
             break;
         }
         case 5:
@@ -191,9 +203,16 @@ void strat_pami2026(void *ID)
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 
-    // wait 85 secondes (pour etre sur de pas partir avant)
-    // vTaskDelay(pdMS_TO_TICKS(85000));
-    // }
+    if (gpio_get_level(FDC3) == 1)
+    {
+        printf("j'attends longtemps \n");
+        vTaskDelay(pdMS_TO_TICKS(attente_longue));
+    }
+    else
+    {
+        printf("j'attends pas longtemps \n");
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
 
     if (nb_points > 0)
     {
@@ -203,11 +222,18 @@ void strat_pami2026(void *ID)
     locomotion.setPos(pos_depart);
 
     bool a_gauche = true;
-    const uint16_t POS_GAUCHE = 400; // Centre (512) - 112
-    const uint16_t POS_DROITE = 624; // Centre (512) + 112
+    const uint16_t POS_GAUCHE = 200; // Centre (512) - 112
+    const uint16_t POS_DROITE = 500; // Centre (512) + 112
 
-    while (true)
+    while (locomotion.trajectoire_en_cours)
     {
+        printf("je suis blouqer ici \n");
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    // Bouger la queue
+    while (1)
+    {
+        printf("je suis arrive pour le faire bouger \n");
         if (a_gauche)
         {
             scs009::move_scs(id_servo_queue, POS_GAUCHE);

@@ -66,8 +66,8 @@ void init_map()
     interdire_zone(600, 2400, 1550, 2000); // zone du grenier
 
     // zone d'attente du robot avant de rentrer
-    // interdire_zone(600, 1100, 1200, 1600);  // RAJ
-    // interdire_zone(1900, 2400, 1200, 1600); // RAN
+    interdire_zone(600, 1100, 1200, 1600); // RAJ
+    interdire_zone(2550, 3000, 1300, 900); // RAB
 
     // on interdit les gardes a manger on s'approchera sans renter entièrement dedans
     interdire_zone(0, 200, 700, 900);       // J1
@@ -125,7 +125,7 @@ bool ligne_de_vue(int x0, int y0, int x1, int y1)
 
     while (true)
     {
-        
+
         if (map[x0][y0] == 255)
             return false;
 
@@ -277,6 +277,14 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
         curr_y = py;
     }
 
+    if (path_length > 0)
+    {
+        temp_path[path_length - 1].x = depart.x;
+        temp_path[path_length - 1].y = depart.y;
+        temp_path[0].x = arrive.x;
+        temp_path[0].y = arrive.y;
+    }
+
     if (path_length <= 2)
     {
         for (int i = 0; i < path_length; i++)
@@ -287,14 +295,14 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
     }
 
     int idx = 0;
-    int current_idx = path_length - 1; 
+    int current_idx = path_length - 1;
 
-    //ajout du point de départ au chemon
+    // ajout du point de départ au chemon
     chemin_suivi[idx++] = temp_path[current_idx];
 
     while (current_idx > 0)
     {
-        int furthest_visible = current_idx - 1; 
+        int furthest_visible = current_idx - 1;
 
         // on cherhce le plus loin vers l'arrivé
         for (int i = current_idx - 1; i >= 0; i--)
@@ -311,7 +319,7 @@ int calcul_chemin(Position depart, Position arrive, Position *chemin_suivi)
             }
             else
             {
-                break; 
+                break;
             }
         }
         chemin_suivi[idx++] = temp_path[furthest_visible];
@@ -333,29 +341,34 @@ int gestion_point_intermediaire(Position depart, Position arrive, Position waypo
     {
         int pts_segment = calcul_chemin(point_actuel, waypoints[i], chemin_temp);
 
-        if (pts_segment == 0) return 0;
+        if (pts_segment == 0)
+            return 0;
 
         for (int j = 1; j < pts_segment; j++)
         {
-            chemin_temp[j].theta = 0; 
+            chemin_temp[j].theta = 0;
             chemin_final[index_final++] = chemin_temp[j];
         }
-        point_actuel = waypoints[i]; 
+        point_actuel = waypoints[i];
     }
 
     int pts_dernier = calcul_chemin(point_actuel, arrive, chemin_temp);
 
-    if (pts_dernier == 0) return 0; 
+    if (pts_dernier == 0)
+        return 0;
 
     for (int j = 1; j < pts_dernier; j++)
     {
-        if (j == pts_dernier - 1) {
+        if (j == pts_dernier - 1)
+        {
 
             chemin_temp[j].theta = arrive.theta;
-        } else {
+        }
+        else
+        {
             chemin_temp[j].theta = 0;
         }
-        
+
         chemin_final[index_final++] = chemin_temp[j];
     }
 

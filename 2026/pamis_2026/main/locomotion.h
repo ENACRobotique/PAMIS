@@ -36,6 +36,7 @@ public:
 
     void move(float lenght, float angle);
     void set_wheelbase(int pami_id);
+    volatile bool trajectoire_en_cours = false;
 
     void moveBlocking(float lenght, float angle);
     DistancesRoues stop();
@@ -77,8 +78,9 @@ public:
     int trajectory_movement();
 
     void setMatchStart();
+    Position pos;
 
-    private:
+private:
     void _move(float d1, float d2);
     Stepper step_left;
     Stepper step_right;
@@ -89,8 +91,6 @@ public:
     float acceleration_pami;
     float current_wheelbase;
     float current_steps_per_mm;
-
-    Position pos;
 
     float oldPosLeft;
     float oldPosRight;

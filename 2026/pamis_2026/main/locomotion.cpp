@@ -220,20 +220,20 @@ void Locomotion::odometry_task(void *arg)
     }
 }
 
-float normaliser_angle(float a)
-{
-    while (a > M_PI)
-        a -= 2.0 * M_PI;
-    while (a <= -M_PI)
-        a += 2.0 * M_PI;
-    return a;
-}
-
 int Locomotion::trajectory_movement()
 {
+    trajectoire_en_cours = true;
     int i = 0;
     while (i < traj_length)
     {
+        uint32_t temps_ecoule_ms = (xTaskGetTickCount() - match_start_time) * portTICK_PERIOD_MS;
+
+        if (temps_ecoule_ms >= 99000)
+        {
+            stop();
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (arret_urgence)
         {
             vTaskDelay(pdMS_TO_TICKS(50));
@@ -249,7 +249,7 @@ int Locomotion::trajectory_movement()
             mvm_etat = TURN_mvm;
             float dx = traj_points[i].x - pos.x;
             float dy = traj_points[i].y - pos.y;
-            float d_theta = normaliser_angle(atan2(dy, dx) - pos.theta);
+            float d_theta = normalise(atan2(dy, dx) - pos.theta);
             move(0, d_theta);
             break;
         }
@@ -259,7 +259,7 @@ int Locomotion::trajectory_movement()
             {
                 float dx = traj_points[i].x - pos.x;
                 float dy = traj_points[i].y - pos.y;
-                float erreur_angle = normaliser_angle(atan2(dy, dx) - pos.theta);
+                float erreur_angle = normalise(atan2(dy, dx) - pos.theta);
 
                 if (abs(erreur_angle) > 0.08f)
                 {
@@ -291,7 +291,7 @@ int Locomotion::trajectory_movement()
                     if (i == traj_length - 1)
                     {
                         mvm_etat = TURN_FINAL_mvm;
-                        float d_theta = normaliser_angle(traj_points[i].theta - pos.theta);
+                        float d_theta = normalise(traj_points[i].theta - pos.theta);
                         move(0, d_theta);
                     }
                     else
@@ -307,6 +307,7 @@ int Locomotion::trajectory_movement()
         {
             if (is_finished)
             {
+                trajectoire_en_cours = false;
                 return 1;
             }
             break;
