@@ -72,7 +72,7 @@ void strat_grenier(void* arg) {
     sts3032::move(7,3050);
     sts3032::move(1,1100);
     locomotion.set_seuils(0,200,0,0,0);
-    locomotion.set_speed(3000,500);
+    locomotion.set_speed(500,3000);
     stratWallid.vider_frigos();
     stratWallid.moveWallid(550,0);
     stratWallid.taper_mur();
@@ -98,7 +98,7 @@ void strat_grenier(void* arg) {
     stratWallid.moveWallid(50,0);
     stratWallid.moveWallid(0,M_PI/2);
     stratWallid.moveWallid(260,0);
-    stratWallid.manger();
+    stratWallid.manger(1);
     stratWallid.danser();
 }
 
@@ -121,26 +121,28 @@ void StratWallid::sortir_caisse(){
     vTaskDelay(100 / portTICK_PERIOD_MS);
     moveWallid(225,-0.12);
     sts3032::move(1,1100);
-    moveWallid(30,0);
+    moveWallid(40,0);
     taper_mur();
     locomotion.set_seuils(50,0,0,0,0);
+    locomotion.set_speed(200,3000);
     moveWallid(-45,0);
+    locomotion.set_speed(500,3000);
     locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
-    locomotion.set_speed(500,100);
+    locomotion.set_speed(100,500);
     moveWallid(60,0);
-    locomotion.set_speed(3000,500);
+    locomotion.set_speed(500,3000);
 }
 
 void StratWallid::placer_frigo_1(){
     sts3032::move(7,2020);
     vTaskDelay(50);
-    locomotion.set_speed(500,100);
+    locomotion.set_speed(100,500);
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-150,0);
     locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI*5/6);
-    locomotion.set_speed(3000,500);
+    locomotion.set_speed(500,3000);
     moveWallid(220,0);
     sts3032::move(7,3050);
     vTaskDelay(50);
@@ -149,8 +151,9 @@ void StratWallid::placer_frigo_1(){
     locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2+0.5);
     locomotion.set_seuils(0,50,0,0,0);
-    moveWallid(120,0);
+    moveWallid(100,0);
     locomotion.set_seuils(0,0,0,0,0);
+    moveWallid(40,0);
     taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-45,0);
@@ -162,9 +165,11 @@ void StratWallid::placer_frigo_1(){
 void StratWallid::placer_frigo_2(){
     sts3032::move(7,2020);
     vTaskDelay(50);
+    locomotion.set_speed(100,500);
     locomotion.set_seuils(0,200,0,0,0);
     moveWallid(-150,0);
     locomotion.set_seuils(200,0,0,0,0);
+    locomotion.set_speed(500,3000);
     moveWallid(0,M_PI*3/4);
     moveWallid(50,0);
     sts3032::move(7,3050);
@@ -186,11 +191,11 @@ void StratWallid::pousser_caisse(){
     vTaskDelay(50);
     moveWallid(15,0);
     taper_mur();
-    locomotion.set_speed(500,100);
+    locomotion.set_speed(100,500);
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-350,0);
     locomotion.set_seuils(0,200,0,0,0);
-    locomotion.set_speed(3000,500);
+    locomotion.set_speed(500,3000);
 }
 
 void StratWallid::vider_frigos(){
@@ -202,8 +207,10 @@ void StratWallid::vider_frigos(){
     moveWallid(0,-M_PI/2);
     vider_frigo2();
     locomotion.set_seuils(0,40,0,0,0);
-    moveWallid(310,0);
+    locomotion.set_speed(200,3000);
+    moveWallid(260,0);
     locomotion.set_seuils(0,0,0,0,0);
+    moveWallid(50,0);
     taper_mur();
     locomotion.set_seuils(200,0,0,0,0);
     moveWallid(-45,0);
@@ -221,7 +228,9 @@ void StratWallid::vider_frigo2(){
     sts3032::move(1,1100);
     vTaskDelay(50);
     locomotion.set_seuils(50,0,0,0,0);
+    locomotion.set_speed(200,3000);
     moveWallid(-190,0);
+    locomotion.set_speed(500,3000);
     locomotion.set_seuils(0,200,0,0,0);
     moveWallid(0,M_PI/2);
     moveWallid(45,0);
@@ -236,14 +245,16 @@ void StratWallid::vider_frigo2(){
 void StratWallid::vider_frigo1(){
     moveWallid(270,0);
     locomotion.set_seuils(50,0,0,0,0);
+    locomotion.set_speed(200,3000);
     moveWallid(-270,0);
+    locomotion.set_speed(500,3000);
     locomotion.set_seuils(0,200,0,0,0);
 }
 
 void StratWallid::taper_mur(){
-    locomotion.set_speed(500,100);
+    locomotion.set_speed(100,500);
     moveWallid(50,0);
-    locomotion.set_speed(3000,500);
+    locomotion.set_speed(500,3000);
 }
 
 void StratWallid::danser(){
@@ -257,19 +268,32 @@ void StratWallid::danser(){
 
 }
 
-void StratWallid::manger(){
+void StratWallid::manger(int distance){
+    // 1 = loin 
+    // 0 = proche 
+    int dist;
+    if (distance==1){
+        dist=870;
+    }
+    else if (distance==0){
+        dist=370;
+    }
+    
     locomotion.set_seuils(0,0,0,0,0);
     moveWallid(-15,0);
     moveWallid(0,-M_PI/2);
     taper_mur();
     moveWallid(-45,0);
     moveWallid(0,M_PI);
-    moveWallid(870,0);
-    moveWallid(0,-M_PI/4);
+    locomotion.set_seuils(0,300,0,0,0);
+    moveWallid(dist,0);
     sts3032::move(7,2020);
+    vTaskDelay(500/portTICK_PERIOD_MS);
+    moveWallid(0,-M_PI/4);
 }
 
     // // wait to plug tirette
     // while (gpio_get_level(FDC1) == 0) {
     //     vTaskDelay(50 / portTICK_PERIOD_MS);
     // }
+
