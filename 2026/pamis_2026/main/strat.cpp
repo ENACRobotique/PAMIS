@@ -90,7 +90,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {300, 1700, -M_PI / 2.0};
             mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-            attente_longue = 85500;
+            attente_longue = 86000;
             break;
         }
         case 3:
@@ -101,7 +101,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
             nb_points_inter = 2;
-            attente_longue = 86000;
+            attente_longue = 87000;
             break;
         }
         case 4:
@@ -111,7 +111,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {300, 1900, M_PI};
             mes_waypoints[1] = {400, 1475, M_PI};
             nb_points_inter = 2;
-            attente_longue = 86500;
+            attente_longue = 88000;
             break;
         }
         case 5:
@@ -148,7 +148,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1700, -M_PI / 2.0};
             mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-            attente_longue = 85500;
+            attente_longue = 86000;
             break;
         }
         case 3:
@@ -158,7 +158,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1800, -M_PI / 2.0};
             mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-            attente_longue = 86000;
+            attente_longue = 87000;
             break;
         }
         case 4:
@@ -168,7 +168,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1900, -M_PI};
             mes_waypoints[1] = {2600, 1475, -M_PI};
             nb_points_inter = 2;
-            attente_longue = 86500;
+            attente_longue = 88000;
             break;
         }
         case 5:
