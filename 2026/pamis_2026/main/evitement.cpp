@@ -28,7 +28,7 @@ bool est_un_obstacle_statique(float obs_x, float obs_y)
     if (obs_y < MARGE_MUR || obs_y > (2000.0f - MARGE_MUR))
         return true;
     // on vérifie le grenier la
-    if (obs_x > 600.0f && obs_x < 2400.0f && obs_y > 1300.0f)
+    if (obs_x > 600.0f && obs_x < 2400.0f && obs_y > 1600.0f)
         return true;
 
     // si l'obstacle n'est pas la
