@@ -66,8 +66,8 @@ void init_map()
     interdire_zone(600, 2400, 1550, 2000); // zone du grenier
 
     // zone d'attente du robot avant de rentrer
-    interdire_zone(600, 1100, 1200, 1600); // RAJ
-    interdire_zone(2550, 3000, 1300, 900); // RAB
+    // interdire_zone(600, 1100, 1200, 1600); // RAJ
+    // interdire_zone(2550, 3000, 1300, 900); // RAB
 
     // on interdit les gardes a manger on s'approchera sans renter entièrement dedans
     interdire_zone(0, 200, 700, 900);       // J1

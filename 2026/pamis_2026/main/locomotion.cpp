@@ -7,10 +7,6 @@
 #include "esp_log.h"
 #include "strat.h"
 
-
-
-
-
 // 1.8° per step, wheel 3inch diameter
 constexpr double STEPS_PER_MM = (360.0 / 1.8) / (M_PI * 71);
 
@@ -18,8 +14,6 @@ constexpr double STEPS_PER_MM = (360.0 / 1.8) / (M_PI * 71);
 constexpr float WHEELBASE = 97.8; // mm pour wallid
 
 float longueur_caisse = 150; // mm
-
-
 
 bool arret_urgence = false;
 
@@ -234,6 +228,7 @@ int Locomotion::trajectory_movement()
         if (temps_ecoule_ms >= 99000)
         {
             stop();
+            trajectoire_en_cours = false;
             break;
         }
         vTaskDelay(pdMS_TO_TICKS(10));

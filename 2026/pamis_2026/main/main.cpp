@@ -29,7 +29,7 @@
 
 const LocomParam PARAM_NINJA = {97.8, (360.0 / 1.8) / (M_PI * 71.0)};
 const LocomParam PARAM_ECUREUIL_1 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
-const LocomParam PARAM_ECUREUIL_2 = {88, (360.0 / 1.8) / (M_PI * 76.2)};
+const LocomParam PARAM_ECUREUIL_2 = {84.48, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_3 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_4 = {87.41, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_5 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};

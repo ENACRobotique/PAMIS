@@ -60,13 +60,13 @@ void strat_pami2026(void *ID)
     Position pos_depart;
     Position pos_arrive;
     uint32_t strat_id = (uint32_t)ID;
-    Position chemin_complet[200];
+    static Position chemin_complet[200];
     int nb_points_inter = 0;
     Position mes_waypoints[10];
     int attente_longue = 85000;
 
     printf("niveau FCD2 %d \n", gpio_get_level(FDC2));
-    locomotion.set_speed(500, 4000);
+    locomotion.set_speed(500, 2000);
 
     if (gpio_get_level(FDC2) == 0)
     {
@@ -75,18 +75,18 @@ void strat_pami2026(void *ID)
         {
         case 1:
         {
-            pos_depart = {100, 1600, M_PI};
+            pos_depart = {100, 1600, 0};
             pos_arrive = {700, 200, -M_PI / 2.0};
             mes_waypoints[0] = {400, 1500, -M_PI / 2.0};
             mes_waypoints[1] = {950, 1000, -M_PI / 2.0};
             mes_waypoints[2] = {950, 500, -M_PI / 2.0};
-            nb_points_inter = 0;
+            nb_points_inter = 3;
             break;
         }
         case 2:
         {
-            pos_depart = {100, 1700, M_PI};
-            pos_arrive = {700, 250, -M_PI / 2.0};
+            pos_depart = {100, 1700, 0};
+            pos_arrive = {1500, 1000, -M_PI / 2.0};
             mes_waypoints[0] = {300, 1700, -M_PI / 2.0};
             mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
@@ -95,7 +95,7 @@ void strat_pami2026(void *ID)
         }
         case 3:
         {
-            pos_depart = {100, 1800, M_PI};
+            pos_depart = {100, 1800, 0};
             pos_arrive = {800, 950, -M_PI / 2.0};
             mes_waypoints[0] = {300, 1800, -M_PI / 2.0};
             mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
@@ -106,10 +106,10 @@ void strat_pami2026(void *ID)
         }
         case 4:
         {
-            pos_depart = {100, 1900, M_PI};
-            pos_arrive = {1150, 1400, M_PI};
-            mes_waypoints[0] = {300, 1900, -M_PI};
-            mes_waypoints[1] = {400, 1475, -M_PI};
+            pos_depart = {100, 1900, 0};
+            pos_arrive = {1150, 1475, 0};
+            mes_waypoints[0] = {300, 1900, M_PI};
+            mes_waypoints[1] = {400, 1475, M_PI};
             nb_points_inter = 2;
             attente_longue = 86500;
             break;
@@ -187,6 +187,8 @@ void strat_pami2026(void *ID)
     int nb_points = gestion_point_intermediaire(pos_depart, pos_arrive, mes_waypoints, nb_points_inter, chemin_complet);
     printf("nombre de point trouvé %i \n", nb_points);
 
+    locomotion.setPos(pos_depart);
+
     // on regarde si on doit attendre
     // if(gpio_get_level(FDC2)){
     // wait to plug tirette
@@ -202,6 +204,7 @@ void strat_pami2026(void *ID)
         printf("on m'a enlever la tirette \n");
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
+    locomotion.setMatchStart();
 
     if (gpio_get_level(FDC3) == 1)
     {
@@ -219,8 +222,6 @@ void strat_pami2026(void *ID)
         locomotion.trajectory(chemin_complet, nb_points);
     }
 
-    locomotion.setPos(pos_depart);
-
     bool a_gauche = true;
     const uint16_t POS_GAUCHE = 200; // Centre (512) - 112
     const uint16_t POS_DROITE = 500; // Centre (512) + 112
@@ -228,7 +229,7 @@ void strat_pami2026(void *ID)
     while (locomotion.trajectoire_en_cours)
     {
         printf("je suis blouqer ici \n");
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
     // Bouger la queue
     while (1)

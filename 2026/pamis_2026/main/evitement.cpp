@@ -28,7 +28,7 @@ bool est_un_obstacle_statique(float obs_x, float obs_y)
     if (obs_y < MARGE_MUR || obs_y > (2000.0f - MARGE_MUR))
         return true;
     // on vérifie le grenier la
-    if (obs_x > 600.0f && obs_x < 2400.0f && obs_y > 1550.0f)
+    if (obs_x > 600.0f && obs_x < 2400.0f && obs_y > 1300.0f)
         return true;
 
     // si l'obstacle n'est pas la
@@ -47,10 +47,19 @@ void task_evitement(void *arg)
         float y_robot = locomotion.pos.y;
         bool dans_zone_jaune = (x_robot < 450.0f && y_robot > 1450.0f);
         bool dans_zone_bleue = (x_robot > 2550.0f && y_robot > 1450.0f);
+        bool non_initialise = (x_robot == 0.0f && y_robot == 0.0f);
 
-        if (dans_zone_jaune || dans_zone_bleue)
+        if (dans_zone_jaune || dans_zone_bleue || non_initialise)
         {
-            // on est dans le nid on regarde pas autout de nous
+            if (en_arret_urgence)
+            {
+                printf("PURGE : Retrait de l'arret d'urgence dans le nid !\n");
+                en_arret_urgence = false;
+                temps_sans_obstacle = 0;
+                locomotion.resumeTrajectory();
+            }
+
+            // On est dans le nid on regarde pas les obstacle
             vTaskDelay(pdMS_TO_TICKS(20));
             continue;
         }
