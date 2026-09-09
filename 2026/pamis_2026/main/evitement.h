@@ -3,4 +3,4 @@
 extern bool obstacle_fixe_detecte;
 extern bool evitement_suspendu;
 
-void init_evitement();
+void task_evitement(void *arg);

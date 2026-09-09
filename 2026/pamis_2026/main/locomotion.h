@@ -49,6 +49,7 @@ public:
     void abortTrajectory();
     void pauseTrajectory();
     void enableSteppers(bool enable);
+    void disableSteppers();
 
     bool moving();
 
@@ -80,6 +81,10 @@ public:
     void setMatchStart();
     Position pos;
 
+    TickType_t match_start_time;
+    float vitesse_pami;
+    float acceleration_pami;
+
 private:
     void _move(float d1, float d2);
     Stepper step_left;
@@ -87,8 +92,6 @@ private:
 
     float seuils[RADAR_NB];
 
-    float vitesse_pami;
-    float acceleration_pami;
     float current_wheelbase;
     float current_steps_per_mm;
 
@@ -104,8 +107,6 @@ private:
     int traj_length;
     TaskHandle_t traj_TaskHandle = NULL;
     bool is_aborted = true;
-
-    TickType_t match_start_time;
 };
 
 extern Locomotion locomotion;

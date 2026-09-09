@@ -76,7 +76,7 @@ void strat_pami2026(void *ID)
         case 1:
         {
             pos_depart = {100, 1600, 0};
-            pos_arrive = {700, 200, -M_PI / 2.0};
+            pos_arrive = {700, 250, -M_PI / 2.0};
             mes_waypoints[0] = {400, 1500, -M_PI / 2.0};
             mes_waypoints[1] = {950, 1000, -M_PI / 2.0};
             mes_waypoints[2] = {950, 500, -M_PI / 2.0};
@@ -90,7 +90,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {300, 1700, -M_PI / 2.0};
             mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-            attente_longue = 86000;
+            attente_longue = 87000;
             break;
         }
         case 3:
@@ -101,17 +101,17 @@ void strat_pami2026(void *ID)
             mes_waypoints[1] = {300, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
             nb_points_inter = 2;
-            attente_longue = 87000;
+            attente_longue = 89000;
             break;
         }
         case 4:
         {
             pos_depart = {100, 1900, 0};
-            pos_arrive = {1150, 1475, 0};
+            pos_arrive = {1100, 1475, 0};
             mes_waypoints[0] = {300, 1900, M_PI};
             mes_waypoints[1] = {400, 1475, M_PI};
             nb_points_inter = 2;
-            attente_longue = 88000;
+            attente_longue = 91000;
             break;
         }
         case 5:
@@ -134,8 +134,8 @@ void strat_pami2026(void *ID)
         case 1:
         {
             pos_depart = {2900, 1600, -M_PI};
-            pos_arrive = {2300, 200, -M_PI / 2.0};
-            mes_waypoints[0] = {2600, 1500, -M_PI / 2.0};
+            pos_arrive = {2300, 250, -M_PI / 2.0};
+            mes_waypoints[0] = {2600, 1600, -M_PI / 2.0};
             mes_waypoints[1] = {2050, 1000, -M_PI / 2.0};
             mes_waypoints[2] = {2050, 500, -M_PI / 2.0};
             nb_points_inter = 3;
@@ -148,7 +148,7 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1700, -M_PI / 2.0};
             mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-            attente_longue = 86000;
+            attente_longue = 87000;
             break;
         }
         case 3:
@@ -158,17 +158,17 @@ void strat_pami2026(void *ID)
             mes_waypoints[0] = {2700, 1800, -M_PI / 2.0};
             mes_waypoints[1] = {2700, 1500, -M_PI / 2.0};
             nb_points_inter = 2;
-            attente_longue = 87000;
+            attente_longue = 89000;
             break;
         }
         case 4:
         {
             pos_depart = {2900, 1900, -M_PI};
-            pos_arrive = {1800, 1475, -M_PI};
+            pos_arrive = {1900, 1475, -M_PI};
             mes_waypoints[0] = {2700, 1900, -M_PI};
             mes_waypoints[1] = {2600, 1475, -M_PI};
             nb_points_inter = 2;
-            attente_longue = 88000;
+            attente_longue = 91000;
             break;
         }
         case 5:
@@ -228,13 +228,14 @@ void strat_pami2026(void *ID)
 
     while (locomotion.trajectoire_en_cours)
     {
-        printf("je suis blouqer ici \n");
+        // printf("je suis blouqer ici \n");
         vTaskDelay(pdMS_TO_TICKS(50));
     }
     // Bouger la queue
     while (1)
     {
-        printf("je suis arrive pour le faire bouger \n");
+
+        // printf("je suis arrive pour le faire bouger \n");
         if (a_gauche)
         {
             scs009::move_scs(id_servo_queue, POS_GAUCHE);

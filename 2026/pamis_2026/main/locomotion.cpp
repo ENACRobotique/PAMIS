@@ -156,6 +156,12 @@ void Locomotion::enableSteppers(bool enable)
     }
 }
 
+void Locomotion::disableSteppers()
+{
+    step_right.disableMotor();
+    step_left.disableMotor();
+}
+
 bool Locomotion::moving()
 {
     bool left_moving = step_left.getState() != motor_status::IDLE && step_left.getState() != motor_status::DISABLED;
@@ -225,7 +231,7 @@ int Locomotion::trajectory_movement()
     {
         uint32_t temps_ecoule_ms = (xTaskGetTickCount() - match_start_time) * portTICK_PERIOD_MS;
 
-        if (temps_ecoule_ms >= 99000)
+        if (temps_ecoule_ms >= 99000 && match_start_time != 0)
         {
             stop();
             trajectoire_en_cours = false;
@@ -306,6 +312,8 @@ int Locomotion::trajectory_movement()
             if (is_finished)
             {
                 trajectoire_en_cours = false;
+                step_right.disableMotor();
+                step_left.disableMotor();
                 return 1;
             }
             break;

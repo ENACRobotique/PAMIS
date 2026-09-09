@@ -36,6 +36,7 @@ const LocomParam PARAM_ECUREUIL_5 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_DEFAUT = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
 
 uint8_t id_servo_queue;
+uint16_t strat_id;
 
 i2c_master_bus_handle_t bus_handle;
 i2c_master_bus_config_t bus_config = {
@@ -112,7 +113,6 @@ extern "C" void app_main(void)
     }
     printf("Je suis le n° %d \n", pami_id);
 
-    uint16_t strat_id;
     ret = read_u16_from_nvs("strat_id", &strat_id);
     if (ret != ESP_OK)
     {
@@ -134,7 +134,7 @@ extern "C" void app_main(void)
         break;
     case 2:
         mes_parametres = PARAM_ECUREUIL_2;
-        id_servo_queue = 31;
+        id_servo_queue = 34;
         break;
     case 3:
         mes_parametres = PARAM_ECUREUIL_3;
@@ -166,7 +166,7 @@ extern "C" void app_main(void)
     }
     else
     {
-        init_evitement();
+        xTaskCreate(task_evitement, "evitement", configMINIMAL_STACK_SIZE + 1024, (void *)strat_id, 3, NULL);
         init_map();
         xTaskCreate(strat_pami2026, "pami strat", 20000, (void *)strat_id, 1, NULL);
     }
