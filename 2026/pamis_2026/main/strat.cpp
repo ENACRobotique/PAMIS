@@ -33,6 +33,7 @@ void strat_fondation(void *arg)
     }
 
     locomotion.enableSteppers(true);
+    locomotion.set_speed(500, 2000);
 
     // wait to unplug tirette
     while (!gpio_get_level(FDC1))
@@ -40,14 +41,16 @@ void strat_fondation(void *arg)
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 
-    locomotion.moveBlocking(100, 0);
-    locomotion.moveBlocking(0, M_PI / 2);
-    locomotion.moveBlocking(100, 0);
-    locomotion.moveBlocking(0, M_PI / 2);
-    locomotion.moveBlocking(100, 0);
-    locomotion.moveBlocking(0, M_PI / 2);
-    locomotion.moveBlocking(100, 0);
-    locomotion.moveBlocking(0, M_PI / 2);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // locomotion.moveBlocking(0, 5 * 2*M_PI);
+    // vTaskDelay(portMAX_DELAY);
+
+    while(true) {
+        locomotion.moveBlocking(600, 0);
+        locomotion.moveBlocking(0, M_PI / 2);
+        locomotion.moveBlocking(400, 0);
+        locomotion.moveBlocking(0, M_PI / 2);
+    }
 
     while (true)
     {

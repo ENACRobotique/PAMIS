@@ -28,6 +28,7 @@
 #define NINJA_ID 9
 
 const LocomParam PARAM_NINJA = {97.8, (360.0 / 1.8) / (M_PI * 71.0)};
+const LocomParam PARAM_FONDATION = {134.0, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_1 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_2 = {84.48, (360.0 / 1.8) / (M_PI * 76.2)};
 const LocomParam PARAM_ECUREUIL_3 = {88.5, (360.0 / 1.8) / (M_PI * 76.2)};
@@ -89,7 +90,7 @@ extern "C" void app_main(void)
     // setup sensors
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &bus_handle));
     imu_init(&bus_handle);
-    radar_vl53_start(&bus_handle);
+    //radar_vl53_start(&bus_handle);
 
     if (sap_init(500000) != ESP_OK)
     {
@@ -128,6 +129,9 @@ extern "C" void app_main(void)
     case NINJA_ID:
         mes_parametres = PARAM_NINJA;
         break;
+    case 0:
+        mes_parametres = PARAM_FONDATION;
+        break;
     case 1:
         mes_parametres = PARAM_ECUREUIL_1;
         id_servo_queue = 32;
@@ -154,6 +158,7 @@ extern "C" void app_main(void)
 
     // setup locomotion
     locomotion.init(mes_parametres);
+    locomotion.set_speed(500, 2000);
     locomotion.enableSteppers(false);
 
     if (strat_id == NINJA_ID)
@@ -163,6 +168,10 @@ extern "C" void app_main(void)
     else if (strat_id == 100)
     {
         xTaskCreate(strat_marchepas, "pami strat", 4096, NULL, 1, NULL);
+    }
+    else if (strat_id == 0)
+    {
+        xTaskCreate(strat_fondation, "pami strat", 4096, NULL, 1, NULL);
     }
     else
     {

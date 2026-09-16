@@ -23,14 +23,14 @@ Stepper_config_t step_cfg = {
     .stepPin = 39,
     .dirPin = 38,
     .enPin = 40,
-    .miStep = MICROSTEP_8,
+    .miStep = MICROSTEP_16,
     .stepAngle = 1.8};
 
 Stepper_config_t step2_cfg = {
     .stepPin = 36,
     .dirPin = 35,
     .enPin = 40,
-    .miStep = MICROSTEP_8,
+    .miStep = MICROSTEP_16,
     .stepAngle = 1.8};
 
 void Locomotion::init(LocomParam parametre)
