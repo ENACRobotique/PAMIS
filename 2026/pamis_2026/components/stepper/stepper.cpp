@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <cfloat>
 #include "stepper.h"
 
 #include "esp_log.h"
@@ -15,12 +16,32 @@
 #define STEP_LOGE(...) ESP_LOGE(__VA_ARGS__)
 #endif
 
-// Convert normal value to fixed-point value
-#define Q(n) ((n)*(1<<16) + 0.5)
+// Periods use unsigned Q18.14. At 1 MHz, one timer tick is one microsecond.
+static constexpr uint32_t PERIOD_SCALE = 1U << 14;
+static constexpr uint32_t MAX_PERIOD_US = 100000; // 100 ms; 2*T still fits in 32 bits
+static constexpr uint32_t PERIOD_MAX = MAX_PERIOD_US * PERIOD_SCALE;
+static constexpr int32_t MAX_MOVE_STEPS = 1000000; // also keeps 4*n+1 within 32 bits
+// Compensates the first-step error of Austin's approximate recurrence.
+// Reference: Microchip AVR446, section 2.3.1 (see the component README).
+static constexpr double INITIAL_PERIOD_CORRECTION = 0.676;
 
-//Convert fixed-point value to normal value.
-#define F(bfp) ((bfp)/(1<<16))
+// Convert timer ticks to fixed-point (rounded when cast to uint32_t).
+#define Q(n) ((n) * PERIOD_SCALE + 0.5)
 
+// Convert fixed-point to whole timer ticks.
+#define F(bfp) ((bfp) / PERIOD_SCALE)
+
+static uint32_t periodToFixed(double ticks)
+{
+    // The setters guarantee a positive speed and acceleration.
+    // Limit the resulting period to the timer's supported range: 1 us to 100 ms.
+    if (ticks < 1) {
+        ticks = 1;
+    } else if (ticks > MAX_PERIOD_US) {
+        ticks = MAX_PERIOD_US;
+    }
+    return (uint32_t)Q(ticks);
+}
 
 
 // PUBLIC definitions
@@ -88,7 +109,10 @@ void Stepper::init()
     gptimer_event_callbacks_t cb_group;
     cb_group.on_alarm = xISRwrap;
     alarm_cfg.flags.auto_reload_on_alarm = 1;
-    gptimer_register_event_callbacks(timer_handle, &cb_group, this);
+    ESP_ERROR_CHECK(
+        gptimer_register_event_callbacks(timer_handle, &cb_group, this)
+    );
+    ESP_ERROR_CHECK(gptimer_enable(timer_handle));
 }
 
 esp_err_t Stepper::runPos(int32_t nb_steps)
@@ -104,6 +128,15 @@ esp_err_t Stepper::runPos(int32_t nb_steps)
         return ESP_ERR_NOT_SUPPORTED;
     }
 
+    // Reject oversized moves before abs() and the ramp calculations.
+    if (nb_steps < -MAX_MOVE_STEPS || nb_steps > MAX_MOVE_STEPS) {
+        STEP_LOGE("Stepper", "Move exceeds one million STEP pulses");
+        return ESP_ERR_INVALID_ARG;
+    }
+    // Compensate the approximation error accumulated by the period recurrence.
+    const double initial_period = INITIAL_PERIOD_CORRECTION * sqrt(2.0 / ctrl.acc) * TIMER_F;
+    const double min_period = TIMER_F / ctrl.v_max;
+
     if (ctrl.status == DISABLED) { // if motor is disabled, enable it
         enableMotor();
     }
@@ -114,33 +147,49 @@ esp_err_t Stepper::runPos(int32_t nb_steps)
     xSemaphoreTake(bsem, 0);
 
     ctrl.steps_total = abs(nb_steps);
-    ctrl.status = ACC;
     ctrl.n = 1;
     // Initial period (step 1)
     // Convert ctrl.T to fixed-point representation, so later operations are more precise
-    ctrl.T = (uint32_t)Q(sqrtf(2.0f / ctrl.acc) * TIMER_F);
+    ctrl.T = periodToFixed(initial_period);
 
     // period at max speed
-    ctrl.T_min = (uint32_t)Q(TIMER_F / ctrl.v_max);
+    ctrl.T_min = periodToFixed(min_period);
+    if (ctrl.T < ctrl.T_min) {
+        ctrl.T = ctrl.T_min;
+    }
 
     // number of steps to reach v_max
-    uint32_t n_vmax = (ctrl.v_max * ctrl.v_max) / (2 * ctrl.acc);
-
-    if (2 * n_vmax < ctrl.steps_total) {
-        /* Trapezoïdal */
-        ctrl.n_acc = n_vmax;
-        ctrl.n_dec = n_vmax;
+    const double n_vmax = (ctrl.v_max * ctrl.v_max) / (2 * ctrl.acc);
+    // Bound before conversion: also keeps 4*n+1 within uint32_t in the ISR.
+    const uint32_t half_steps = ctrl.steps_total / 2;
+    if (n_vmax < half_steps) {
+        ctrl.n_ramp = (uint32_t)n_vmax;
     } else {
-        /* Triangular */
-        ctrl.n_acc = ctrl.steps_total / 2;
-        ctrl.n_dec = ctrl.n_acc;
+        ctrl.n_ramp = half_steps;
     }
 
     // Initial period. Convert back from fixed-point to normal number.
     alarm_cfg.alarm_count  = F(ctrl.T);
-    gptimer_set_alarm_action(timer_handle, &alarm_cfg);
-    gptimer_enable(timer_handle);
-    return gptimer_start(timer_handle);
+    esp_err_t err = gptimer_set_raw_count(timer_handle, 0);
+    if (err != ESP_OK) {
+        ctrl.status = IDLE;
+        STEP_LOGE("Stepper", "Failed to reset timer: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = gptimer_set_alarm_action(timer_handle, &alarm_cfg);
+    if (err != ESP_OK) {
+        ctrl.status = IDLE;
+        STEP_LOGE("Stepper", "Failed to set timer alarm: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = gptimer_start(timer_handle);
+    if (err != ESP_OK) {
+        ctrl.status = IDLE;
+        STEP_LOGE("Stepper", "Failed to start timer: %s", esp_err_to_name(err));
+    }
+    return err;
 }
 
 esp_err_t Stepper::runPosMm(int32_t relative)
@@ -148,25 +197,40 @@ esp_err_t Stepper::runPosMm(int32_t relative)
     if (ctrl.stepsPerMm == 0)
     {
         STEP_LOGE("Stepper", "Steps per millimeter not set, cannot move!");
+        return ESP_ERR_INVALID_ARG;
     }
-    return runPos(relative * ctrl.stepsPerMm);
+    const double steps = relative * ctrl.stepsPerMm;
+    // Check before converting double to int32_t.
+    if (fabs(steps) > MAX_MOVE_STEPS) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    return runPos((int32_t)steps);
 }
 
 
 void Stepper::setSpeedMm(double speed, double acc)
 {
-    if (ctrl.stepsPerMm == 0)
-    {
-        STEP_LOGE("Stepper", "Steps per millimeter not set, cannot set the speed!");
+    const double steps_per_mm = ctrl.stepsPerMm;
+    const double v_max = speed * steps_per_mm;
+    const double acceleration = acc * steps_per_mm;
+    if (!isfinite(v_max) || v_max <= 0 ||
+        !isfinite(acceleration) || acceleration <= 0) {
+        STEP_LOGE("Stepper", "Speed and acceleration must be finite and positive");
+        return;
     }
-    ctrl.v_max = speed * ctrl.stepsPerMm;
-    ctrl.acc = acc * ctrl.stepsPerMm;
+    ctrl.v_max = v_max;
+    ctrl.acc = acceleration;
     STEP_LOGI("Stepper", "Speed set: v=%02f mm/s a=%02f mm/s^2", speed, acc);
 }
 
 void Stepper::setStepsPerMm(double steps)
 {
-    ctrl.stepsPerMm = steps * (int)conf.miStep;
+    const double steps_per_mm = steps * (int)conf.miStep;
+    if (!isfinite(steps_per_mm) || steps_per_mm <= 0) {
+        STEP_LOGE("Stepper", "Steps per millimeter must be finite and positive");
+        return;
+    }
+    ctrl.stepsPerMm = steps_per_mm;
 }
 
 float Stepper::getStepsPerMm()
@@ -181,7 +245,10 @@ uint8_t Stepper::getState()
 
 int64_t Stepper::getPosition()
 {
-    return currentPos;
+    portENTER_CRITICAL(&control_lock);
+    const int64_t position = currentPos;
+    portEXIT_CRITICAL(&control_lock);
+    return position;
 }
 
 float Stepper::getPositionMm()
@@ -191,7 +258,9 @@ float Stepper::getPositionMm()
 
 void Stepper::resetAbsolute()
 {
+    portENTER_CRITICAL(&control_lock);
     currentPos = 0;
+    portEXIT_CRITICAL(&control_lock);
 }
 
 uint16_t Stepper::getSpeed()
@@ -209,18 +278,28 @@ float Stepper::getAcc()
     return ctrl.acc;
 }
 
-void Stepper::stop()
+void Stepper::emergencyStop()
+{
+    portENTER_CRITICAL(&control_lock);
+    const bool stopped = emergencyStopLocked();
+    portEXIT_CRITICAL(&control_lock);
+
+    if (stopped) {
+        xSemaphoreGive(bsem);
+    }
+}
+
+bool Stepper::emergencyStopLocked()
 {
     if (ctrl.status <= IDLE)
     {
-        return;
+        return false;
     }
     gptimer_stop(timer_handle); // stop the timer
     ctrl.status = IDLE;
     ctrl.steps_done = 0;
-    gptimer_disable(timer_handle);
     gpio_set_level((gpio_num_t)conf.stepPin, 0);
-    xSemaphoreGive(bsem);
+    return true;
 }
 
 // PRIVATE definitions
@@ -239,6 +318,12 @@ void Stepper::setDir(bool state)
 /* Timer callback, used for generating pulses and calculating speed profile in real time */
 bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
 {
+    portENTER_CRITICAL_ISR(&control_lock);
+    // An alarm callback may already be pending when stop(0) stops the timer.
+    if (ctrl.status == IDLE || ctrl.status == DISABLED) {
+        portEXIT_CRITICAL_ISR(&control_lock);
+        return 0;
+    }
     gpio_ll_set_level(&GPIO, conf.stepPin, 1);
     
     // add one step
@@ -260,20 +345,21 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
         gptimer_stop(timer_handle);
         ctrl.status = IDLE;
         ctrl.steps_done = 0;
-        gptimer_disable(timer_handle);
         gpio_ll_set_level(&GPIO, conf.stepPin, 0);
-        xSemaphoreGiveFromISR(bsem, NULL);
-        return 0;
+        BaseType_t task_woken = pdFALSE;
+        xSemaphoreGiveFromISR(bsem, &task_woken);
+        portEXIT_CRITICAL_ISR(&control_lock);
+        return task_woken == pdTRUE;    // return true if some other task was waiting on the semaphore
     }
 
     uint32_t steps_left = ctrl.steps_total - ctrl.steps_done;
 
     // Select the next pulse's phase before updating its period.
-    // Preserve DEC when braking was requested by stopSlow().
+    // Preserve DEC when braking was requested by stop().
     if (ctrl.status == ACC || ctrl.status == COAST) {
-        if (steps_left <= ctrl.n_dec) {
+        if (steps_left <= ctrl.n_ramp) {
             ctrl.status = DEC;
-        } else if (ctrl.steps_done >= ctrl.n_acc) {
+        } else if (ctrl.steps_done >= ctrl.n_ramp) {
             ctrl.status = COAST;
         }
     }
@@ -289,10 +375,19 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
         ctrl.n++;
         break;
 
-    case DEC:
-        ctrl.T += (2 * ctrl.T) / (4 * ctrl.n + 1);
-        ctrl.n--;
+    case DEC: {
+        const uint32_t period = ctrl.T;
+        const uint32_t delta = (2 * period) / (4 * ctrl.n + 1);
+        if (delta > PERIOD_MAX - period) {  // if(period+delta > PERIOD_MAX)
+            ctrl.T = PERIOD_MAX;
+        } else {
+            ctrl.T = period + delta;
+        }
+        if (ctrl.n > 0) {
+            ctrl.n--;
+        }
         break;
+    }
 
     case COAST:
     default:
@@ -304,39 +399,72 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
     // convert back from fixed-point to normal value
     alarm_cfg.alarm_count = F(ctrl.T);
     gptimer_set_alarm_action(timer_handle, &alarm_cfg);
-    return 1;
+    portEXIT_CRITICAL_ISR(&control_lock);
+    return false;   // No high priority task woken
 }
 
-float Stepper::stopSlow() {
-    //smallest n corresponding to the top speed until now.
-    uint32_t n;
-    
-    if(ctrl.status == ACC ) {
-        // still accelerating, top speed is now.
-        n = ctrl.n;
-    } else if (ctrl.status == COAST) {
-        // constant speed, take the last step of ACC
-        n = ctrl.n_acc;
-    } else {
-        // not in ACC nor in COAST, nothing to do to stop.
-        return uint32_t(0);
+float Stepper::stop()
+{
+    // No distance limit: keep the normal braking ramp selected by stop(distance).
+    return stop(DBL_MAX);
+}
+
+float Stepper::stop(double braking_distance) {
+    const double steps_per_mm = ctrl.stepsPerMm;
+    if (!isfinite(braking_distance) || braking_distance < 0 ||
+        steps_per_mm == 0) {
+        STEP_LOGE("Stepper", "Invalid braking distance or steps per millimeter");
+        return 0;
+    }
+    // Update the remaining distance and recurrence index as one operation
+    // relative to the pulse ISR.
+    portENTER_CRITICAL(&control_lock);
+    if (ctrl.status <= IDLE) {
+        portEXIT_CRITICAL(&control_lock);
+        return 0;
     }
 
-    // Estimate top speed from the ideal constant-acceleration model.
-    uint32_t v = sqrt(2 * ctrl.acc * n);
-    // in how many steps can we stop ?
-    uint32_t n_dec = (uint32_t)((v*v) / (2.0f * ctrl.acc));
-    int step_to_do = ctrl.steps_total - (ctrl.steps_done + n_dec);
-    // Shorten the target to the estimated braking distance.
-    ctrl.steps_total = ctrl.steps_done + n_dec;
-    // let's brake !
-    ctrl.status = DEC;
-    // Signed distance removed from the original target:
-    float mm_to_do = step_to_do / ctrl.stepsPerMm;
-    if (ctrl.dir){
-        mm_to_do *= -1;
+    const uint32_t steps_done = ctrl.steps_done;
+    const uint32_t steps_left = ctrl.steps_total - steps_done;
+    uint32_t planned_braking_steps;
+    if (ctrl.status == ACC) {
+        planned_braking_steps = ctrl.n;
+    } else if (ctrl.status == COAST) {
+        planned_braking_steps = ctrl.n_ramp;
+    } else {
+        // A braking ramp is already in progress: keep its current target.
+        planned_braking_steps = steps_left;
     }
-    return mm_to_do;
+    if (planned_braking_steps > steps_left) {
+        planned_braking_steps = steps_left;
+    }
+
+    // braking_distance is a maximum: never make the normal braking ramp longer.
+    uint32_t braking_steps = planned_braking_steps;
+    if (braking_distance < planned_braking_steps / steps_per_mm) {
+        braking_steps = (uint32_t)ceil(braking_distance * steps_per_mm);
+    }
+
+    double removed_distance = (steps_left - braking_steps) / steps_per_mm;
+    if (ctrl.dir == CCW) {
+        removed_distance = -removed_distance;
+    }
+    if (braking_steps == 0) {
+        const bool stopped = emergencyStopLocked();
+        portEXIT_CRITICAL(&control_lock);
+        if (stopped) {
+            xSemaphoreGive(bsem);
+        }
+        return removed_distance;
+    }
+
+    // Keep the current period: no instantaneous speed change. A shorter
+    // recurrence index produces a steeper slowdown over fewer pulses.
+    ctrl.n = braking_steps;
+    ctrl.steps_total = steps_done + braking_steps;
+    ctrl.status = DEC;
+    portEXIT_CRITICAL(&control_lock);
+    return removed_distance;
 }
 
 BaseType_t Stepper::waitFinishedTimeout(TickType_t xTicksToWait) {

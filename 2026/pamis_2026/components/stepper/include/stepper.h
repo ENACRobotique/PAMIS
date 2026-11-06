@@ -62,10 +62,9 @@ typedef struct
     double stepsPerMm = 0; /** Steps per one milimiter, if the motor is performing linear movement */
     
     uint32_t n;
-    uint32_t n_acc;          // nombre de steps d'accélération
-    uint32_t n_dec;          // nombre de steps de décélération
-    uint32_t T;                 // période courante en ticks, format Q16.16
-    uint32_t T_min;             // période minimale en ticks, format Q16.16
+    uint32_t n_ramp;     // nombre de pas prévu pour chacune des deux rampes
+    uint32_t T;                 // période courante en ticks, format Q18.14
+    uint32_t T_min;             // période minimale en ticks, format Q18.14
 } ctrl_var_t;
 
 class Stepper
@@ -73,11 +72,12 @@ class Stepper
 private:
     Stepper_config_t conf;
     volatile ctrl_var_t ctrl;
+    portMUX_TYPE control_lock = portMUX_INITIALIZER_UNLOCKED;
     gptimer_handle_t timer_handle;  /** timer handle */
     gptimer_alarm_config_t alarm_cfg = {
         .reload_count = 0
     };
-    int64_t currentPos = 0; // absolute position
+    int64_t currentPos = 0; // absolute position, protected by control_lock
 
     SemaphoreHandle_t bsem;
 
@@ -91,6 +91,11 @@ private:
      *  @param state 0-CW 1-CCW
      */
     void setDir(bool);
+
+    /** @brief immediate stop; control_lock must already be held
+     *  @return true if an active movement was stopped
+     */
+    bool emergencyStopLocked();
 
     /** @brief static wrapper for ISR function
      *  @param _this Stepper* this pointer
@@ -126,18 +131,20 @@ public:
     void init();
 
     /** @brief runs motor to relative position in steps
-     *  @param relative number of steps to run, negative is reverse
+     *  @param relative number of STEP pulses, negative is reverse; maximum magnitude 1000000
      */
     esp_err_t runPos(int32_t relative);
 
     /** @brief runs motor to relative position in mm
-     *  @param relative number of mm to run, negative is reverse
+     *  @param relative number of mm to run, negative is reverse; limited to 1000000 STEP pulses
      */
     esp_err_t runPosMm(int32_t relative);
 
     /** @brief sets target speed and shared acceleration/deceleration
      *  @param speed speed mm*s^-1
      *  @param acc acceleration and deceleration mm*s^-2
+     *  @note Unset conversion factor or non-finite/non-positive converted values
+     *        are logged and ignored; both previous settings are preserved.
      */
     void setSpeedMm(double speed, double acc);
 
@@ -145,6 +152,8 @@ public:
      * @brief Set full motor steps per mm, before microstepping
      *
      * @param steps full motor steps needed to move one millimeter
+     * @note The value after microstepping must be finite and positive;
+     *       otherwise the error is logged and the previous setting is preserved.
      */
     void setStepsPerMm(double steps);
 
@@ -199,12 +208,21 @@ public:
 
     /** @brief stops the motor dead, but stays enabled
      */
-    void stop();
+    void emergencyStop();
 
     /** @brief starts braking from ACC or COAST by shortening the target
      *  @return signed distance removed from the original target, in mm; zero if inactive or already braking
      */
-    float stopSlow();
+    float stop();
+
+    /** @brief brakes within the requested maximum distance, including when already in DEC
+     *  @param braking_distance non-negative maximum distance in mm, independent of direction;
+     *         rounded up to a STEP pulse. A shorter planned braking ramp is preserved.
+     *         Zero requests an immediate stop.
+     *  @return signed distance removed from the original target, in mm;
+     *          zero if inactive or arguments are invalid
+     */
+    float stop(double braking_distance);
 
     /**
      * @param xTicksToWait timeout in FreeRTOS ticks; a timeout does not stop the motor

@@ -80,8 +80,8 @@ void Locomotion::abortTrajectory()
 void Locomotion::pauseTrajectory()
 {
     arret_urgence = true;
-    float step_to_do_left = step_left.stopSlow();
-    float step_to_do_right = step_right.stopSlow();
+    float step_to_do_left = step_left.stop();
+    float step_to_do_right = step_right.stop();
     if (traj_TaskHandle != NULL)
     {
         vTaskSuspend(traj_TaskHandle);
@@ -91,8 +91,8 @@ void Locomotion::pauseTrajectory()
 DistancesRoues Locomotion::stop()
 {
     // arret lent
-    float step_to_do_left = step_left.stopSlow();
-    float step_to_do_right = step_right.stopSlow();
+    float step_to_do_left = step_left.stop();
+    float step_to_do_right = step_right.stop();
     waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
     DistancesRoues d = {
         .d1 = step_to_do_left,
