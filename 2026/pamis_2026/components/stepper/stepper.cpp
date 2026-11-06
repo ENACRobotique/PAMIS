@@ -22,7 +22,6 @@
 #define F(bfp) ((bfp)/(1<<16))
 
 
-// bool state = 0;
 
 // PUBLIC definitions
 
@@ -64,7 +63,7 @@ void Stepper::init()
     currentPos = 0;
     bsem = xSemaphoreCreateBinary();
 
-    // Set SETP, DIR, and ENABLE pins as OUTPUT.
+    // Set STEP, DIR, and ENABLE pins as OUTPUT.
     uint64_t mask = (1ULL << conf.stepPin) | (1ULL << conf.dirPin) | (1ULL << conf.enPin); // put output gpio pins in bitmask
     gpio_config_t gpio_conf = {
         .pin_bit_mask = mask,
@@ -98,7 +97,7 @@ esp_err_t Stepper::runPos(int32_t nb_steps)
         return ESP_OK;
     }
 
-    // TODO que faire ? Fonction appelée alors que le mouvement précédent n'est pas termminé
+    // Refuse a new move while the previous one is still active.
     if (ctrl.status > IDLE)
     {
         STEP_LOGW("Stepper", "Finising previous move, this command will be ignored");
@@ -154,7 +153,7 @@ esp_err_t Stepper::runPosMm(int32_t relative)
 }
 
 
-void Stepper::setSpeedMm(double speed, double acc, double dec)
+void Stepper::setSpeedMm(double speed, double acc)
 {
     if (ctrl.stepsPerMm == 0)
     {
@@ -162,8 +161,7 @@ void Stepper::setSpeedMm(double speed, double acc, double dec)
     }
     ctrl.v_max = speed * ctrl.stepsPerMm;
     ctrl.acc = acc * ctrl.stepsPerMm;
-    //ctrl.dec = dec * ctrl.stepsPerMm;
-    STEP_LOGI("Stepper", "Speed set: v=%02f mm/s t+=%02f s t-=%02f s", speed, acc, dec);
+    STEP_LOGI("Stepper", "Speed set: v=%02f mm/s a=%02f mm/s^2", speed, acc);
 }
 
 void Stepper::setStepsPerMm(double steps)
@@ -196,11 +194,6 @@ void Stepper::resetAbsolute()
     currentPos = 0;
 }
 
-void Stepper::runInf(bool direction)
-{
-    
-}
-
 uint16_t Stepper::getSpeed()
 {
     return ctrl.v_max;
@@ -216,19 +209,12 @@ float Stepper::getAcc()
     return ctrl.acc;
 }
 
-float Stepper::getDec()
-{
-    return ctrl.acc;
-    //return ctrl.dec;
-}
-
 void Stepper::stop()
 {
     if (ctrl.status <= IDLE)
     {
         return;
     }
-    // ctrl.runInfinite = false;
     gptimer_stop(timer_handle); // stop the timer
     ctrl.status = IDLE;
     ctrl.steps_done = 0;
@@ -250,11 +236,9 @@ void Stepper::setDir(bool state)
     ESP_ERROR_CHECK(gpio_set_level((gpio_num_t)conf.dirPin, state));
 }
 
-//static bool plop = 0;
 /* Timer callback, used for generating pulses and calculating speed profile in real time */
 bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
 {
-    //GPIO.out_w1ts = (1ULL << conf.stepPin);
     GPIO.out1_w1ts.val = 1 << (conf.stepPin - 32);
     
     // add one step
@@ -284,7 +268,7 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
 
         // decrease period so the stepper accelerate
         // decrease the period less and less to keep the acceleration somewhat constant.
-        // computed in  fixed-point representation so the amount being substracted stays > 1
+        // Use fixed-point arithmetic to retain sub-tick period changes.
         ctrl.T -= (2 * ctrl.T) / (4 * ctrl.n + 1);
         if (ctrl.T < ctrl.T_min) {
             ctrl.T = ctrl.T_min;
@@ -311,7 +295,6 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
         ctrl.status = IDLE;
         ctrl.steps_done = 0;
         gptimer_disable(timer_handle);
-        //GPIO.out_w1tc = (1ULL << conf.stepPin);
         GPIO.out1_w1tc.val = 1 << (conf.stepPin - 32);
         xSemaphoreGiveFromISR(bsem, NULL);
         return 0;
@@ -340,17 +323,16 @@ float Stepper::stopSlow() {
         return uint32_t(0);
     }
 
-    // top speed
+    // Estimate top speed from the ideal constant-acceleration model.
     uint32_t v = sqrt(2 * ctrl.acc * n);
     // in how many steps can we stop ?
     uint32_t n_dec = (uint32_t)((v*v) / (2.0f * ctrl.acc));
     int step_to_do = ctrl.steps_total - (ctrl.steps_done + n_dec);
-    // Number of step to do at the beginning
-    // then there is this many steps to do, no more.
+    // Shorten the target to the estimated braking distance.
     ctrl.steps_total = ctrl.steps_done + n_dec;
     // let's brake !
     ctrl.status = DEC;
-    // Step to do :
+    // Signed distance removed from the original target:
     float mm_to_do = step_to_do / ctrl.stepsPerMm;
     if (ctrl.dir){
         mm_to_do *= -1;

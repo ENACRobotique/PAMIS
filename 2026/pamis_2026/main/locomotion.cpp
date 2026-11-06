@@ -23,15 +23,15 @@ Stepper_config_t step_cfg = {
     .stepPin = 39,
     .dirPin = 38,
     .enPin = 40,
-    .miStep = MICROSTEP_16,
-    .stepAngle = 1.8};
+    .miStep = MICROSTEP_16
+};
 
 Stepper_config_t step2_cfg = {
     .stepPin = 36,
     .dirPin = 35,
     .enPin = 40,
-    .miStep = MICROSTEP_16,
-    .stepAngle = 1.8};
+    .miStep = MICROSTEP_16
+};
 
 void Locomotion::init(LocomParam parametre)
 {
@@ -47,11 +47,11 @@ void Locomotion::init(LocomParam parametre)
     step_left.config(&step_cfg);
     step_left.init();
     step_left.setStepsPerMm(current_steps_per_mm);
-    step_left.setSpeedMm(1000, 4000, 1000);
+    step_left.setSpeedMm(1000, 4000);
     step_right.config(&step2_cfg);
     step_right.init();
     step_right.setStepsPerMm(current_steps_per_mm);
-    step_right.setSpeedMm(1000, 4000, 1000);
+    step_right.setSpeedMm(1000, 4000);
     set_seuils(0, 0, 0, 0, 0);
 
     oldPosLeft = getPosLeft();
@@ -113,7 +113,6 @@ void Locomotion::_move(float d1, float d2)
 {
 
     float a1 = 0;
-    float a2 = 0;
     float v1 = 0;
     float v2 = 0;
     float d = (d1 + d2) / 2;
@@ -122,18 +121,16 @@ void Locomotion::_move(float d1, float d2)
         v1 = vitesse_pami;
         v2 = vitesse_pami;
         a1 = acceleration_pami;
-        a2 = acceleration_pami;
     }
     else
     {
         v1 = abs(d1 / d) * vitesse_pami;
         v2 = abs(d2 / d) * vitesse_pami;
         a1 = abs(d1 / d) * acceleration_pami;
-        a2 = abs(d2 / d) * acceleration_pami;
     }
 
-    step_left.setSpeedMm(v1, a1, a2);
-    step_right.setSpeedMm(v2, a1, a2);
+    step_left.setSpeedMm(v1, a1);
+    step_right.setSpeedMm(v2, a1);
     step_left.runPosMm(d1);
     step_right.runPosMm(d2);
 }
