@@ -255,19 +255,32 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
     }
 
 
+    // There is no next period to calculate after the final pulse.
+    if (ctrl.steps_done >= ctrl.steps_total) {
+        gptimer_stop(timer_handle);
+        ctrl.status = IDLE;
+        ctrl.steps_done = 0;
+        gptimer_disable(timer_handle);
+        gpio_ll_set_level(&GPIO, conf.stepPin, 0);
+        xSemaphoreGiveFromISR(bsem, NULL);
+        return 0;
+    }
+
     uint32_t steps_left = ctrl.steps_total - ctrl.steps_done;
 
+    // Select the next pulse's phase before updating its period.
+    // Preserve DEC when braking was requested by stopSlow().
+    if (ctrl.status == ACC || ctrl.status == COAST) {
+        if (steps_left <= ctrl.n_dec) {
+            ctrl.status = DEC;
+        } else if (ctrl.steps_done >= ctrl.n_acc) {
+            ctrl.status = COAST;
+        }
+    }
 
     switch (ctrl.status)
     {
     case ACC:
-        if (ctrl.n >= ctrl.n_acc) {
-            ctrl.status = COAST;
-            break;
-        }
-
-        // decrease period so the stepper accelerate
-        // decrease the period less and less to keep the acceleration somewhat constant.
         // Use fixed-point arithmetic to retain sub-tick period changes.
         ctrl.T -= (2 * ctrl.T) / (4 * ctrl.n + 1);
         if (ctrl.T < ctrl.T_min) {
@@ -276,28 +289,14 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
         ctrl.n++;
         break;
 
-    case COAST:
-        if (steps_left <= ctrl.n_dec) {
-            ctrl.status = DEC;
-        }
-    break;
     case DEC:
         ctrl.T += (2 * ctrl.T) / (4 * ctrl.n + 1);
         ctrl.n--;
         break;
-    
+
+    case COAST:
     default:
         break;
-    }
-
-    if (ctrl.steps_done >= ctrl.steps_total) {
-        gptimer_stop(timer_handle); // stop the timer
-        ctrl.status = IDLE;
-        ctrl.steps_done = 0;
-        gptimer_disable(timer_handle);
-        gpio_ll_set_level(&GPIO, conf.stepPin, 0);
-        xSemaphoreGiveFromISR(bsem, NULL);
-        return 0;
     }
 
     gpio_ll_set_level(&GPIO, conf.stepPin, 0);
