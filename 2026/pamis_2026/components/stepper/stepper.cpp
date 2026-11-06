@@ -239,7 +239,7 @@ void Stepper::setDir(bool state)
 /* Timer callback, used for generating pulses and calculating speed profile in real time */
 bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
 {
-    GPIO.out1_w1ts.val = 1 << (conf.stepPin - 32);
+    gpio_ll_set_level(&GPIO, conf.stepPin, 1);
     
     // add one step
     ctrl.steps_done++;
@@ -295,12 +295,12 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
         ctrl.status = IDLE;
         ctrl.steps_done = 0;
         gptimer_disable(timer_handle);
-        GPIO.out1_w1tc.val = 1 << (conf.stepPin - 32);
+        gpio_ll_set_level(&GPIO, conf.stepPin, 0);
         xSemaphoreGiveFromISR(bsem, NULL);
         return 0;
     }
 
-    GPIO.out1_w1tc.val = 1 << (conf.stepPin - 32);
+    gpio_ll_set_level(&GPIO, conf.stepPin, 0);
 
     // convert back from fixed-point to normal value
     alarm_cfg.alarm_count = F(ctrl.T);
