@@ -70,9 +70,10 @@ public:
 
     static void trajectory_task(void *arg);
     /**
+     * @param milliseconds timeout in milliseconds; omit it to wait indefinitely
      * @return pdTRUE if move finished, or pdFALSE on timeout
      */
-    BaseType_t waitFinishedTimeout(uint32_t millisesconds);
+    BaseType_t waitFinishedTimeout(uint32_t milliseconds = portMAX_DELAY);
 
     void trajectory(Position *dest, int nb_pts);
 

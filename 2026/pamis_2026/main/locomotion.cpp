@@ -101,6 +101,12 @@ DistancesRoues Locomotion::stop(double braking_distance)
     return d;
 }
 
+void Locomotion::moveBlocking(float lenght, float angle)
+{
+    move(lenght, angle);
+    waitFinishedTimeout();
+}
+
 void Locomotion::move(float d, float alpha)
 {
 
@@ -113,7 +119,7 @@ void Locomotion::move(float d, float alpha)
 void Locomotion::_move(float d1, float d2)
 {
 
-    float a1 = 0;
+    float acc = 0;
     float v1 = 0;
     float v2 = 0;
     float d = (d1 + d2) / 2;
@@ -121,26 +127,22 @@ void Locomotion::_move(float d1, float d2)
     {
         v1 = vitesse_pami;
         v2 = vitesse_pami;
-        a1 = acceleration_pami;
+        acc = acceleration_pami;
     }
     else
     {
         v1 = abs(d1 / d) * vitesse_pami;
         v2 = abs(d2 / d) * vitesse_pami;
-        a1 = abs(d1 / d) * acceleration_pami;
+        acc = abs(d1 / d) * acceleration_pami;
     }
 
-    step_left.setSpeedMm(v1, a1);
-    step_right.setSpeedMm(v2, a1);
+    step_left.setSpeedMm(v1, acc);
+    step_right.setSpeedMm(v2, acc);
     step_left.runPosMm(d1);
     step_right.runPosMm(d2);
 }
 
-void Locomotion::moveBlocking(float lenght, float angle)
-{
-    move(lenght, angle);
-    waitFinishedTimeout(portMAX_DELAY);
-}
+
 
 void Locomotion::enableSteppers(bool enable)
 {
@@ -340,10 +342,13 @@ void Locomotion::trajectory_task(void *arg)
     }
 }
 
-BaseType_t Locomotion::waitFinishedTimeout(uint32_t ms)
+BaseType_t Locomotion::waitFinishedTimeout(uint32_t milliseconds)
 {
-    
-    return step_left.waitFinishedTimeout(pdMS_TO_TICKS(ms)) && step_right.waitFinishedTimeout(pdMS_TO_TICKS(ms));
+    const TickType_t timeout_ticks = milliseconds == portMAX_DELAY
+        ? portMAX_DELAY
+        : pdMS_TO_TICKS(milliseconds);
+
+    return step_left.waitFinishedTimeout(timeout_ticks) && step_right.waitFinishedTimeout(timeout_ticks);
 }
 
 /**
@@ -358,7 +363,7 @@ DistancesRoues Locomotion::leg(DistancesRoues d)
         if (radar_vl53::danger())
         {
             DistancesRoues d = stop();
-            waitFinishedTimeout(portMAX_DELAY);
+            waitFinishedTimeout();
             return d;
         }
     }
