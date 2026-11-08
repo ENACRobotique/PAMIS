@@ -10,5 +10,7 @@ constexpr std::size_t RADAR_NB = 5;
 
 void start(i2c_master_bus_handle_t* bus_handle);
 uint16_t get_distance(uint16_t radar_nb);
+void set_seuils(float seuil0, float seuil1, float seuil2, float seuil3, float seuil4);
+bool danger();
 
 } // namespace radar_vl53

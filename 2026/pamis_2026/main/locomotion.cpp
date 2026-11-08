@@ -52,7 +52,7 @@ void Locomotion::init(LocomParam parametre)
     step_right.init();
     step_right.setStepsPerMm(current_steps_per_mm);
     step_right.setSpeedMm(1000, 4000);
-    set_seuils(0, 0, 0, 0, 0);
+    radar_vl53::set_seuils(0, 0, 0, 0, 0);
 
     oldPosLeft = getPosLeft();
     oldPosRight = getPosRight();
@@ -345,26 +345,6 @@ BaseType_t Locomotion::waitFinishedTimeout(uint32_t ms)
     return step_left.waitFinishedTimeout(pdMS_TO_TICKS(ms)) && step_right.waitFinishedTimeout(pdMS_TO_TICKS(ms));
 }
 
-void Locomotion::set_seuils(float a, float b, float c, float d, float e)
-{
-    seuils[0] = a;
-    seuils[1] = b;
-    seuils[2] = c;
-    seuils[3] = d;
-    seuils[4] = e;
-}
-
-bool Locomotion::danger()
-{
-    float d0 = radar_vl53::get_distance(0);
-    float d1 = radar_vl53::get_distance(1);
-    float d2 = radar_vl53::get_distance(2);
-    float d3 = radar_vl53::get_distance(3);
-    float d4 = radar_vl53::get_distance(4);
-
-    return (d0 <= seuils[0] || d1 <= seuils[1] || d2 <= seuils[2] || d3 <= seuils[3] || d4 <= seuils[4]);
-}
-
 /**
  * Essaye d'effectuer le mouvement demandé, et retourne ce qu'il manque a faire quand l'évitement l'empêche de bouger.
  * Check l'évitement toutes les 100ms.
@@ -374,7 +354,7 @@ DistancesRoues Locomotion::leg(DistancesRoues d)
     _move(d.d1, d.d2);
     while (waitFinishedTimeout(100) != pdTRUE)
     {
-        if (danger())
+        if (radar_vl53::danger())
         {
             DistancesRoues d = stop();
             waitFinishedTimeout(portMAX_DELAY);
@@ -398,7 +378,7 @@ void Locomotion::moveEvitement(float d, float alpha)
     {
         ESP_LOGI("MOVE_E", "d1:%f   d2:%f", r.d1, r.d2);
         r = leg(r);
-        while (danger())
+        while (radar_vl53::danger())
         {
             utils::sleep(500);
         }

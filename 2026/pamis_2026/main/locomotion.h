@@ -40,8 +40,6 @@ public:
 
     void moveBlocking(float lenght, float angle);
     DistancesRoues stop();
-    void set_seuils(float a, float b, float c, float d, float e);
-    bool danger();
     DistancesRoues leg(DistancesRoues d);
     void moveEvitement(float d, float alpha);
     void set_speed(float v, float a);
@@ -89,8 +87,6 @@ private:
     void _move(float d1, float d2);
     Stepper step_left;
     Stepper step_right;
-
-    float seuils[radar_vl53::RADAR_NB];
 
     float current_wheelbase;
     float current_steps_per_mm;

@@ -4,6 +4,7 @@
 #include "sts3032.h"
 #include "config.h"
 #include "utils.h"
+#include "radar_vl53.h"
 
 TaskHandle_t ninja_handle = NULL;
 TaskHandle_t manger_handle = NULL;
@@ -76,19 +77,19 @@ void strat_grenier(void *arg)
     stratWallid.set_team(cote, bras_mid, bras_bas);
     sts3032::move(7, 3050);
     sts3032::move(1, 1100);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     locomotion.set_speed(500, 3000);
     stratWallid.vider_frigos();
     stratWallid.moveWallid(550, 0);
     stratWallid.taper_mur();
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     stratWallid.moveWallid(-290, 0);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     stratWallid.moveWallid(0, -M_PI / 2);
     stratWallid.taper_mur();
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     stratWallid.moveWallid(-345, 0);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     stratWallid.sortir_caisse();
     stratWallid.placer_frigo_1();
     stratWallid.moveWallid(480, 0);
@@ -131,11 +132,11 @@ void StratWallid::sortir_caisse()
     sts3032::move(1, 1100);
     moveWallid(40, 0);
     taper_mur();
-    locomotion.set_seuils(50, 0, 0, 0, 0);
+    radar_vl53::set_seuils(50, 0, 0, 0, 0);
     locomotion.set_speed(200, 3000);
     moveWallid(-45, 0);
     locomotion.set_speed(500, 3000);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     moveWallid(0, M_PI / 2);
     locomotion.set_speed(100, 500);
     moveWallid(60, 0);
@@ -147,27 +148,27 @@ void StratWallid::placer_frigo_1()
     sts3032::move(7, 2020);
     utils::sleep(50);
     locomotion.set_speed(100, 500);
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-150, 0);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     moveWallid(0, M_PI * 5 / 6);
     locomotion.set_speed(500, 3000);
     moveWallid(220, 0);
     sts3032::move(7, 3050);
     utils::sleep(50);
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-50, 0);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     moveWallid(0, M_PI / 2 + 0.5);
-    locomotion.set_seuils(0, 50, 0, 0, 0);
+    radar_vl53::set_seuils(0, 50, 0, 0, 0);
     moveWallid(100, 0);
-    locomotion.set_seuils(0, 0, 0, 0, 0);
+    radar_vl53::set_seuils(0, 0, 0, 0, 0);
     moveWallid(40, 0);
     taper_mur();
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-45, 0);
     moveWallid(0, M_PI / 2);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
 }
 
 void StratWallid::placer_frigo_2()
@@ -175,24 +176,24 @@ void StratWallid::placer_frigo_2()
     sts3032::move(7, 2020);
     utils::sleep(50);
     locomotion.set_speed(100, 500);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     moveWallid(-150, 0);
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     locomotion.set_speed(500, 3000);
     moveWallid(0, M_PI * 3 / 4);
     moveWallid(50, 0);
     sts3032::move(7, 3050);
     utils::sleep(50);
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-75, 0);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     moveWallid(0, M_PI * 1.8 / 2);
     moveWallid(40, 0);
     taper_mur();
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-25, 0);
     moveWallid(0, M_PI / 2);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
 }
 
 void StratWallid::pousser_caisse()
@@ -202,9 +203,9 @@ void StratWallid::pousser_caisse()
     moveWallid(15, 0);
     taper_mur();
     locomotion.set_speed(100, 500);
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-350, 0);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     locomotion.set_speed(500, 3000);
 }
 
@@ -217,17 +218,17 @@ void StratWallid::vider_frigos()
     moveWallid(110, 0);
     moveWallid(0, -M_PI / 2);
     vider_frigo2();
-    locomotion.set_seuils(0, 40, 0, 0, 0);
+    radar_vl53::set_seuils(0, 40, 0, 0, 0);
     locomotion.set_speed(200, 3000);
     moveWallid(260, 0);
-    locomotion.set_seuils(0, 0, 0, 0, 0);
+    radar_vl53::set_seuils(0, 0, 0, 0, 0);
     moveWallid(50, 0);
     taper_mur();
-    locomotion.set_seuils(200, 0, 0, 0, 0);
+    radar_vl53::set_seuils(200, 0, 0, 0, 0);
     moveWallid(-45, 0);
     moveWallid(0, M_PI / 2);
     utils::sleep(50);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
 }
 
 void StratWallid::vider_frigo2()
@@ -238,11 +239,11 @@ void StratWallid::vider_frigo2()
     moveWallid(180, -0.2);
     sts3032::move(1, 1100);
     utils::sleep(50);
-    locomotion.set_seuils(50, 0, 0, 0, 0);
+    radar_vl53::set_seuils(50, 0, 0, 0, 0);
     locomotion.set_speed(200, 3000);
     moveWallid(-190, 0);
     locomotion.set_speed(500, 3000);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
     moveWallid(0, M_PI / 2);
     moveWallid(45, 0);
     moveWallid(0, -M_PI / 2);
@@ -256,11 +257,11 @@ void StratWallid::vider_frigo2()
 void StratWallid::vider_frigo1()
 {
     moveWallid(270, 0);
-    locomotion.set_seuils(50, 0, 0, 0, 0);
+    radar_vl53::set_seuils(50, 0, 0, 0, 0);
     locomotion.set_speed(200, 3000);
     moveWallid(-270, 0);
     locomotion.set_speed(500, 3000);
-    locomotion.set_seuils(0, 200, 0, 0, 0);
+    radar_vl53::set_seuils(0, 200, 0, 0, 0);
 }
 
 void StratWallid::taper_mur()
@@ -295,13 +296,13 @@ void StratWallid::manger(int distance)
         dist = 370;
     }
 
-    locomotion.set_seuils(0, 0, 0, 0, 0);
+    radar_vl53::set_seuils(0, 0, 0, 0, 0);
     moveWallid(-15, 0);
     moveWallid(0, -M_PI / 2);
     taper_mur();
     moveWallid(-45, 0);
     moveWallid(0, M_PI);
-    locomotion.set_seuils(0, 300, 0, 0, 0);
+    radar_vl53::set_seuils(0, 300, 0, 0, 0);
     moveWallid(dist, 0);
     sts3032::move(7, 2020);
     utils::sleep(500);

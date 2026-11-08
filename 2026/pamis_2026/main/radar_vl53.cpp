@@ -15,6 +15,7 @@ namespace radar_vl53 {
 
 constexpr uint16_t RADAR_NB_RETRY = 5;
 uint16_t distances_radars[RADAR_NB];
+static float seuils[RADAR_NB] = {};
 
 static i2c_master_bus_handle_t* vl53_bus_handle;
 
@@ -158,6 +159,28 @@ uint16_t get_distance(uint16_t radar_nb){
     else{
         return(1000000);
     }
+}
+
+void set_seuils(float seuil0, float seuil1, float seuil2, float seuil3, float seuil4)
+{
+    seuils[0] = seuil0;
+    seuils[1] = seuil1;
+    seuils[2] = seuil2;
+    seuils[3] = seuil3;
+    seuils[4] = seuil4;
+}
+
+// TODO: check seulement les capteurs actifs ?
+bool danger()
+{
+    for (std::size_t i = 0; i < RADAR_NB; ++i)
+    {
+        if (get_distance(i) <= seuils[i])
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 static void radarTask(void* arg) {
