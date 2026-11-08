@@ -149,18 +149,15 @@ void Locomotion::enableSteppers(bool enable)
     if (enable)
     {
         step_left.enableMotor();
+        step_right.enableMotor();
     }
     else
     {
         step_left.disableMotor();
+        step_right.disableMotor();
     }
 }
 
-void Locomotion::disableSteppers()
-{
-    step_right.disableMotor();
-    step_left.disableMotor();
-}
 
 bool Locomotion::moving()
 {

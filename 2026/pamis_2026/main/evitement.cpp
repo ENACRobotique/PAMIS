@@ -30,7 +30,7 @@ void danser()
     const uint16_t POS_GAUCHE = 200; // Centre (512) - 112
     const uint16_t POS_DROITE = 500; // Centre (512) + 1
     // printf("je suis arrive pour le faire bouger \n");
-    locomotion.disableSteppers();
+    locomotion.enableSteppers(false);
     while (1)
     {
         if (a_gauche)

@@ -49,7 +49,6 @@ public:
     void abortTrajectory();
     void pauseTrajectory();
     void enableSteppers(bool enable);
-    void disableSteppers();
 
     bool moving();
 
