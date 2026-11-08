@@ -36,3 +36,10 @@ int sap_ping(uint8_t id);
 esp_err_t sap_send_pkt(sap_pkt_t* pkt);
 
 int readPacket(sap_pkt_t* pkt, TickType_t timeout);
+
+/**
+ * Call this function after a write-only
+ * Return servo error code, -1 if no response
+ * 0 is OK
+ */
+int check_response(sap_pkt_t *req, TickType_t timeout);

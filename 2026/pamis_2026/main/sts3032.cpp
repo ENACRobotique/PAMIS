@@ -149,17 +149,36 @@ namespace sts3032{
         R_CurrentCurrent = 0x45,
     };
 
-    void move(uint8_t id, uint16_t pos){
+    int move(uint8_t id, uint16_t pos) {
         sap_pkt_t pkt={
             .id = id,
             .len = 5,
             .instruction = SAP_WRITE
         };
         pkt.params[0] = R_GoalPosition;
-        uint16_t* pop = (uint16_t*)(&pkt.params[1]);
-        *pop = pos;
+        pkt.params[1] = static_cast<uint8_t>(pos);
+        pkt.params[2] = static_cast<uint8_t>(pos >> 8);
         
         sap_send_pkt(&pkt);
+
+        // read response
+        return check_response(&pkt, pdMS_TO_TICKS(20));
+    }
+
+    int setSpeed(uint8_t id, uint16_t speed) {
+        sap_pkt_t pkt={
+            .id = id,
+            .len = 5,
+            .instruction = SAP_WRITE
+        };
+        pkt.params[0] = R_RunningSpeed;
+        pkt.params[1] = static_cast<uint8_t>(speed);
+        pkt.params[2] = static_cast<uint8_t>(speed >> 8);
+        
+        sap_send_pkt(&pkt);
+
+        // read response
+        return check_response(&pkt, pdMS_TO_TICKS(20));
     }
 
     int16_t readPos(uint8_t id){
@@ -171,15 +190,33 @@ namespace sts3032{
         pkt.params[0] = R_CurrentPosition;
         pkt.params[1] = 2;
         sap_pkt_t rcv_pkt;
-        readPacket(&rcv_pkt, 0);
+        
+        // Send READ packet
         sap_send_pkt(&pkt);
-        vTaskDelay(1 / portTICK_PERIOD_MS);
-        //readPacket(&rcv_pkt, 1 / portTICK_PERIOD_MS);
-        if(readPacket(&rcv_pkt, 20 / portTICK_PERIOD_MS) == pdTRUE){
-            //if(rcv_pkt.instruction!=0){return 10000;}
-            int16_t pos = *((int16_t*) rcv_pkt.params);
+
+        if(readPacket(&rcv_pkt, pdMS_TO_TICKS(30)) == pdTRUE && rcv_pkt.id == id){
+            int16_t pos = rcv_pkt.params[0] | (rcv_pkt.params[1] << 8);
             return pos;
         }
         return 10000;
+    }
+
+    uint8_t moving(uint8_t id) {
+        sap_pkt_t pkt = {
+            .id = id,
+            .len = 4,
+            .instruction = SAP_READ
+        };
+        pkt.params[0] = R_Moving;
+        pkt.params[1] = 1;
+        sap_pkt_t rcv_pkt;
+        
+        // Send READ packet
+        sap_send_pkt(&pkt);
+
+        if(readPacket(&rcv_pkt, pdMS_TO_TICKS(30)) == pdTRUE && rcv_pkt.id == id){
+            return rcv_pkt.params[0];
+        }
+        return 200;
     }
 }

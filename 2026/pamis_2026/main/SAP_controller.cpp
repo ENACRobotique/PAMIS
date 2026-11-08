@@ -6,6 +6,7 @@
 
 const int uart_buffer_size = (1024 * 2);
 QueueHandle_t uart_queue;
+sap_pkt_t pending_rcv_pkt;
 sap_pkt_t rcv_pkt;
 SemaphoreHandle_t bsem;
 
@@ -40,7 +41,7 @@ esp_err_t sap_init(int baudrate)
         return ret;
     }
 
-    // xTaskCreate( sap_readerTask, "sap_reader", configMINIMAL_STACK_SIZE + 1024, NULL, 1, NULL);
+    xTaskCreate( sap_readerTask, "sap_reader", configMINIMAL_STACK_SIZE + 1024, NULL, 2, NULL);
     return ret;
 }
 
@@ -58,31 +59,39 @@ static void sap_readerTask(void *arg)
                 rcv_header = 0;
             }
         }
-        xSemaphoreTake(bsem, 0);
-        int nb_data = uart_read_bytes(SAP_UART, &(rcv_pkt.id), 2, 10 / portTICK_PERIOD_MS);
-        if (nb_data != 2)
+        
+        int nb_data = uart_read_bytes(SAP_UART, &(pending_rcv_pkt.id), 2, 10 / portTICK_PERIOD_MS);
+        if (nb_data != 2 || pending_rcv_pkt.len < 2 || pending_rcv_pkt.len > SAP_MAX_DATA_LEN + 2)
         {
             continue;
         }
-        nb_data = uart_read_bytes(SAP_UART, &(rcv_pkt.instruction), rcv_pkt.len, 10 / portTICK_PERIOD_MS);
-        if (nb_data != rcv_pkt.len)
+        
+        nb_data = uart_read_bytes(SAP_UART, &(pending_rcv_pkt.instruction), pending_rcv_pkt.len, 10 / portTICK_PERIOD_MS);
+        if (nb_data != pending_rcv_pkt.len)
         {
             continue;
         }
 
-        uint8_t checksum = (rcv_pkt.id + rcv_pkt.len + rcv_pkt.instruction);
-        for (int i = 0; i < rcv_pkt.len - 2; i++)
+        uint8_t checksum = (pending_rcv_pkt.id + pending_rcv_pkt.len + pending_rcv_pkt.instruction);
+        for (int i = 0; i < pending_rcv_pkt.len - 2; i++)
         {
-            checksum += rcv_pkt.params[i];
+            checksum += pending_rcv_pkt.params[i];
         }
         checksum = ~checksum;
-        if (rcv_pkt.params[rcv_pkt.len - 2] != checksum)
+        if (pending_rcv_pkt.params[pending_rcv_pkt.len - 2] != checksum)
         {
             // printf("bad checksum\n");
             continue;
         }
+
+        // take the semaphore to invalidate previously received packet
+        xSemaphoreTake(bsem, 0);
+        // copy received packet
+        memcpy(&rcv_pkt, &pending_rcv_pkt, sizeof(sap_pkt_t));
+        // signal new incoming packet
         xSemaphoreGive(bsem);
-        // printf("pkt received\n");
+
+        //printf("pkt received (type %u)\n", pending_rcv_pkt.instruction);
     }
 }
 
@@ -90,10 +99,23 @@ int readPacket(sap_pkt_t *pkt, TickType_t timeout)
 {
     if (xSemaphoreTake(bsem, timeout) == pdTRUE)
     {
-        memcpy(pkt, &rcv_pkt, sizeof(rcv_pkt));
+        if(pkt) {
+            memcpy(pkt, &rcv_pkt, sizeof(rcv_pkt));
+        }
         return pdTRUE;
     };
     return pdFALSE;
+}
+
+int check_response(sap_pkt_t *req, TickType_t timeout) {
+    sap_pkt_t resp;
+    if(readPacket(&resp, timeout) != pdTRUE ||
+        resp.id != req->id ||
+        resp.len != 2
+      ) {
+        return -1;
+    }
+    return resp.instruction;
 }
 
 int sap_ping(uint8_t id)
@@ -133,6 +155,17 @@ esp_err_t sap_send_pkt(sap_pkt_t *pkt)
         checksum += pkt->params[i];
     }
     pkt->params[pkt->len - 2] = ~checksum;
-    esp_err_t ret = uart_write_bytes(SAP_UART, pkt, pkt->len + 4);
-    return ret;
+    
+    // take the semaphore to invalidate previously received packet
+    xSemaphoreTake(bsem, 0);
+
+    int ret = uart_write_bytes(SAP_UART, pkt, pkt->len + 4);
+
+    ESP_ERROR_CHECK(uart_wait_tx_done(UART_NUM_1, pdMS_TO_TICKS(10)));
+
+    if(ret == pkt->len + 4) {
+        return ESP_OK;
+    } else {
+        return ESP_FAIL;
+    }
 }
