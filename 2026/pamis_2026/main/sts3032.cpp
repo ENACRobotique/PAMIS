@@ -165,6 +165,16 @@ namespace sts3032{
         return check_response(&pkt, pdMS_TO_TICKS(20));
     }
 
+    int moveBlocking(uint8_t id, uint16_t pos) {
+        int ret = move(id, pos);
+
+        vTaskDelay(pdMS_TO_TICKS(2));   // Wait for the Moving register to update
+        while(sts3032::moving(id) != 0) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        return ret;
+    }
+
     int setSpeed(uint8_t id, uint16_t speed) {
         sap_pkt_t pkt={
             .id = id,
