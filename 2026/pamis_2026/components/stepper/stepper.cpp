@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <cfloat>
 #include "stepper.h"
 
 #include "esp_log.h"
@@ -401,12 +400,6 @@ bool Stepper::xISR(gptimer_t *timer, const gptimer_alarm_event_data_t *data)
     gptimer_set_alarm_action(timer_handle, &alarm_cfg);
     portEXIT_CRITICAL_ISR(&control_lock);
     return false;   // No high priority task woken
-}
-
-float Stepper::stop()
-{
-    // No distance limit: keep the normal braking ramp selected by stop(distance).
-    return stop(DBL_MAX);
 }
 
 float Stepper::stop(double braking_distance) {

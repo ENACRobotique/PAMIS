@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <limits>
 #include "stdint.h"
 #include "stdio.h"
 #include "string.h"
@@ -210,19 +211,14 @@ public:
      */
     void emergencyStop();
 
-    /** @brief starts braking from ACC or COAST by shortening the target
-     *  @return signed distance removed from the original target, in mm; zero if inactive or already braking
-     */
-    float stop();
-
     /** @brief brakes within the requested maximum distance, including when already in DEC
-     *  @param braking_distance non-negative maximum distance in mm, independent of direction;
+     *  @param braking_distance optional non-negative maximum distance in mm, independent of direction;
      *         rounded up to a STEP pulse. A shorter planned braking ramp is preserved.
-     *         Zero requests an immediate stop.
+     *         Zero requests an immediate stop. When omitted, the normal braking ramp is used.
      *  @return signed distance removed from the original target, in mm;
      *          zero if inactive or arguments are invalid
      */
-    float stop(double braking_distance);
+    float stop(double braking_distance = std::numeric_limits<double>::max());
 
     /**
      * @param xTicksToWait timeout in FreeRTOS ticks; a timeout does not stop the motor
