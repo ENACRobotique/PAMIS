@@ -1,4 +1,6 @@
 #pragma once
+
+#include <limits>
 #include "stepper.h"
 #include "radar_vl53.h"
 
@@ -39,7 +41,7 @@ public:
     volatile bool trajectoire_en_cours = false;
 
     void moveBlocking(float lenght, float angle);
-    DistancesRoues stop();
+    DistancesRoues stop(double braking_distance = std::numeric_limits<double>::max());
     DistancesRoues leg(DistancesRoues d);
     void moveEvitement(float d, float alpha);
     void set_speed(float v, float a);

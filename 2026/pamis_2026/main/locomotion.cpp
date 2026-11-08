@@ -88,15 +88,16 @@ void Locomotion::pauseTrajectory()
     }
 }
 
-DistancesRoues Locomotion::stop()
+DistancesRoues Locomotion::stop(double braking_distance)
 {
     // arret lent
-    float step_to_do_left = step_left.stop();
-    float step_to_do_right = step_right.stop();
+    float step_to_do_left = step_left.stop(braking_distance);
+    float step_to_do_right = step_right.stop(braking_distance);
     waitFinishedTimeout(1000);
     DistancesRoues d = {
         .d1 = step_to_do_left,
-        .d2 = step_to_do_right};
+        .d2 = step_to_do_right
+    };
     return d;
 }
 
