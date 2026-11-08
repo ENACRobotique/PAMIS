@@ -23,6 +23,7 @@
 #include "evitement.h"
 #include "Astar.h"
 #include "stratWallid.h"
+#include "utils.h"
 #include "scs009.h"
 
 #define NINJA_ID 9
@@ -53,9 +54,9 @@ static void blinker(void *arg)
 {
     while (true)
     {
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        utils::sleep(500);
         gpio_set_level(LED1, 1);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        utils::sleep(500);
         gpio_set_level(LED1, 0);
     }
 }
@@ -100,7 +101,7 @@ extern "C" void app_main(void)
     {
         ESP_LOGI("SAP", "SAP initialized !");
     }
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    utils::sleep(200);
 
     // create blinker task
     xTaskCreate(blinker, "Blinker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
@@ -210,9 +211,9 @@ extern "C" void app_main(void)
         // Blink 3 times on WiFi connect
         for (int i = 0; i < 3; i++)
         {
-            vTaskDelay(200 / portTICK_PERIOD_MS);
+            utils::sleep(200);
             gpio_set_level(LED2, 1);
-            vTaskDelay(200 / portTICK_PERIOD_MS);
+            utils::sleep(200);
             gpio_set_level(LED2, 0);
         }
     }
@@ -225,9 +226,9 @@ extern "C" void app_main(void)
             // Blink 10 times on WiFi AP creation after failure to connect to WiFi
             for (int i = 0; i < 10; i++)
             {
-                vTaskDelay(200 / portTICK_PERIOD_MS);
+                utils::sleep(200);
                 gpio_set_level(LED2, 1);
-                vTaskDelay(200 / portTICK_PERIOD_MS);
+                utils::sleep(200);
                 gpio_set_level(LED2, 0);
             }
         }
@@ -247,7 +248,7 @@ extern "C" void app_main(void)
     while (1)
     {
         ws_async_send_robot_pos();
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        utils::sleep(100);
         // printf("Free heap size: %" PRIu32 " bytes\n", esp_get_free_heap_size());
     }
 }

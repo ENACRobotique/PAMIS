@@ -20,6 +20,7 @@
 #include "evitement.h"
 #include "math.h"
 #include "scs009.h"
+#include "utils.h"
 
 extern uint8_t id_servo_queue;
 
@@ -29,7 +30,7 @@ void strat_fondation(void *arg)
     // wait to plug tirette
     while (gpio_get_level(FDC1))
     {
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        utils::sleep(20);
     }
 
     locomotion.enableSteppers(true);
@@ -38,10 +39,10 @@ void strat_fondation(void *arg)
     // wait to unplug tirette
     while (!gpio_get_level(FDC1))
     {
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        utils::sleep(50);
     }
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    utils::sleep(1000);
     // locomotion.moveBlocking(0, 5 * 2*M_PI);
     // vTaskDelay(portMAX_DELAY);
 
@@ -54,7 +55,7 @@ void strat_fondation(void *arg)
 
     while (true)
     {
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        utils::sleep(500);
     }
 }
 
@@ -197,7 +198,7 @@ void strat_pami2026(void *ID)
     // wait to plug tirette
     while (gpio_get_level(FDC1))
     {
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        utils::sleep(50);
     }
 
     locomotion.enableSteppers(true);
@@ -205,19 +206,19 @@ void strat_pami2026(void *ID)
     while (!gpio_get_level(FDC1))
     {
         printf("on m'a enlever la tirette \n");
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        utils::sleep(50);
     }
     locomotion.setMatchStart();
 
     if (gpio_get_level(FDC3) == 1)
     {
         printf("j'attends longtemps \n");
-        vTaskDelay(pdMS_TO_TICKS(attente_longue));
+        utils::sleep(attente_longue);
     }
     else
     {
         printf("j'attends pas longtemps \n");
-        vTaskDelay(pdMS_TO_TICKS(100));
+        utils::sleep(100);
     }
 
     if (nb_points > 0)
@@ -232,7 +233,7 @@ void strat_pami2026(void *ID)
     while (locomotion.trajectoire_en_cours)
     {
         // printf("je suis blouqer ici \n");
-        vTaskDelay(pdMS_TO_TICKS(50));
+        utils::sleep(50);
     }
     // Bouger la queue
     while (1)
@@ -249,7 +250,7 @@ void strat_pami2026(void *ID)
         }
         a_gauche = !a_gauche;
 
-        vTaskDelay(pdMS_TO_TICKS(400));
+        utils::sleep(400);
     }
 }
 
@@ -259,6 +260,6 @@ void strat_marchepas(void *arg)
     {
         locomotion.set_speed(500, 400);
         locomotion.moveBlocking(0, -5 * 2 * M_PI);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        utils::sleep(1000);
     }
 }

@@ -93,7 +93,7 @@ DistancesRoues Locomotion::stop()
     // arret lent
     float step_to_do_left = step_left.stop();
     float step_to_do_right = step_right.stop();
-    waitFinishedTimeout(1000 / portTICK_PERIOD_MS);
+    waitFinishedTimeout(1000);
     DistancesRoues d = {
         .d1 = step_to_do_left,
         .d2 = step_to_do_right};
@@ -216,7 +216,7 @@ void Locomotion::odometry_task(void *arg)
         that->setPos(pos);
 
         // sleep jusqu'à la prochaine période
-        vTaskDelay(ODOMETRY_PERIOD_MS / portTICK_PERIOD_MS);
+        utils::sleep(ODOMETRY_PERIOD_MS);
     }
 }
 
@@ -234,10 +234,10 @@ int Locomotion::trajectory_movement()
             trajectoire_en_cours = false;
             break;
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        utils::sleep(10);
         if (arret_urgence)
         {
-            vTaskDelay(pdMS_TO_TICKS(50));
+            utils::sleep(50);
             mvm_etat = IDLE_mvm;
             continue;
         }
@@ -339,9 +339,10 @@ void Locomotion::trajectory_task(void *arg)
     }
 }
 
-BaseType_t Locomotion::waitFinishedTimeout(TickType_t xTicksToWait)
+BaseType_t Locomotion::waitFinishedTimeout(uint32_t ms)
 {
-    return step_left.waitFinishedTimeout(xTicksToWait) && step_right.waitFinishedTimeout(xTicksToWait);
+    
+    return step_left.waitFinishedTimeout(pdMS_TO_TICKS(ms)) && step_right.waitFinishedTimeout(pdMS_TO_TICKS(ms));
 }
 
 void Locomotion::set_seuils(float a, float b, float c, float d, float e)
@@ -367,7 +368,7 @@ bool Locomotion::danger()
 DistancesRoues Locomotion::leg(DistancesRoues d)
 {
     _move(d.d1, d.d2);
-    while (waitFinishedTimeout(100 / portTICK_PERIOD_MS) != pdTRUE)
+    while (waitFinishedTimeout(100) != pdTRUE)
     {
         if (danger())
         {
@@ -391,7 +392,7 @@ void Locomotion::moveEvitement(float d, float alpha)
         r = leg(r);
         while (danger())
         {
-            vTaskDelay(500 / portTICK_PERIOD_MS);
+            utils::sleep(500);
         }
     }
 }

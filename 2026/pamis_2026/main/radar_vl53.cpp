@@ -8,6 +8,7 @@ extern "C" {
 }
 #include "endian.h"
 #include "telelogs.h"
+#include "utils.h"
 
 
 
@@ -99,7 +100,7 @@ static VL53L1X_ERROR init_radar(VL53L1_Dev_t* radar) {
                     return VL53L1X_ERROR_TIMEOUT;
                 }
             }
-            vTaskDelay(50 / portTICK_PERIOD_MS);
+            utils::sleep(50);
         }
 
         //sensor initialization
@@ -135,7 +136,7 @@ static VL53L1X_ERROR radar_read(VL53L1_Dev_t* radar,  VL53L1X_Result_t* result)
             {
                 break;
             }
-            vTaskDelay(20 / portTICK_PERIOD_MS);
+            utils::sleep(20);
         }
         else
         {
@@ -167,7 +168,7 @@ static void radarTask(void* arg) {
         gpio_set_level(radars[i].shutdown_gpio,0);
     }
     
-    vTaskDelay(10 / portTICK_PERIOD_MS);    // be sure that sensor are off
+    utils::sleep(10);    // be sure that sensor are off
     
     // init sensors
     for(int i = 0; i<RADAR_NB; i++){

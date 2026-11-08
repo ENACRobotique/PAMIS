@@ -3,6 +3,7 @@
 #include "config.h"
 #include "string.h"
 #include "esp_log.h"
+#include "utils.h"
 
 const int uart_buffer_size = (1024 * 2);
 QueueHandle_t uart_queue;
@@ -53,20 +54,20 @@ static void sap_readerTask(void *arg)
         while (rcv_header != 0xFFFF)
         {
             rcv_header = rcv_header << 8;
-            int nb_data = uart_read_bytes(SAP_UART, &rcv_header, 1, 10 / portTICK_PERIOD_MS);
+            int nb_data = uart_read_bytes(SAP_UART, &rcv_header, 1, pdMS_TO_TICKS(10));
             if (nb_data == 0)
             {
                 rcv_header = 0;
             }
         }
         
-        int nb_data = uart_read_bytes(SAP_UART, &(pending_rcv_pkt.id), 2, 10 / portTICK_PERIOD_MS);
+        int nb_data = uart_read_bytes(SAP_UART, &(pending_rcv_pkt.id), 2, pdMS_TO_TICKS(10));
         if (nb_data != 2 || pending_rcv_pkt.len < 2 || pending_rcv_pkt.len > SAP_MAX_DATA_LEN + 2)
         {
             continue;
         }
         
-        nb_data = uart_read_bytes(SAP_UART, &(pending_rcv_pkt.instruction), pending_rcv_pkt.len, 10 / portTICK_PERIOD_MS);
+        nb_data = uart_read_bytes(SAP_UART, &(pending_rcv_pkt.instruction), pending_rcv_pkt.len, pdMS_TO_TICKS(10));
         if (nb_data != pending_rcv_pkt.len)
         {
             continue;
@@ -138,8 +139,8 @@ int sap_ping(uint8_t id)
     {
         ESP_LOGI("SAP", "send packet ok");
     }
-    vTaskDelay(1 / portTICK_PERIOD_MS);
-    if (readPacket(&rcv_pkt, 20 / portTICK_PERIOD_MS) == pdTRUE)
+    utils::sleep(1);
+    if (readPacket(&rcv_pkt, pdMS_TO_TICKS(20)) == pdTRUE)
     {
         return 1;
     }

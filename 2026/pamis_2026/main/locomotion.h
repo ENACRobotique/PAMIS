@@ -72,7 +72,7 @@ public:
     /**
      * @return pdTRUE if move finished, or pdFALSE on timeout
      */
-    BaseType_t waitFinishedTimeout(TickType_t xTicksToWait);
+    BaseType_t waitFinishedTimeout(uint32_t millisesconds);
 
     void trajectory(Position *dest, int nb_pts);
 

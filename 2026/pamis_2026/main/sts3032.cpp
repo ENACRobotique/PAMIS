@@ -1,6 +1,7 @@
 #include "sts3032.h"
 #include "SAP_controller.h"
 #include "driver/uart.h"
+#include "utils.h"
 
 namespace sts3032{
 
@@ -168,9 +169,9 @@ namespace sts3032{
     int moveBlocking(uint8_t id, uint16_t pos) {
         int ret = move(id, pos);
 
-        vTaskDelay(pdMS_TO_TICKS(2));   // Wait for the Moving register to update
+        utils::sleep(2);   // Wait for the Moving register to update
         while(sts3032::moving(id) != 0) {
-            vTaskDelay(pdMS_TO_TICKS(100));
+            utils::sleep(100);
         }
         return ret;
     }

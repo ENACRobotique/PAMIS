@@ -3,6 +3,7 @@
 #include "stepper.h"
 #include "sts3032.h"
 #include "config.h"
+#include "utils.h"
 
 TaskHandle_t ninja_handle = NULL;
 TaskHandle_t manger_handle = NULL;
@@ -46,7 +47,7 @@ void strat_grenier(void *arg)
 
     while (gpio_get_level(FDC1) == 0)
     {
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        utils::sleep(50);
     }
 
     auto timer = xTimerCreate("MatchEndTimer", pdMS_TO_TICKS(MATCH_TIME * 1000), pdFALSE, (void *)0, match_end_cb);
@@ -125,7 +126,7 @@ void StratWallid::sortir_caisse()
 {
     moveWallid(60, 0);
     sts3032::move(1, bras_mid);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    utils::sleep(100);
     moveWallid(225, -0.12);
     sts3032::move(1, 1100);
     moveWallid(40, 0);
@@ -144,7 +145,7 @@ void StratWallid::sortir_caisse()
 void StratWallid::placer_frigo_1()
 {
     sts3032::move(7, 2020);
-    vTaskDelay(50);
+    utils::sleep(50);
     locomotion.set_speed(100, 500);
     locomotion.set_seuils(200, 0, 0, 0, 0);
     moveWallid(-150, 0);
@@ -153,7 +154,7 @@ void StratWallid::placer_frigo_1()
     locomotion.set_speed(500, 3000);
     moveWallid(220, 0);
     sts3032::move(7, 3050);
-    vTaskDelay(50);
+    utils::sleep(50);
     locomotion.set_seuils(200, 0, 0, 0, 0);
     moveWallid(-50, 0);
     locomotion.set_seuils(0, 200, 0, 0, 0);
@@ -172,7 +173,7 @@ void StratWallid::placer_frigo_1()
 void StratWallid::placer_frigo_2()
 {
     sts3032::move(7, 2020);
-    vTaskDelay(50);
+    utils::sleep(50);
     locomotion.set_speed(100, 500);
     locomotion.set_seuils(0, 200, 0, 0, 0);
     moveWallid(-150, 0);
@@ -181,7 +182,7 @@ void StratWallid::placer_frigo_2()
     moveWallid(0, M_PI * 3 / 4);
     moveWallid(50, 0);
     sts3032::move(7, 3050);
-    vTaskDelay(50);
+    utils::sleep(50);
     locomotion.set_seuils(200, 0, 0, 0, 0);
     moveWallid(-75, 0);
     locomotion.set_seuils(0, 200, 0, 0, 0);
@@ -197,7 +198,7 @@ void StratWallid::placer_frigo_2()
 void StratWallid::pousser_caisse()
 {
     moveWallid(0, -M_PI / 2);
-    vTaskDelay(50);
+    utils::sleep(50);
     moveWallid(15, 0);
     taper_mur();
     locomotion.set_speed(100, 500);
@@ -225,7 +226,7 @@ void StratWallid::vider_frigos()
     locomotion.set_seuils(200, 0, 0, 0, 0);
     moveWallid(-45, 0);
     moveWallid(0, M_PI / 2);
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    utils::sleep(50);
     locomotion.set_seuils(0, 200, 0, 0, 0);
 }
 
@@ -233,10 +234,10 @@ void StratWallid::vider_frigo2()
 {
     moveWallid(100, 0);
     sts3032::move(1, bras_bas);
-    vTaskDelay(50);
+    utils::sleep(50);
     moveWallid(180, -0.2);
     sts3032::move(1, 1100);
-    vTaskDelay(50);
+    utils::sleep(50);
     locomotion.set_seuils(50, 0, 0, 0, 0);
     locomotion.set_speed(200, 3000);
     moveWallid(-190, 0);
@@ -246,7 +247,7 @@ void StratWallid::vider_frigo2()
     moveWallid(45, 0);
     moveWallid(0, -M_PI / 2);
     sts3032::move(1, bras_bas);
-    vTaskDelay(50);
+    utils::sleep(50);
     moveWallid(220, -0.2);
     sts3032::move(1, 1100);
     moveWallid(0, M_PI);
@@ -274,9 +275,9 @@ void StratWallid::danser()
     while (true)
     {
         sts3032::move(1, 1690);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        utils::sleep(500);
         sts3032::move(1, 510);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        utils::sleep(500);
     }
 }
 
@@ -303,11 +304,11 @@ void StratWallid::manger(int distance)
     locomotion.set_seuils(0, 300, 0, 0, 0);
     moveWallid(dist, 0);
     sts3032::move(7, 2020);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    utils::sleep(500);
     moveWallid(0, -M_PI / 4);
 }
 
 // // wait to plug tirette
 // while (gpio_get_level(FDC1) == 0) {
-//     vTaskDelay(50 / portTICK_PERIOD_MS);
+//     utils::sleep(50);
 // }

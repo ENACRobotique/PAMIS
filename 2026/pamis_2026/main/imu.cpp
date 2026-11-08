@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include "lms6dsl_reg.h"
 #include "esp_log.h"
+#include "utils.h"
 
 constexpr uint32_t CHECK_IMU_MAX_FAIL = 50;
 
@@ -21,7 +22,7 @@ i2c_device_config_t imu_dev_config = {
 static void read_imu(void* arg) {
     //reboot IMU
     //writeRegister(LSM6DSL_CTRL3_C, 0x80);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    utils::sleep(20);
 
     // Read WHO_AM_I register until we get the expected value
     while(true) {
@@ -30,7 +31,7 @@ static void read_imu(void* arg) {
         if(who_am_i == LSM6DSL_WHO_AM_I) {
             break;
         }
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        utils::sleep(100);
     }
 
     // configure IMU
@@ -39,7 +40,7 @@ static void read_imu(void* arg) {
 
     while(true) {
         uint8_t who_am_i = 0;
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+        utils::sleep(200);
         register_read(LSM6DSL_WHO_AM_I_REG, &who_am_i, 1);
         //ESP_LOGI("IMU", "Who am I ? 0x%x", who_am_i);
     }
@@ -58,4 +59,3 @@ void imu_init(i2c_master_bus_handle_t* bus_handle){
 esp_err_t register_read(uint8_t reg, uint8_t* buff, size_t length){
     return i2c_master_transmit_receive(imu_dev_handle, &reg, 1, buff, length, 100);
 }
-

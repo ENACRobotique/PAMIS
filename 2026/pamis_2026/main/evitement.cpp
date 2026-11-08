@@ -45,7 +45,7 @@ void danser()
         }
         a_gauche = !a_gauche;
 
-        vTaskDelay(pdMS_TO_TICKS(400));
+        utils::sleep(400);
     }
 }
 
@@ -97,7 +97,7 @@ void task_evitement(void *ID)
             }
 
             // On est dans le nid on regarde pas les obstacle
-            vTaskDelay(pdMS_TO_TICKS(20));
+            utils::sleep(20);
             continue;
         }
         bool obstacle_detecte = false;
@@ -178,6 +178,6 @@ void task_evitement(void *ID)
                 }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(20));
+        utils::sleep(20);
     }
 }

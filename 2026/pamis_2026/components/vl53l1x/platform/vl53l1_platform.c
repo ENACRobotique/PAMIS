@@ -105,7 +105,7 @@ int8_t VL53L1_RdDWord(VL53L1_Dev_t* dev, uint16_t index, uint32_t *data) {
 }
 
 int8_t VL53L1_WaitMs(VL53L1_Dev_t* dev, int32_t wait_ms){
-	vTaskDelay(wait_ms / portTICK_PERIOD_MS);
+	vTaskDelay(pdMS_TO_TICKS(wait_ms));
 	/* To be filled by customer. Return 0 if OK */
 	/* Warning : For big endian platforms, fields 'RegisterAdress' and 'value' need to be swapped. */
 	
