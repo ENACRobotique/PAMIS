@@ -356,15 +356,19 @@ void Locomotion::set_seuils(float a, float b, float c, float d, float e)
 
 bool Locomotion::danger()
 {
-    float d0 = get_distance(0);
-    float d1 = get_distance(1);
-    float d2 = get_distance(2);
-    float d3 = get_distance(3);
-    float d4 = get_distance(4);
+    float d0 = radar_vl53::get_distance(0);
+    float d1 = radar_vl53::get_distance(1);
+    float d2 = radar_vl53::get_distance(2);
+    float d3 = radar_vl53::get_distance(3);
+    float d4 = radar_vl53::get_distance(4);
 
     return (d0 <= seuils[0] || d1 <= seuils[1] || d2 <= seuils[2] || d3 <= seuils[3] || d4 <= seuils[4]);
 }
 
+/**
+ * Essaye d'effectuer le mouvement demandé, et retourne ce qu'il manque a faire quand l'évitement l'empêche de bouger.
+ * Check l'évitement toutes les 100ms.
+ */
 DistancesRoues Locomotion::leg(DistancesRoues d)
 {
     _move(d.d1, d.d2);
@@ -380,6 +384,10 @@ DistancesRoues Locomotion::leg(DistancesRoues d)
     return {0, 0};
 }
 
+/**
+ * Effectue un mouvement en s'arrêtant au besoin pour l'évitement
+ * TODO: ajouter un timeout optionnel ?
+ */
 void Locomotion::moveEvitement(float d, float alpha)
 {
     float d1 = d - (current_wheelbase / 2) * alpha;

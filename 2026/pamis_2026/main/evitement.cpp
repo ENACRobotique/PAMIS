@@ -9,9 +9,7 @@
 #include "scs009.h"
 extern Locomotion locomotion;
 
-#ifndef RADAR_NB
-#define RADAR_NB 3
-#endif // on aura 3 radar sur les PAMI_2026
+constexpr uint16_t EVITEMENT_RADAR_NB = 3;
 
 const uint16_t SEUIL_STOP = 150;                                 // 15cm devant le robot
 const float ANGLES_RADAR[3] = {-M_PI / 4.5f, 0.0f, M_PI / 4.5f}; // 40degres
@@ -103,9 +101,9 @@ void task_evitement(void *ID)
         bool obstacle_detecte = false;
 
         // Lecture des radars
-        for (uint16_t i = 0; i < RADAR_NB; i++)
+        for (uint16_t i = 0; i < EVITEMENT_RADAR_NB; i++)
         {
-            int dist = get_distance(i);
+            int dist = radar_vl53::get_distance(i);
 
             if (dist > 10 && dist < SEUIL_STOP)
             {

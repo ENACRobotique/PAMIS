@@ -10,9 +10,10 @@ extern "C" {
 #include "telelogs.h"
 #include "utils.h"
 
+namespace radar_vl53 {
 
 
-#define RADAR_NB_RETRY 5
+constexpr uint16_t RADAR_NB_RETRY = 5;
 uint16_t distances_radars[RADAR_NB];
 
 static i2c_master_bus_handle_t* vl53_bus_handle;
@@ -221,7 +222,9 @@ static void radarTask(void* arg) {
 
 
 
-void radar_vl53_start(i2c_master_bus_handle_t* bus_handle){
+void start(i2c_master_bus_handle_t* bus_handle){
     vl53_bus_handle = bus_handle;
     xTaskCreate( radarTask, "radar", configMINIMAL_STACK_SIZE + 1024, NULL, 1, NULL);
 }
+
+} // namespace radar_vl53

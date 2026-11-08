@@ -90,7 +90,7 @@ private:
     Stepper step_left;
     Stepper step_right;
 
-    float seuils[RADAR_NB];
+    float seuils[radar_vl53::RADAR_NB];
 
     float current_wheelbase;
     float current_steps_per_mm;

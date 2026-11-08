@@ -91,7 +91,7 @@ extern "C" void app_main(void)
     // setup sensors
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &bus_handle));
     imu_init(&bus_handle);
-    //radar_vl53_start(&bus_handle);
+    // radar_vl53::start(&bus_handle);
 
     if (sap_init(500000) != ESP_OK)
     {
