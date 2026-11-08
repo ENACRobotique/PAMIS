@@ -37,11 +37,11 @@ void danser()
     {
         if (a_gauche)
         {
-            scs009::move_scs(id_servo_queue, POS_GAUCHE);
+            scs009::move(id_servo_queue, POS_GAUCHE);
         }
         else
         {
-            scs009::move_scs(id_servo_queue, POS_DROITE);
+            scs009::move(id_servo_queue, POS_DROITE);
         }
         a_gauche = !a_gauche;
 

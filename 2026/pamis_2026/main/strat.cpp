@@ -241,11 +241,11 @@ void strat_pami2026(void *ID)
         // printf("je suis arrive pour le faire bouger \n");
         if (a_gauche)
         {
-            scs009::move_scs(id_servo_queue, POS_GAUCHE);
+            scs009::move(id_servo_queue, POS_GAUCHE);
         }
         else
         {
-            scs009::move_scs(id_servo_queue, POS_DROITE);
+            scs009::move(id_servo_queue, POS_DROITE);
         }
         a_gauche = !a_gauche;
 
