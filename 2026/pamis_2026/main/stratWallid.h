@@ -1,3 +1,5 @@
+#pragma once
+
 void strat_grenier(void* arg);
 
 
